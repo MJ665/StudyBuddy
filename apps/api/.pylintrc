@@ -1,0 +1,5 @@
+[MASTER]
+ignore=migrations,venv,.venv,.turbo,.mypy_cache,.ruff_cache
+
+[MESSAGES CONTROL]
+disable=not-callable,missing-docstring,missing-module-docstring,missing-class-docstring,missing-function-docstring,too-few-public-methods,too-many-arguments,too-many-locals,duplicate-code,import-error,line-too-long,unused-import

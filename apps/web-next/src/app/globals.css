@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@theme {
+  --color-surface-dim: #0c1324;
+  --color-surface-container-low: #151b2d;
+  --color-surface-container: #191f31;
+  --color-surface-container-high: #23293c;
+  --color-surface-container-highest: #2e3447;
+  --color-surface-bright: #33394c;
+  
+  --color-on-surface: #dce1fb;
+  --color-on-surface-variant: #c7c4d7;
+  --color-outline-variant: #464554;
+  
+  --color-brand-primary: #c0c1ff;
+  --color-brand-primary-container: #8083ff;
+  --color-brand-secondary: #4edea3;
+  --color-brand-tertiary: #ffb2b7;
+}
+
+@layer base {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #334155;
+  }
+
+  /* Material Symbols Outlined — used in sidebar nav + bank card icons */
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+}
+
+/* Quiz dot-map pulse animation for current question */
+@keyframes dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(99, 102, 241, 0); }
+}
+.animate-dot-pulse {
+  animation: dot-pulse 2s ease-in-out infinite;
+}
+
+/* Executive Summary Print Optimization */
+@media print {
+  @page {
+    size: A4;
+    margin: 2cm;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Hide UI elements that are non-essential for physical reports */
+  nav, .sidebar, .top-navbar, .action-buttons, .no-print, button, .tabs, .search-bar {
+    display: none !important;
+  }
+
+  /* Force high-contrast containers */
+  .bg-surface-container, .bg-slate-950, .bg-slate-900 {
+    background: transparent !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    color: black !important;
+  }
+
+  .text-white, .text-slate-400, .text-indigo-400 {
+    color: black !important;
+  }
+
+  .rounded-[3rem], .rounded-3xl {
+    border-radius: 1rem !important;
+  }
+
+  /* Ensure the report content fills the page */
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Header adjustments */
+  h1, h2, h3 {
+    color: #1e3a8a !important;
+    margin-top: 2rem !important;
+  }
+
+  /* Avoid breaking observations across pages */
+  .observation-card, li {
+    page-break-inside: avoid;
+  }
+}

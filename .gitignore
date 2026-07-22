@@ -1,0 +1,17 @@
+# deps
+node_modules/
+apps/api/.venv/
+apps/api/venv/
+__pycache__/
+*.pyc
+# env & secrets
+.env
+.env.*
+# build
+apps/web-next/.next/
+dist/
+# archives & caches
+_archive/
+graphify-out/cache/
+*.log
+.DS_Store

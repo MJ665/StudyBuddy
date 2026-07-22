@@ -1,0 +1,16 @@
+--- apps/web-next/src/services/ApiService.ts
++++ apps/web-next/src/services/ApiService.ts
+@@ -269,6 +269,13 @@
+     });
+   }
+ 
++  static async adminResetPassword(userId: number, newPassword: string) {
++    return this.request(`/admin/users/${userId}/reset-password`, {
++      method: 'POST',
++      body: JSON.stringify({ new_password: newPassword })
++    });
++  }
++
+   // --- Profile ---
+   static async getProfile() {
+     return this.request('/auth/profile');
