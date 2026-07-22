@@ -42,7 +42,11 @@ ALLOWED_ANONYMOUS = {
 
 def _anonymous_endpoints():
     out = []
-    for path in sorted(ROUTERS.glob("*.py")):
+    # routers/ (monoliths + aggregators) plus the Phase-3 modular router files.
+    paths = sorted(ROUTERS.glob("*.py")) + sorted(
+        (ROUTERS.parent / "modules").glob("*/routers/*.py")
+    )
+    for path in paths:
         tree = ast.parse(path.read_text())
         for node in ast.walk(tree):
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
