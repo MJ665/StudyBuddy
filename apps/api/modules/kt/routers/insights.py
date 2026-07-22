@@ -614,16 +614,12 @@ async def org_insights_summary(
         {"date": str(r.date), "count": r.count} for r in activity_res.fetchall()
     ]
 
-    # 3. Neo4j Stats
-    episodes = await neo4j.run_one(
-        "MATCH (e:Episode {organization_id: $oid}) RETURN count(e) as count", oid=org_id
-    )
-    entities = await neo4j.run_one(
-        "MATCH (e:Episode {organization_id: $oid})-[:MENTIONS]->(ent:Entity) RETURN count(DISTINCT ent) as count",
-        oid=org_id,
-    )
-    total_episodes = episodes.get("count", 0) if episodes else 0
-    total_entities = entities.get("count", 0) if entities else 0
+    # 3. Knowledge-store stats (relational, Phase 6 — was Neo4j)
+    from modules.kt.services.graph_service import graph_counts
+
+    _counts = await graph_counts(db, organization_id=org_id)
+    total_episodes = _counts["total_episodes"]
+    total_entities = _counts["total_entities"]
 
     # 4. Health Metrics (Calculated)
     coverage = (ingested_docs / max(total_docs, 1)) * 100
@@ -780,7 +776,11 @@ async def explore_graph(
     except Exception:
         pass
 
-    data = await neo4j.get_graph_explorer_data(str(resolved_company_id) if resolved_company_id else "", project_ids)
+    from modules.kt.services.graph_service import get_graph_explorer_data
+
+    data = await get_graph_explorer_data(
+        db, str(resolved_company_id) if resolved_company_id else "", project_ids
+    )
 
     try:
         await redis_client.set(redis_key, json.dumps(data), ex=3600)
@@ -812,7 +812,9 @@ async def explore_graph_neighborhood(
         pass
 
     try:
-        data = await neo4j.get_graph_neighborhood(node_id)
+        from modules.kt.services.graph_service import get_graph_neighborhood
+
+        data = await get_graph_neighborhood(db, node_id)
         try:
             await redis_client.set(redis_key, json.dumps(data), ex=3600)
         except Exception:
@@ -862,7 +864,11 @@ async def knowledge_timeline(
     except Exception:
         pass
 
-    data = await neo4j.get_timeline(str(resolved_company_id) if resolved_company_id else "", project_ids)
+    from modules.kt.services.graph_service import get_timeline
+
+    data = await get_timeline(
+        db, str(resolved_company_id) if resolved_company_id else "", project_ids
+    )
 
     try:
         await redis_client.set(redis_key, json.dumps(data), ex=3600)
@@ -903,17 +909,9 @@ async def graph_stats(
     except Exception:
         pass
 
-    episodes = await neo4j.run_one(
-        "MATCH (e:Episode {company_id: $cid}) RETURN count(e) as count", cid=company_id
-    )
-    entities = await neo4j.run_one(
-        "MATCH (e:Episode {company_id: $cid})-[:MENTIONS]->(ent:Entity) RETURN count(DISTINCT ent) as count",
-        cid=company_id,
-    )
-    stats_res = {
-        "total_episodes": episodes.get("count", 0) if episodes else 0,
-        "total_entities": entities.get("count", 0) if entities else 0,
-    }
+    from modules.kt.services.graph_service import graph_counts
+
+    stats_res = await graph_counts(db, company_id=company_id)
 
     try:
         await redis_client.set(redis_key, json.dumps(stats_res), ex=3600)

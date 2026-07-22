@@ -461,13 +461,20 @@ async def readiness_check():
     except Exception:  # noqa: BLE001
         checks["redis"] = "unavailable"
 
-    # Neo4j (KT graph) — degraded, not fatal for non-KT traffic.
+    # KT vector store (pgvector) — rides on the primary database; report the
+    # extension presence. (Neo4j is fully retired — Phase 6.)
     try:
-        from services.kt_engine import neo4j
+        from sqlalchemy import text as _text
 
-        checks["neo4j"] = "ok" if await neo4j.connect() else "unconfigured"
+        from database import AsyncSessionLocal as _ASL
+
+        async with _ASL() as _s:
+            _ext = await _s.execute(
+                _text("SELECT 1 FROM pg_extension WHERE extname='vector'")
+            )
+            checks["pgvector"] = "ok" if _ext.first() else "missing"
     except Exception:  # noqa: BLE001
-        checks["neo4j"] = "unavailable"
+        checks["pgvector"] = "unavailable"
 
     body = {"status": "ready" if ready else "not_ready", "checks": checks}
     if not ready:

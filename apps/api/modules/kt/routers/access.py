@@ -323,16 +323,13 @@ async def verify_key_endpoint(
         if not await _user_can_retrieve_company(uid, doc.company_id, org_id, db):
             raise HTTPException(403, "Access denied")
 
-        # Perform Neo4j traversal (service expected to be available as `neo4j`)
+        # Relational neighborhood (Phase 6): same project + shared tags.
+        # (The old neo4j.traverse_neighborhood call referenced a method that
+        # never existed — it always raised and returned [].)
         try:
-            neighbors = await neo4j.traverse_neighborhood(
-                start_node_id=node_id,
-                depth=depth,
-                filters={
-                    "company_id": doc.company_id,
-                    "status": ["APPROVED", "PUBLISHED"],
-                },
-            )
+            from modules.kt.services.graph_service import related_documents
+
+            neighbors = await related_documents(db, doc)
         except Exception:
             # Fallback: return empty neighbor list on service errors
             neighbors = []
