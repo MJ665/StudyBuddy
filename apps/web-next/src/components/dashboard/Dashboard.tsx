@@ -86,10 +86,8 @@ export default function Dashboard({
       .then(res => setMyStats(res))
       .catch(err => console.error("Failed to load stats", err));
 
-    const handleNavProfile = () => {
-      if (onViewProfile) onViewProfile();
-    };
-    window.addEventListener('nav-profile', handleNavProfile);
+    // (removed) 'nav-profile' window-event listener — nothing ever
+    // dispatched it; navigation is router-based since Phase 4.
 
     // Load Daily Challenge on mount (not tab-dependent)
     ApiService.getDailyChallenge()
@@ -99,9 +97,6 @@ export default function Dashboard({
       })
       .catch(() => setDailyChallenge(null));
 
-    return () => {
-      window.removeEventListener('nav-profile', handleNavProfile);
-    };
   }, [user.group_id, onViewProfile]);
 
   useEffect(() => {
