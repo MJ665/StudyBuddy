@@ -28,20 +28,13 @@ class TestGrantListsFailClosed:
         assert _normalize_grant_list(["a", 1]) == ["a", "1"]
 
     def test_vector_search_returns_nothing_without_grants(self):
-        """Fail closed before any connection or query is attempted."""
-        result = asyncio.run(
-            kt_engine.neo4j.vector_search(
-                query_embedding=[0.0] * 8, company_id="c", project_ids=[], top_k=5
-            )
-        )
-        assert result == []
+        """Fail closed before any connection or query is attempted.
+        (Phase 7: targets the pgvector retriever — Neo4j is retired.)"""
+        from modules.kt.services.retrieval import vector_search
 
-    def test_graph_hop_returns_nothing_without_grants(self):
-        """The hop query must be as restricted as the seed query — a filtered
-        seed feeding an unfiltered hop would leak content one edge away."""
         result = asyncio.run(
-            kt_engine.neo4j.graph_hop(
-                seed_episode_ids=["e1"], company_id="c", project_ids=[]
+            vector_search(
+                query_embedding=[0.0] * 8, company_id="c", project_ids=[], top_k=5
             )
         )
         assert result == []
@@ -113,18 +106,21 @@ class TestNoRetrievalPathTrustsClientScope:
 class TestRetrievalQueriesCarryTheFilter:
     """Both retrieval paths must filter on sensitivity, not just tenancy."""
 
-    @pytest.mark.parametrize("method", ["vector_search", "graph_hop"])
-    def test_query_filters_on_sensitivity(self, method):
+    def test_query_filters_on_sensitivity(self):
+        """(Phase 7) The pgvector retriever must bind the sensitivity filter."""
         import inspect
 
-        source = inspect.getsource(getattr(kt_engine.Neo4jKTClient, method))
-        assert "d.sensitivity" in source, f"{method} does not filter on sensitivity"
-        assert "$sens" in source, f"{method} does not bind the sensitivity parameter"
+        from modules.kt.services import retrieval
 
-    @pytest.mark.parametrize("method", ["vector_search", "graph_hop"])
-    def test_query_is_scoped_to_company_and_projects(self, method):
+        source = inspect.getsource(retrieval.vector_search)
+        assert "sensitivity" in source, "retriever does not filter on sensitivity"
+        assert "sensitivities" in source, "retriever does not bind the allowed set"
+
+    def test_query_is_scoped_to_company_and_projects(self):
         import inspect
 
-        source = inspect.getsource(getattr(kt_engine.Neo4jKTClient, method))
-        assert "c.id = $cid" in source
-        assert "p.id IN $pids" in source
+        from modules.kt.services import retrieval
+
+        source = inspect.getsource(retrieval.vector_search)
+        assert "company_id == company_id" in source or "KTDocument.company_id" in source
+        assert "project_id.in_(project_ids)" in source

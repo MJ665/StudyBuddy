@@ -82,7 +82,6 @@ from services.kt_engine import (
     gemini,
     generate_access_key,
     is_injection,
-    neo4j,
     rerank,
     sanitize_output,
     verify_access_key_signature,

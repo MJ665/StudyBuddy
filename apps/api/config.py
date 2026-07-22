@@ -29,10 +29,7 @@ class Settings(BaseSettings):
 
     # --- KT PLATFORM (KNOWLEDGE TRANSFER) ---
     HMAC_KEY_SECRET: str = "kt_hmac_access_key_secret_studyhub_2025"
-    NEO4J_URI: Optional[str] = None
-    NEO4J_USERNAME: Optional[str] = None
-    NEO4J_PASSWORD: Optional[str] = None
-    NEO4J_INSTANCE: Optional[str] = None
+    # (Phase 7) NEO4J_* settings removed — the KT store is Postgres/pgvector.
 
     KEY_DEFAULT_TTL_DAYS: int = 90
     STALE_DOC_THRESHOLD_DAYS: int = 90

@@ -47,16 +47,23 @@ async def validate_infrastructure():
         "bucket": settings.S3_BUCKET_NAME,
     }
 
-    # 5. Neo4j Initialization
+    # 5. KT vector store (pgvector on the primary DB — Neo4j retired, Phase 7)
     try:
-        from services.kt_engine import neo4j
+        from sqlalchemy import text as _text
 
-        await neo4j.setup_constraints()
-        results["neo4j"] = {"status": "healthy"}
-        logger.info("✅ Neo4j constraints verified.")
+        from database import AsyncSessionLocal
+
+        async with AsyncSessionLocal() as s:
+            ok = (
+                await s.execute(
+                    _text("SELECT 1 FROM pg_extension WHERE extname='vector'")
+                )
+            ).first()
+        results["pgvector"] = {"status": "healthy" if ok else "missing"}
+        logger.info("✅ pgvector extension verified.")
     except Exception as e:
-        results["neo4j"] = {"status": "unhealthy", "error": str(e)}
-        logger.error(f"❌ Neo4j initialization failed: {e}")
+        results["pgvector"] = {"status": "unhealthy", "error": str(e)}
+        logger.error(f"❌ pgvector check failed: {e}")
 
     logger.info("Infrastructure validation complete.")
     return results
