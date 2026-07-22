@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from services.ai_reporting import ai_executive
 from services.performance_engine import performance_engine
-from sqlalchemy import case, func, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, joinedload
 
@@ -276,6 +276,83 @@ def get_pending_reviews(
         )
 
     return sorted(queue, key=lambda x: x["attempted_at"] or "", reverse=True)
+
+
+@router.get("/inbox")
+def get_unified_inbox(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_mentor_or_above),
+):
+    """Unified mentor workspace inbox (Phase 6 — mentor merge).
+
+    ONE queue for everything awaiting this mentor: assessment reviews
+    (quiz + coding attempts, from the existing pending-reviews logic) AND
+    KT documents submitted for their approval. Ends the historical split
+    where document reviews lived only inside the KT sub-app.
+    """
+    from models.kt_model import DocStatusEnum, KTDocument, KTProject
+
+    # Assessment side — reuse the existing queue builder verbatim.
+    assessment_queue = get_pending_reviews(db, current_user)
+
+    # KT side — docs pending review, mentor-scoped exactly like
+    # modules/kt/routers/insights.py::mentor_inbox (sync twin).
+    org_id = int(current_user["organization_id"])
+    uid = int(current_user["sub"])
+    role = current_user.get("role", "Member")
+
+    q = db.query(KTDocument).filter(
+        KTDocument.organization_id == org_id,
+        KTDocument.status.in_(
+            [DocStatusEnum.SUBMITTED, DocStatusEnum.UNDER_REVIEW]
+        ),
+    )
+    if role == "Mentor":
+        q = q.filter(
+            or_(KTDocument.mentor_id == uid, KTDocument.mentor_id.is_(None))
+        )
+    elif role == "GroupAdmin":
+        group_id = current_user.get("group_id")
+        if group_id:
+            proj_ids = [
+                r[0]
+                for r in db.query(KTProject.id)
+                .filter(
+                    KTProject.organization_id == org_id,
+                    KTProject.group_id == group_id,
+                )
+                .all()
+            ]
+            q = q.filter(KTDocument.project_id.in_(proj_ids))
+
+    kt_docs = (
+        q.order_by(KTDocument.submitted_at.asc().nullslast()).limit(30).all()
+    )
+    kt_queue = [
+        {
+            "id": d.id,
+            "type": "kt_document",
+            "title": d.title,
+            "doc_type": str(d.doc_type) if d.doc_type else None,
+            "project_id": d.project_id,
+            "author_id": d.author_id,
+            "status": str(d.status.value if hasattr(d.status, "value") else d.status),
+            "submitted_at": d.submitted_at.isoformat() if d.submitted_at else None,
+            # Deep link into the KT workspace for the actual review UI.
+            "link": "/kt",
+        }
+        for d in kt_docs
+    ]
+
+    return {
+        "assessment": assessment_queue,
+        "kt_documents": kt_queue,
+        "counts": {
+            "assessment": len(assessment_queue),
+            "kt_documents": len(kt_queue),
+            "total": len(assessment_queue) + len(kt_queue),
+        },
+    }
 
 
 @router.post("/review")

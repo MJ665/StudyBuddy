@@ -35,16 +35,11 @@ def _host_reachable(host: str, port: int = 443, timeout: float = 3.0) -> bool:
 
 @pytest.fixture(scope="session")
 def live_ready():
-    """Skip live tests unless Gemini key + Neo4j host are available."""
+    """Skip live tests unless a Gemini key is available.
+
+    Phase 6: Neo4j reachability no longer gates anything — the KT pipeline
+    runs entirely on Postgres/pgvector.
+    """
     if not os.environ.get("GEMINI_API_KEY"):
         pytest.skip("GEMINI_API_KEY not set")
-    instance = os.environ.get("NEO4J_INSTANCE")
-    uri = os.environ.get("NEO4J_URI")
-    host = None
-    if uri and "://" in uri:
-        host = uri.split("://", 1)[1].split(":")[0].split("/")[0]
-    elif instance:
-        host = f"{instance}.databases.neo4j.io"
-    if not host or not _host_reachable(host):
-        pytest.skip(f"Neo4j host unreachable ({host}) — instance paused/deleted?")
     return True

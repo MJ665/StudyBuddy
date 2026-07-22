@@ -486,6 +486,12 @@ class ApiService {
     return this.request('/mentor/pending-reviews');
   }
 
+  /** Unified mentor inbox: assessment reviews + KT docs awaiting approval.
+   * (getMentorInbox already names the KT-sub-app queue at /kt/mentor/inbox.) */
+  static async getUnifiedMentorInbox() {
+    return this.request('/mentor/inbox');
+  }
+
   static async getGroupStudents(groupId: number) {
     return this.request(`/mentor/group/${groupId}/students`);
   }

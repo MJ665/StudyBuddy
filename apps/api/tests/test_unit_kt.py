@@ -1,13 +1,10 @@
-"""Unit tests for KT pipeline pure logic (no network): chunking, citations, context."""
+"""Unit tests for KT pipeline pure logic (no network): chunking, citations, context.
+
+Phase 6: the chunker moved to modules/kt/services/ingestion_service (the
+pgvector pipeline); the Neo4j-era _sprint_label is gone.
+"""
 from services.kt_langraph import _build_context, _extract_citations
-from services.kt_workflows import KTIngestionService, _sprint_label
-
-
-def test_sprint_label_quarter_bucketing():
-    assert _sprint_label("2024-01-10") == "Q1 2024"
-    assert _sprint_label("2024-05-20") == "Q2 2024"
-    assert _sprint_label("2023-11-02") == "Q4 2023"
-    assert _sprint_label("garbage") == "Undated"
+from modules.kt.services.ingestion_service import chunk_by_temporal_headers
 
 
 def test_chunk_by_temporal_headers_splits_on_dates():
@@ -15,7 +12,7 @@ def test_chunk_by_temporal_headers_splits_on_dates():
         "### 2024-04-15\nWe shipped the billing service.\n"
         "### 2024-05-20\nWe added webhook verification."
     )
-    chunks = KTIngestionService.chunk_by_temporal_headers(text)
+    chunks = chunk_by_temporal_headers(text)
     assert len(chunks) == 2
     assert chunks[0]["time"] == "2024-04-15"
     assert chunks[1]["time"] == "2024-05-20"
@@ -23,12 +20,12 @@ def test_chunk_by_temporal_headers_splits_on_dates():
 
 
 def test_chunk_by_temporal_headers_quarter_header():
-    chunks = KTIngestionService.chunk_by_temporal_headers("### Q3 2024\nSome retro notes.")
+    chunks = chunk_by_temporal_headers("### Q3 2024\nSome retro notes.")
     assert chunks[0]["time"] == "2024-07-01"  # Q3 -> month 7
 
 
 def test_chunk_no_headers_single_chunk():
-    chunks = KTIngestionService.chunk_by_temporal_headers("Just a plain body with no headers.")
+    chunks = chunk_by_temporal_headers("Just a plain body with no headers.")
     assert len(chunks) == 1
     assert chunks[0]["content"] == "Just a plain body with no headers."
 

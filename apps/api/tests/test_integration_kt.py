@@ -1,17 +1,17 @@
-"""Live end-to-end KT test: ingest a throwaway doc, retrieve, chat (both paths), clean up.
+"""Live end-to-end KT test on the pgvector pipeline (Phase 6 rewrite).
 
-Marked `live` — skipped automatically when Gemini/Neo4j are unavailable. Uses an
-existing company/project (real FKs) and a TEST_ document that is deleted afterwards,
-so no real KT data is touched.
+ingest a throwaway doc → chunks in kt_document_chunks → grounded chat (both
+paths) → clean up. Marked `live` — needs a real GEMINI_API_KEY. Creates its
+own throwaway company/project so it runs on any database, including fresh.
 """
 import json
+import uuid
 
 import pytest
 from sqlalchemy import text
 
 pytestmark = [pytest.mark.live, pytest.mark.asyncio]
 
-TEST_DOC_ID = "TEST_PYTEST_KT_DOC"
 BODY = (
     "### 2024-04-15\n"
     "We migrated billing to Stripe. Payment retries are made safe with idempotency "
@@ -21,68 +21,50 @@ BODY = (
 )
 
 
-async def _first_company_and_project(engine):
-    async with engine.connect() as c:
-        comp = (await c.execute(text("SELECT id, organization_id FROM kt_companies LIMIT 1"))).first()
-        assert comp is not None, "no KT company to attach test doc to"
-        proj = (
-            await c.execute(
-                text("SELECT id FROM kt_projects WHERE company_id=:c LIMIT 1"),
-                {"c": comp.id},
-            )
-        ).first()
-        assert proj is not None, "no KT project under company"
-    return comp.id, comp.organization_id, proj.id
-
-
-async def _cleanup(engine, neo4j):
-    await neo4j.connect()
-    async with neo4j.driver.session() as s:
-        await s.run("MATCH (ep:Episode {doc_id:$d}) DETACH DELETE ep", d=TEST_DOC_ID)
-        await s.run("MATCH (d:Document {id:$d}) DETACH DELETE d", d=TEST_DOC_ID)
-    async with engine.begin() as c:
-        await c.execute(text("DELETE FROM kt_documents WHERE id=:d"), {"d": TEST_DOC_ID})
-
-
 async def test_kt_full_loop(live_ready):
     from database import async_engine, db_session_factory
-    from models.kt_model import DocStatusEnum, KTDocument
-    from services.kt_engine import neo4j
+    from models.kt_model import DocStatusEnum, KTCompany, KTDocument, KTProject
+    from modules.kt.services import ingestion_service
     from services.kt_langraph import stream_kt_chatbot_response
-    from services.kt_workflows import KTIngestionService, run_rag_query
+    from services.kt_workflows import run_rag_query
 
-    cid, org_id, pid = await _first_company_and_project(async_engine)
-    await _cleanup(async_engine, neo4j)  # ensure clean slate
+    doc_id = str(uuid.uuid4())
+    cid = str(uuid.uuid4())
+    pid = str(uuid.uuid4())
+    org_id = 999998
 
     try:
-        # 1. Author creates + it is approved (throwaway).
+        # 1. Author creates + it is approved (throwaway fixtures).
         async with db_session_factory() as db:
+            db.add(KTCompany(id=cid, name="pytest-live-co", organization_id=org_id))
+            db.add(KTProject(id=pid, company_id=cid, organization_id=org_id,
+                             name="pytest-live-project"))
             db.add(
                 KTDocument(
-                    id=TEST_DOC_ID, project_id=pid, company_id=cid, organization_id=org_id,
+                    id=doc_id, project_id=pid, company_id=cid, organization_id=org_id,
                     title="PyTest Billing Runbook", doc_type="runbook",
                     knowledge_domain="backend", body_markdown=BODY,
-                    status=DocStatusEnum.APPROVED,
+                    status=DocStatusEnum.APPROVED, sensitivity="low",
                 )
             )
             await db.commit()
 
-        # 2. Mentor "feed" → real ingestion pipeline.
-        await KTIngestionService.run_pipeline(TEST_DOC_ID, db_session_factory)
+        # 2. Mentor "feed" → real pgvector ingestion pipeline.
+        await ingestion_service.run_pipeline(doc_id, db_session_factory)
 
-        # 3. Episodes were written to the graph.
-        await neo4j.connect()
-        async with neo4j.driver.session() as s:
-            n = (await (await s.run(
-                "MATCH (ep:Episode {doc_id:$d}) RETURN count(ep) AS c", d=TEST_DOC_ID
-            )).data())[0]["c"]
-        assert n >= 1, "ingestion wrote no episodes"
+        # 3. Chunks with embeddings were written.
+        async with async_engine.connect() as c:
+            n = (await c.execute(
+                text("SELECT count(*) FROM kt_document_chunks WHERE document_id=:d"),
+                {"d": doc_id},
+            )).scalar_one()
+        assert n >= 2, "ingestion wrote too few chunks"
 
         # 4. Doc marked INGESTED with chunk_count.
         async with async_engine.connect() as c:
             row = (await c.execute(
                 text("SELECT status, ingested_at, chunk_count FROM kt_documents WHERE id=:d"),
-                {"d": TEST_DOC_ID},
+                {"d": doc_id},
             )).first()
         assert row.status == "INGESTED"
         assert row.ingested_at is not None
@@ -95,6 +77,7 @@ async def test_kt_full_loop(live_ready):
             rag = await run_rag_query(q, cid, [pid], [], db)
         assert rag["answer"] and "don't have enough" not in rag["answer"].lower()
         assert len(rag["sources"]) >= 1
+        assert rag["was_answered"] is True
 
         # 6. Streaming chat yields tokens then a terminal frame with a citation.
         tokens, final = [], None
@@ -109,6 +92,9 @@ async def test_kt_full_loop(live_ready):
         assert answer and "Error:" not in answer
         assert "[citation:" in answer or len(final.get("sources", [])) >= 1
     finally:
-        await _cleanup(async_engine, neo4j)
-        await neo4j.close()
+        async with async_engine.begin() as c:
+            await c.execute(text("DELETE FROM kt_document_chunks WHERE document_id=:d"), {"d": doc_id})
+            await c.execute(text("DELETE FROM kt_documents WHERE id=:d"), {"d": doc_id})
+            await c.execute(text("DELETE FROM kt_projects WHERE id=:p"), {"p": pid})
+            await c.execute(text("DELETE FROM kt_companies WHERE id=:c"), {"c": cid})
         await async_engine.dispose()

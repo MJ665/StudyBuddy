@@ -61,6 +61,7 @@ export default function MentorDashboard({
   const [groupAiSummary, setGroupAiSummary] = useState<string>('');
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [selectedStudentHistory, setSelectedStudentHistory] = useState<any>(null);
+  const [ktInbox, setKtInbox] = useState<any[]>([]); // KT docs awaiting my review
 
   useEffect(() => {
     fetchGroups();
@@ -75,10 +76,18 @@ export default function MentorDashboard({
 
   const fetchPendingReviews = async () => {
     try {
-      const pending = await ApiService.getPendingReviews();
-      setRecentAttempts(pending);
-    } catch (err) {
-      console.error('Failed to fetch pending reviews', err);
+      // Unified inbox (Phase 6): assessment reviews + KT docs in one call.
+      const inbox = await ApiService.getUnifiedMentorInbox();
+      setRecentAttempts(inbox.assessment || []);
+      setKtInbox(inbox.kt_documents || []);
+    } catch {
+      // Fallback to the assessment-only queue if the inbox is unavailable.
+      try {
+        const pending = await ApiService.getPendingReviews();
+        setRecentAttempts(pending);
+      } catch (err) {
+        console.error('Failed to fetch pending reviews', err);
+      }
     }
   };
 
@@ -293,7 +302,43 @@ export default function MentorDashboard({
 
             {activeMainTab === 'DASHBOARD' && (
               <div className="space-y-8">
-              
+
+           {/* Unified inbox: KT documents awaiting this mentor's review */}
+           {ktInbox.length > 0 && (
+             <div className="bg-surface-container p-6 rounded-3xl border border-amber-500/20">
+               <div className="flex items-center justify-between mb-4">
+                 <p className="text-xs font-black uppercase text-amber-400">
+                   Knowledge Docs Awaiting Review ({ktInbox.length})
+                 </p>
+                 <a
+                   href="/kt"
+                   className="text-xs font-bold text-indigo-400 hover:text-indigo-300"
+                 >
+                   Open KT Workspace →
+                 </a>
+               </div>
+               <div className="space-y-2">
+                 {ktInbox.slice(0, 5).map((d: any) => (
+                   <a
+                     key={d.id}
+                     href="/kt"
+                     className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-white/5 hover:border-amber-500/30 transition-all"
+                   >
+                     <div>
+                       <p className="text-sm font-bold text-white">{d.title}</p>
+                       <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                         {d.doc_type || 'document'} · {d.status}
+                       </p>
+                     </div>
+                     <span className="text-[10px] text-slate-500">
+                       {d.submitted_at ? new Date(d.submitted_at).toLocaleDateString() : ''}
+                     </span>
+                   </a>
+                 ))}
+               </div>
+             </div>
+           )}
+
            {/* Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-surface-container p-6 rounded-3xl border border-surface-bright">
