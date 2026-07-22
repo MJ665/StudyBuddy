@@ -40,3 +40,9 @@ from .job import BackgroundJob, JobStatus  # noqa: F401
 # Base.metadata (and main.py's create_all) sees them.
 from modules.org.models import OrgUnit, UserOrgRole  # noqa: F401
 from modules.kt.models import KTDocumentChunk  # noqa: F401
+
+# Phase 5: every legacy-hierarchy mutation is mirrored onto OrgUnit/
+# UserOrgRole in the same transaction (see modules/org/sync.py).
+from modules.org.sync import register_org_unit_sync  # noqa: E402
+
+register_org_unit_sync()

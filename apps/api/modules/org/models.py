@@ -45,7 +45,12 @@ class OrgUnit(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     organization_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("organizations.id"), index=True, nullable=True
+        Integer,
+        # CASCADE: deleting an Organization wipes its mirrored subtree — the
+        # flush-order-safe counterpart of the sync's own delete mirroring.
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
+        nullable=True,
     )
     parent_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("org_units.id", ondelete="CASCADE"), index=True, nullable=True
@@ -106,6 +111,11 @@ class UserOrgRole(Base):
         Integer, ForeignKey("org_units.id", ondelete="CASCADE"), nullable=False, index=True
     )
     role: Mapped[str] = mapped_column(String(50), nullable=False)
+    # Which legacy mechanism produced this row — the dual-write sync
+    # (modules/org/sync.py) owns rows per-source so updates/deletes are
+    # deterministic:  primary = users.group_id+users.role,
+    # scoped = user_roles, mentor = mentor_group_assignments.
+    source: Mapped[str] = mapped_column(String(20), default="primary", nullable=False)
 
     assigned_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
