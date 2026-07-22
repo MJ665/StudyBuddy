@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class AIResponseEnvelope(BaseModel):
@@ -34,9 +34,18 @@ class UserCreate(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    group_id: int
-    full_name: str
+    """Email-first login (Phase 3 rebuild).
+
+    Preferred shape: {email, password} — individual credentials.
+    Legacy shape: {group_id, full_name, password} — group password-pattern
+    login, kept only until the frontend flips to email login (Phase 4);
+    removed in Phase 6.
+    """
+
     password: str
+    email: EmailStr | None = None
+    group_id: int | None = None
+    full_name: str | None = None
 
 
 class SuperAdminLogin(BaseModel):

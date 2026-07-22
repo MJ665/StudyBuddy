@@ -7,39 +7,76 @@ router = APIRouter()
 
 @router.post("/login")
 def login(req: schemas.LoginRequest, response: Response, db: Session = Depends(get_db)):
-    user = (
-        db.query(models.User)
-        .filter(
-            models.User.group_id == req.group_id, models.User.full_name == req.full_name
-        )
-        .first()
-    )
+    """Email-first login (Phase 3 rebuild).
 
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found in this group")
-
-    group = db.query(models.Group).filter(models.Group.id == req.group_id).first()
-    if not group:
-        raise HTTPException(status_code=404, detail="Group not found")
-
-    # Implement robust Regex-based pattern replacing for group passwords
-    # Check if user has a custom password override (from reset)
-    if user.password_hash:
-        if not pwd_context.verify(req.password, user.password_hash):
-            raise HTTPException(
-                status_code=401, detail="Invalid credential synchronization"
+    Preferred: {email, password} against the user's individual password_hash.
+    Legacy: {group_id, full_name, password} against the group password
+    pattern — kept only until the frontend flips (Phase 4); dies in Phase 6.
+    """
+    if req.email:
+        # ── Email path: individual credentials only, never group patterns. ──
+        candidates = (
+            db.query(models.User)
+            .filter(
+                models.User.email == req.email.lower().strip(),
+                models.User.is_active.is_(True),
             )
+            .all()
+        )
+        # users.email is unique per (email, group_id) — the same person may
+        # have one row per group membership. Only rows with an individual
+        # password can email-login; a shared-pattern-era row cannot.
+        with_pw = [u for u in candidates if u.password_hash]
+        # Uniform 401 for unknown email / no password / bad password — no
+        # account-existence oracle.
+        user = None
+        for cand in with_pw:
+            if pwd_context.verify(req.password, cand.password_hash):
+                user = cand
+                break
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
     else:
-        # Extract the first name and sanitize it
-        first_name = re.sub(r"[^a-zA-Z0-9]", "", user.full_name.split(" ")[0]).lower()
-
-        # Replace <name>, {name}, or [name] (case insensitive) with the sanitized first name
-        expected_password = re.sub(
-            r"[<{\[]name[>}\]]", first_name, group.password_pattern, flags=re.IGNORECASE
+        # ── Legacy path (unchanged semantics) ────────────────────────────────
+        if req.group_id is None or not req.full_name:
+            raise HTTPException(
+                status_code=422,
+                detail="Provide email+password, or group_id+full_name+password",
+            )
+        user = (
+            db.query(models.User)
+            .filter(
+                models.User.group_id == req.group_id,
+                models.User.full_name == req.full_name,
+            )
+            .first()
         )
 
-        if req.password.strip() != expected_password.strip():
-            raise HTTPException(status_code=401, detail="Invalid password")
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found in this group")
+
+        group = db.query(models.Group).filter(models.Group.id == req.group_id).first()
+        if not group:
+            raise HTTPException(status_code=404, detail="Group not found")
+
+        # Implement robust Regex-based pattern replacing for group passwords
+        # Check if user has a custom password override (from reset)
+        if user.password_hash:
+            if not pwd_context.verify(req.password, user.password_hash):
+                raise HTTPException(
+                    status_code=401, detail="Invalid credential synchronization"
+                )
+        else:
+            # Extract the first name and sanitize it
+            first_name = re.sub(r"[^a-zA-Z0-9]", "", user.full_name.split(" ")[0]).lower()
+
+            # Replace <name>, {name}, or [name] (case insensitive) with the sanitized first name
+            expected_password = re.sub(
+                r"[<{\[]name[>}\]]", first_name, group.password_pattern, flags=re.IGNORECASE
+            )
+
+            if req.password.strip() != expected_password.strip():
+                raise HTTPException(status_code=401, detail="Invalid password")
 
     # Update last login
     user.last_login = datetime.datetime.now(datetime.timezone.utc)
