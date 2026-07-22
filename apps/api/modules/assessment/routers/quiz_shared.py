@@ -43,20 +43,9 @@ DIFFICULTY_WEIGHTS = {
     "Hard": 2.0,
 }
 
-def resolve_answer(answer: str, options: list) -> str:
-    """
-    Resolves letter-based answers (A/B/C/D) to full text options.
-    Handles both legacy letter answers and full text answers.
-    """
-    if not answer:
-        return ""
-    trimmed = answer.strip()
-    upper = trimmed.upper()
-    if upper in ["A", "B", "C", "D"] and len(upper) == 1:
-        idx = ord(upper) - 65
-        if options and idx < len(options) and options[idx]:
-            return str(options[idx])
-    return trimmed
+# resolve_answer moved to services/grading.py (grading-domain logic);
+# re-imported here so `from quiz_shared import *` keeps exporting it.
+from services.grading import resolve_answer  # noqa: E402, F401
 
 from cache_manager import cache_manager  # noqa: E402
 

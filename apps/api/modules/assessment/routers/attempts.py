@@ -73,63 +73,22 @@ async def submit_attempt(
     )
     q_map = {q.id: q for q in _q_rows.scalars().all()}
 
-    points_list: List[float] = []
-    weights_list: List[float] = []
-    detailed_answers = []
+    # Unified engine: ONE grading loop shared with proctored exams
+    # (modules/assessment/services/attempt_engine.py). Difficulty weighting is
+    # the practice-quiz configuration of that engine.
+    from modules.assessment.services.attempt_engine import grade_answer_set
 
-    # Multi-type grading dispatch: objective types graded deterministically,
-    # free-text (short_answer/essay) graded by AI (partial credit via `fraction`).
-    from services.grading import grade_question, question_to_dict
-
-    for idx, q_id in enumerate(attempt.question_ids):
-        q = q_map.get(q_id)
-        u_ans = attempt.user_answers[idx] if idx < len(attempt.user_answers) else ""
-        u_note = attempt.user_notes[idx][:1000] if idx < len(attempt.user_notes) else ""
-
-        is_correct = False
-        correct_text = ""
-        q_weight = 1.0
-
-        if q:
-            q_weight = float(DIFFICULTY_WEIGHTS.get(q.difficulty or "Medium", 1.0))
-            # Multi-select answers arrive as a JSON-array string (user_answers is
-            # List[str]); decode so the grader receives a real list.
-            answer_val: Any = u_ans
-            if isinstance(u_ans, str) and u_ans.startswith("["):
-                import json as _json
-
-                try:
-                    answer_val = _json.loads(u_ans)
-                except Exception:
-                    answer_val = u_ans
-            grade = await grade_question(question_to_dict(q), answer_val)
-            is_correct = grade.is_correct
-            qtype = getattr(q, "question_type", "mcq_single") or "mcq_single"
-            if qtype in ("mcq_single", "true_false"):
-                correct_text = resolve_answer(q.answer, q.options)
-            else:
-                correct_text = q.model_answer or (q.answer or "")
-
-            # Partial credit (free-text / multi-select) scales the difficulty weight.
-            points_list.append(grade.fraction * q_weight)
-            weights_list.append(q_weight)
-
-            detailed_answers.append(
-                {
-                    "question_id": q.id,
-                    "question_text": q.question,
-                    "question_type": qtype,
-                    "options": q.options,
-                    "user_answer": u_ans,
-                    "correct_answer": correct_text,
-                    "is_correct": is_correct,
-                    "fraction": round(grade.fraction, 3),
-                    "ai_rationale": grade.rationale,
-                    "needs_review": grade.needs_review,
-                    "note": u_note,
-                    "weighted_points": round(grade.fraction * q_weight, 3),
-                }
-            )
+    graded = await grade_answer_set(
+        q_map,
+        attempt.question_ids,
+        attempt.user_answers,
+        notes=attempt.user_notes,
+        difficulty_weights=DIFFICULTY_WEIGHTS,
+        collect_details=True,
+    )
+    points_list = graded.points_list
+    weights_list = graded.weights_list
+    detailed_answers = graded.detailed_answers
 
     score_val: float = sum(points_list)
     total_weight_val: float = sum(weights_list)

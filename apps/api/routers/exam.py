@@ -249,8 +249,6 @@ async def submit_exam(
     db: AsyncSession = Depends(get_async_db),
     current_user: dict = Depends(verify_token),
 ):
-    from services.grading import grade_question, question_to_dict
-
     uid = int(current_user["sub"])
     attempt = await db.get(models.ExamAttempt, attempt_id)
     if not attempt or attempt.user_id != uid:
@@ -270,16 +268,22 @@ async def submit_exam(
         )
     )
     qs = {q.id: q for q in _qrows.scalars().all()}
-    earned = 0.0
-    max_total = 0.0
-    for qid in exam.question_ids or []:
-        q = qs.get(qid)
-        if not q:
-            continue
-        ans = body.answers.get(str(qid), "")
-        grade = await grade_question(question_to_dict(q), ans)
-        earned += grade.points_earned
-        max_total += grade.max_points
+
+    # Unified engine — same grading loop as practice quizzes. Exams use raw
+    # points (no difficulty weighting). This also fixes a real defect: this
+    # path never JSON-decoded multi-select answers, so mcq_multi questions
+    # were always graded wrong in exams.
+    from modules.assessment.services.attempt_engine import grade_answer_set
+
+    graded = await grade_answer_set(
+        qs,
+        exam.question_ids or [],
+        body.answers,
+        difficulty_weights=None,
+        collect_details=False,
+    )
+    earned = graded.earned_points
+    max_total = graded.max_points
 
     pct = (earned / max_total * 100.0) if max_total > 0 else 0.0
     attempt.answers = body.answers

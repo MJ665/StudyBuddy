@@ -22,6 +22,23 @@ FREE_TEXT_TYPES = {"short_answer", "essay"}
 PASS_FRACTION = 0.7
 
 
+def resolve_answer(answer: str, options: list) -> str:
+    """
+    Resolves letter-based answers (A/B/C/D) to full text options.
+    Handles both legacy letter answers and full text answers.
+    (Moved from the quiz router — grading-domain logic lives here.)
+    """
+    if not answer:
+        return ""
+    trimmed = answer.strip()
+    upper = trimmed.upper()
+    if upper in ["A", "B", "C", "D"] and len(upper) == 1:
+        idx = ord(upper) - 65
+        if options and idx < len(options) and options[idx]:
+            return str(options[idx])
+    return trimmed
+
+
 @dataclass
 class GradeResult:
     is_correct: bool
