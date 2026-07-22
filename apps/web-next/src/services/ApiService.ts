@@ -178,6 +178,14 @@ class ApiService {
     });
   }
 
+  /** Email-first login (Phase 4 rebuild) — individual credentials. */
+  static async loginWithEmail(email: string, password: string) {
+    return this.request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+  }
+
   static async getMe(): Promise<UserMe> {
     return this.request('/auth/me');
   }
