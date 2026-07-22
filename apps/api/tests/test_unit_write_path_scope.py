@@ -38,14 +38,22 @@ SCOPE_CALLS = {
 
 
 def _calls_in(fname, handler):
-    tree = ast.parse((ROUTERS / fname).read_text())
-    for n in ast.walk(tree):
-        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == handler:
-            return {
-                c.func.id
-                for c in ast.walk(n)
-                if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)
-            }
+    # Post Phase-3 split a handler may live in routers/<fname> (monolith or
+    # aggregator) or in any modules/*/routers/*.py file it was moved to.
+    candidates = [ROUTERS / fname] + sorted(
+        (ROUTERS.parent / "modules").glob("*/routers/*.py")
+    )
+    for path in candidates:
+        if not path.exists():
+            continue
+        tree = ast.parse(path.read_text())
+        for n in ast.walk(tree):
+            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == handler:
+                return {
+                    c.func.id
+                    for c in ast.walk(n)
+                    if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)
+                }
     return None
 
 
