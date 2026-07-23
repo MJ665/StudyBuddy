@@ -12,7 +12,7 @@ async def get_cohort_health(
     current_user: dict = Depends(verify_token),
 ):
     """PHASE-3: Generate 10 targeted strategic intervention points for a group."""
-    assert_group_in_org(group_id, db, current_user)
+    await db.run_sync(lambda s: assert_group_in_org(group_id, s, current_user))
     group = await db.run_sync(lambda s: s.query(models.Group).filter(models.Group.id == group_id).first())
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
@@ -60,7 +60,7 @@ async def refresh_group_intelligence(
     current_user: dict = Depends(require_ldadmin),
 ):
     """PHASE-3: Force re-calculate and re-cache all performance vectors for a group."""
-    assert_group_in_org(group_id, db, current_user)
+    await db.run_sync(lambda s: assert_group_in_org(group_id, s, current_user))
     from cache_manager import cache_manager
 
     users = await db.run_sync(lambda s: s.query(models.User).filter(models.User.group_id == group_id).all())
@@ -374,8 +374,8 @@ async def get_performance_distribution(
     Section 12 Method #11 — Performance Distribution (Z-Score Analysis)
     Z = (x - μ) / σ per user
     """
-    assert_batch_in_org(batch_id, db, current_user)
-    assert_group_in_org(group_id, db, current_user)
+    await db.run_sync(lambda s: assert_batch_in_org(batch_id, s, current_user))
+    await db.run_sync(lambda s: assert_group_in_org(group_id, s, current_user))
     import json
 
     redis_key = f"reports:perf_dist:{batch_id}:{group_id}"
@@ -602,8 +602,8 @@ async def get_coding_leaderboard(
     Coding challenge leaderboard — surfacing CodingAttempt data.
     Previously stored but never exposed to any UI.
     """
-    assert_batch_in_org(batch_id, db, current_user)
-    assert_group_in_org(group_id, db, current_user)
+    await db.run_sync(lambda s: assert_batch_in_org(batch_id, s, current_user))
+    await db.run_sync(lambda s: assert_group_in_org(group_id, s, current_user))
     import json
 
     redis_key = f"reports:coding_leaderboard:{group_id}:{batch_id}:{page}:{page_size}"
@@ -682,7 +682,7 @@ async def get_group_leaderboard(
     STRAT-ANALYTICS-01: Comparative leaderboard for group performance.
     Calculates weighted proficiency score for all members in the group.
     """
-    assert_group_in_org(group_id, db, current_user)
+    await db.run_sync(lambda s: assert_group_in_org(group_id, s, current_user))
     # Authorization: Ensure actor has access to this group
     if current_user["role"] != "LDAdmin":
         if int(current_user.get("group_id", -1)) != group_id:

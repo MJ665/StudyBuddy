@@ -13,7 +13,7 @@ async def get_batch_report(
     db: AsyncSession = Depends(get_async_db),
     current_user: dict = Depends(require_ldadmin),
 ):
-    assert_batch_in_org(batch_id, db, current_user)
+    await db.run_sync(lambda s: assert_batch_in_org(batch_id, s, current_user))
     batch = await db.run_sync(lambda s: s.query(models.Batch).filter(models.Batch.id == batch_id).first())
     if not batch:
         raise HTTPException(status_code=404, detail="Batch not found")
@@ -169,7 +169,7 @@ async def export_batch_xlsx(
     current_user: dict = Depends(require_ldadmin),
 ):
     """Professional Multi-Sheet L&D Executive Export."""
-    assert_batch_in_org(batch_id, db, current_user)
+    await db.run_sync(lambda s: assert_batch_in_org(batch_id, s, current_user))
     from cache_manager import redis_client
 
     lock_key = f"rl:export_batch_xlsx:{current_user['sub']}"
@@ -427,7 +427,7 @@ async def export_batch_report(
     current_user: dict = Depends(require_ldadmin),
 ):
     """FUNC-006: Professional multi-sheet Excel export for L&D Stakeholders."""
-    assert_batch_in_org(batch_id, db, current_user)
+    await db.run_sync(lambda s: assert_batch_in_org(batch_id, s, current_user))
     batch = await db.run_sync(lambda s: s.query(models.Batch).filter(models.Batch.id == batch_id).first())
     if not batch:
         raise HTTPException(status_code=404, detail="Batch not found")

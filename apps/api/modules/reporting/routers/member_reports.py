@@ -12,7 +12,9 @@ async def get_member_growth_atlas(
     current_user: dict = Depends(verify_token),
 ):
     """PHASE-3: Generate exactly 30 granular growth insights for a learner."""
-    assert_user_in_org(user_id, db, current_user)
+    # assert_user_in_org is the ONE sync implementation of this rule; run it
+    # against this async session's own connection (AsyncSession has no .query).
+    await db.run_sync(lambda s: assert_user_in_org(user_id, s, current_user))
     from services.user_service import user_service
 
     res = await user_service.get_user_atlas(user_id, db)
@@ -73,7 +75,7 @@ async def get_learning_velocity(
     Section 12 Method #1 — Learning Velocity Curve (Linear Regression over time)
     Returns slope (positive = improving) and per-attempt accuracy trend.
     """
-    assert_user_in_org(user_id, db, current_user)
+    await db.run_sync(lambda s: assert_user_in_org(user_id, s, current_user))
     import json
 
     redis_key = f"reports:learn_vel:{user_id}"
@@ -142,7 +144,7 @@ async def get_member_registry(
     current_user: dict = Depends(verify_token),
 ):
     """FUNC-004: Comprehensive usage registry for a specific member."""
-    assert_user_in_org(user_id, db, current_user)
+    await db.run_sync(lambda s: assert_user_in_org(user_id, s, current_user))
     from services.user_service import user_service
 
     res = await user_service.get_user_registry(user_id, db)
@@ -161,7 +163,7 @@ async def get_user_activity_heatmap(
     Powers the GitHub-style contribution heatmap on the UserProfile page.
     Accessible by: Self, Mentor (own group), GroupAdmin (own group), LDAdmin.
     """
-    assert_user_in_org(user_id, db, current_user)
+    await db.run_sync(lambda s: assert_user_in_org(user_id, s, current_user))
     import json
 
     redis_key = f"reports:heatmap:{user_id}"

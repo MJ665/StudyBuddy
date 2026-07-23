@@ -166,7 +166,11 @@ async def create_course(
     except Exception as e:
         print(f"Error invalidating course cache: {e}")
 
-    log_admin_action(
+    # Async endpoint → async audit twin (the sync log_admin_action would
+    # call .query on an AsyncSession and 500).
+    from services.audit_service import log_admin_action_async
+
+    await log_admin_action_async(
         db,
         actor_id=int(current_user["sub"]),
         actor_role=current_user["role"],

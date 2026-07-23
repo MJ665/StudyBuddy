@@ -12,7 +12,7 @@ async def get_group_leaderboard_admin(
     current_user: dict = Depends(require_ldadmin),
 ):
     """Alias for the group leaderboard endpoint used by the admin dashboard."""
-    assert_group_in_org(group_id, db, current_user)
+    await db.run_sync(lambda s: assert_group_in_org(group_id, s, current_user))
     from routers.reports import get_group_leaderboard
 
     return await get_group_leaderboard(group_id, db, current_user)
@@ -26,7 +26,7 @@ async def get_batch_intelligence(
     current_user: dict = Depends(require_ldadmin),
 ):
     """Returns full 30-dimension aggregate intelligence for a batch."""
-    assert_batch_in_org(batch_id, db, current_user)
+    await db.run_sync(lambda s: assert_batch_in_org(batch_id, s, current_user))
     intel = await performance_engine.get_batch_vectors(batch_id, db, refresh=refresh)
     if not intel:
         raise HTTPException(status_code=404, detail="Batch data unavailable")
@@ -41,7 +41,7 @@ async def get_batch_ai_insights(
     current_user: dict = Depends(require_ldadmin),
 ):
     """Generates high-fidelity AI insights for a specific batch using aggregate vectors."""
-    assert_batch_in_org(batch_id, db, current_user)
+    await db.run_sync(lambda s: assert_batch_in_org(batch_id, s, current_user))
     batch = await db.run_sync(lambda s: s.query(models.Batch).filter(models.Batch.id == batch_id).first())
     if not batch:
         raise HTTPException(status_code=404, detail="Batch not found")
@@ -72,7 +72,7 @@ async def get_batch_executive_summary(
     current_user: dict = Depends(require_ldadmin),
 ):
     """Generates a professional executive summary for a batch."""
-    assert_batch_in_org(batch_id, db, current_user)
+    await db.run_sync(lambda s: assert_batch_in_org(batch_id, s, current_user))
     batch = await db.run_sync(lambda s: s.query(models.Batch).filter(models.Batch.id == batch_id).first())
     if not batch:
         raise HTTPException(status_code=404, detail="Batch not found")
@@ -219,7 +219,7 @@ async def get_executive_report(
     current_user: dict = Depends(require_ldadmin),
 ):
     """PHASE-3: Full-stack executive report for a batch (STRAT-301)."""
-    assert_batch_in_org(batch_id, db, current_user)
+    await db.run_sync(lambda s: assert_batch_in_org(batch_id, s, current_user))
     batch = await db.run_sync(lambda s: s.query(models.Batch).filter(models.Batch.id == batch_id).first())
     if not batch:
         raise HTTPException(status_code=404, detail="Batch not found")
