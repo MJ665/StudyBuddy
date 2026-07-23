@@ -66,7 +66,8 @@ export default function Dashboard({
   }, [myStats]);
 
   useEffect(() => {
-    if (!user.group_id) return;
+    // group_id 0 is a valid group — guard on null/undefined, not falsiness.
+    if (user.group_id == null) return;
     ApiService.getCourses(user.group_id)
       .then(res => {
         setCourses(Array.isArray(res) ? res : []);
