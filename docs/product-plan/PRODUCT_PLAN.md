@@ -65,7 +65,8 @@
 - **Rule §12.7 refined:** blanket pagination NOT applied to naturally-bounded lists; unbounded-growth lists get caps (500) — applied to question-reports + bank-library. **Rule §12.6 amended:** soft-delete (deprecate) is a KT-content rule; assessment hard-deletes remain LDAdmin-gated + audited + referential-integrity-guarded (no schema churn).
 - Root README rewritten for the actual product; root plan.md deleted (canonical: docs/product-plan/PRODUCT_PLAN.md)
 - 379 tests green; build green; tsc clean
-**Remaining backlog (next session):** 5a modularize 14 small routers (splitter ready in scratchpad; spec mapping in plan) · 5b frontend monolith internal redesigns w/ browser verification (outlines captured in audit) · ApiService→typed-hooks call-site migration · legacy group-login removal after first prod onboarding · production deploy (owner's hosting)
+**✅ 5a DONE (b24c221):** all 14 small routers moved into modules (assessment/reporting/org/platform/identity); routers/*.py are sys.modules ALIASES (imports/monkeypatch/inspection identical; main.py untouched); profile→profile_social rename (collision). Scanner guardrails extended to module paths → suite grew **379 → 523 tests**, all green; parity 321; no shadowing; KT E2E PASS; build green. The `routers/` dir now contains ONLY aggregators, alias stubs, and kt_user_helper.
+**Remaining backlog (next session):** 5b frontend monolith internal redesigns w/ browser verification (outlines captured in audit: LDAdminDashboard 10 tabs, UserProfile 4 tabs, KTCreationWizard 5 steps, MentorDashboard 4 sections) · ApiService→typed-hooks call-site migration · legacy group-login removal after first prod onboarding · production deploy (owner's hosting)
 
 ---
 
