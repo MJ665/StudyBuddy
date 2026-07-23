@@ -1,37 +1,38 @@
+"""Idempotent system-identity + seed bootstrap.
+
+Runs on every app startup (main.on_startup) AND on a full reset
+(scripts/reset_and_seed.py). Everything here is idempotent and env-driven:
+
+  APP_ADMIN_EMAIL / APP_ADMIN_PASSWORD  -> Platform Admin (owns /platform)
+  LD_ADMIN_EMAIL  / LD_ADMIN_PASSWORD   -> L&D Admin for the seed organization
+  SEED_ORG_NAME   / SEED_ORG_SLUG       -> the default organization
+
+So whenever the database is initialized from zero, the two operator accounts
+exist with the configured credentials and the seed org hierarchy is in place.
+"""
+
+import bcrypt
+
 import models
 from database import SessionLocal
 
 
-def ensure_system(db=None):
-    if db is None:
-        db = SessionLocal()
-        should_close = True
-    else:
-        should_close = False
-    try:
-        print("🔍 Checking System Identity (ID 0)...")
+def _hash(pw: str) -> str:
+    # bcrypt caps at 72 bytes; encode+truncate matches the login path.
+    return bcrypt.hashpw(pw.encode()[:72], bcrypt.gensalt()).decode()
 
-        # 1. Ensure Group 0 exists
-        group = db.query(models.Group).filter(models.Group.id == 0).first()
-        if not group:
-            print("🚀 Creating System Group (ID 0)...")
-            system_group = models.Group(
-                id=0,
-                name="System Registry",
-                password_pattern="<name>@sigmoid",
-                is_active=True,
-            )
-            db.add(system_group)
-            db.commit()
-            print("✅ System Group created.")
-        else:
-            print("✅ System Group exists.")
 
-        # 2. Ensure User 0 exists
-        user = db.query(models.User).filter(models.User.id == 0).first()
-        if not user:
-            print("🚀 Creating System Admin (ID 0)...")
-            system_admin = models.User(
+def _ensure_system_group_and_user(db) -> None:
+    group = db.query(models.Group).filter(models.Group.id == 0).first()
+    if not group:
+        db.add(models.Group(id=0, name="System Registry", is_active=True))
+        db.commit()
+        print("✅ System Group (ID 0) created.")
+
+    user = db.query(models.User).filter(models.User.id == 0).first()
+    if not user:
+        db.add(
+            models.User(
                 id=0,
                 email="system@studyhub.ai",
                 full_name="System Admin",
@@ -41,133 +42,175 @@ def ensure_system(db=None):
                 custom_slug="admin",
                 bio="Master System Architect of the Sigmoid Intelligence Ecosystem.",
                 expertise_json={
-                    "skills": [
-                        "System Governance",
-                        "AI Orchestration",
-                        "Rapid Provisioning",
-                    ]
+                    "skills": ["System Governance", "AI Orchestration", "Rapid Provisioning"]
                 },
             )
-            db.add(system_admin)
-            db.commit()
-            print("✅ System Admin created with tactical profile.")
-        else:
-            print("✅ System Admin exists.")
-            if not user.custom_slug:
-                user.custom_slug = "admin"
-                user.bio = (
-                    "Master System Architect of the Sigmoid Intelligence Ecosystem."
-                )
-                user.expertise_json = {
-                    "skills": [
-                        "System Governance",
-                        "AI Orchestration",
-                        "Rapid Provisioning",
-                    ]
-                }
-                db.commit()
-                print("✅ System Admin profile backfilled.")
-
-        # 2b. Ensure Platform Super Admin (top of hierarchy, owns /platform).
-        # ONE credential source: settings.APP_ADMIN_PASSWORD — the same value
-        # /auth/superadmin/login verifies. (Previously this hardcoded a
-        # literal password that drifted from the env value, so the operator
-        # had two different credentials for the same identity.)
-        from config import settings as _settings
-
-        PLATFORM_EMAIL = "meet.jain563@gmail.com"
-        _admin_pw = (_settings.APP_ADMIN_PASSWORD or "").encode()
-        padmin = (
-            db.query(models.User)
-            .filter(models.User.email == PLATFORM_EMAIL)
-            .first()
         )
-        if not _admin_pw:
-            print("⚠️ APP_ADMIN_PASSWORD unset — skipping Platform Admin seeding.")
-        elif not padmin:
-            import bcrypt as _bcrypt
+        db.commit()
+        print("✅ System Admin (ID 0) created.")
+    elif not user.custom_slug:
+        user.custom_slug = "admin"
+        db.commit()
 
-            pw_hash = _bcrypt.hashpw(_admin_pw, _bcrypt.gensalt()).decode()
-            padmin = models.User(
-                email=PLATFORM_EMAIL,
-                full_name="Platform Admin",
+
+def _ensure_hierarchy(db, settings):
+    """Ensure SuperOrg -> Org -> Dept -> Vertical -> Batch and align Group 0.
+
+    Returns (org, dept). Idempotent by org slug. Content scoping
+    (`assert_same_super_org`) requires org.super_organization_id to be set, so a
+    SuperOrganization is created and linked here.
+    """
+    org = (
+        db.query(models.Organization)
+        .filter(models.Organization.slug == settings.SEED_ORG_SLUG)
+        .first()
+    )
+    if not org:
+        org = models.Organization(
+            name=settings.SEED_ORG_NAME, slug=settings.SEED_ORG_SLUG
+        )
+        db.add(org)
+        db.commit()
+        db.refresh(org)
+        print(f"🏛️ Seed org created: {org.name}")
+
+    # SuperOrganization link (required for shared-content scoping).
+    if getattr(org, "super_organization_id", None) is None:
+        super_org = db.query(models.SuperOrganization).first()
+        if not super_org:
+            super_org = models.SuperOrganization(
+                name=f"{settings.SEED_ORG_NAME} Enterprise",
+                slug=f"{settings.SEED_ORG_SLUG}-enterprise",
+                status="active",
+            )
+            db.add(super_org)
+            db.commit()
+            db.refresh(super_org)
+        org.super_organization_id = super_org.id
+        db.commit()
+
+    dept = (
+        db.query(models.Department)
+        .filter(models.Department.organization_id == org.id)
+        .first()
+    )
+    if not dept:
+        dept = models.Department(
+            name="DataOps", organization_id=org.id, description="Default sector"
+        )
+        db.add(dept)
+        db.commit()
+        db.refresh(dept)
+
+    vert = (
+        db.query(models.Vertical)
+        .filter(models.Vertical.department_id == dept.id)
+        .first()
+    )
+    if not vert:
+        vert = models.Vertical(name="AI Core", department_id=dept.id)
+        db.add(vert)
+        db.commit()
+        db.refresh(vert)
+
+    batch = (
+        db.query(models.Batch).filter(models.Batch.vertical_id == vert.id).first()
+    )
+    if not batch:
+        batch = models.Batch(name="Genesis", vertical_id=vert.id)
+        db.add(batch)
+        db.commit()
+        db.refresh(batch)
+
+    # Align System Group 0 into the hierarchy so org resolution works.
+    group = db.query(models.Group).filter(models.Group.id == 0).first()
+    if group and (group.department_id != dept.id or group.batch_id != batch.id):
+        group.batch_id = batch.id
+        group.vertical_id = vert.id
+        group.department_id = dept.id
+        db.commit()
+
+    return org, dept
+
+
+def _enforce_admin(db, *, email, password, role, org=None, dept=None) -> None:
+    """Create-or-enforce an operator account with the configured credentials."""
+    if not email or not password:
+        print(f"⚠️ {role} email/password unset — skipping seed.")
+        return
+    user = db.query(models.User).filter(models.User.email == email).first()
+    org_id = org.id if org is not None else None
+    dept_id = dept.id if dept is not None else None
+    if not user:
+        db.add(
+            models.User(
+                email=email,
+                full_name=f"{'Platform' if role == 'PlatformAdmin' else 'L&D'} Admin",
                 group_id=0,
-                role="PlatformAdmin",
+                organization_id=org_id,
+                department_id=dept_id,
+                role=role,
                 is_active=True,
-                password_hash=pw_hash,
+                password_hash=_hash(password),
             )
-            db.add(padmin)
-            db.commit()
-            print("✅ Platform Super Admin seeded.")
-        else:
-            # Enforce the designated role AND env-sourced credentials (this
-            # email may already exist as an L&D Admin).
-            import bcrypt as _bcrypt
+        )
+        db.commit()
+        print(f"✅ {role} seeded: {email}")
+        return
 
-            changed = False
-            if padmin.role != "PlatformAdmin":
-                padmin.role = "PlatformAdmin"
-                changed = True
-            if not padmin.password_hash or not _bcrypt.checkpw(
-                _admin_pw, padmin.password_hash.encode()
-            ):
-                padmin.password_hash = _bcrypt.hashpw(
-                    _admin_pw, _bcrypt.gensalt()
-                ).decode()
-                changed = True
-            if changed:
-                db.commit()
-                print("✅ Platform Super Admin role/credentials enforced.")
+    # Enforce role, org attribution, and credentials.
+    changed = False
+    if user.role != role:
+        user.role = role
+        changed = True
+    if org_id is not None and getattr(user, "organization_id", None) != org_id:
+        user.organization_id = org_id
+        changed = True
+    if dept_id is not None and getattr(user, "department_id", None) != dept_id:
+        user.department_id = dept_id
+        changed = True
+    if not user.password_hash or not bcrypt.checkpw(
+        password.encode()[:72], user.password_hash.encode()
+    ):
+        user.password_hash = _hash(password)
+        changed = True
+    if changed:
+        db.commit()
+        print(f"✅ {role} enforced: {email}")
 
-        # 3. STEALTH RECOVERY: Seed Default Org if Registry is Empty
-        org_count = db.query(models.Organization).count()
-        if org_count == 0:
-            print("🏛️ Zero State Detected: Provisioning Stealth Hierarchy...")
 
-            # Default Org
-            org = models.Organization(name="Sigmoid HQ", slug="sigmoid-hq")
-            db.add(org)
-            db.commit()
-            db.refresh(org)
+def ensure_system(db=None):
+    should_close = db is None
+    if db is None:
+        db = SessionLocal()
+    try:
+        from config import settings
 
-            # Default Dept
-            dept = models.Department(
-                name="DataOps",
-                organization_id=org.id,
-                description="Default Intelligence Sector",
-            )
-            db.add(dept)
-            db.commit()
-            db.refresh(dept)
+        print("🔍 Ensuring system identity + seed operators...")
+        _ensure_system_group_and_user(db)
+        org, dept = _ensure_hierarchy(db, settings)
 
-            # Default Vertical
-            vert = models.Vertical(name="AI Core", department_id=dept.id)
-            db.add(vert)
-            db.commit()
-            db.refresh(vert)
-
-            # Default Batch
-            batch = models.Batch(name="Genesis 2024", vertical_id=vert.id)
-            db.add(batch)
-            db.commit()
-            db.refresh(batch)
-
-            # Update System Group with Hierarchical Alignment
-            group = db.query(models.Group).filter(models.Group.id == 0).first()
-            if group:
-                group.batch_id = batch.id
-                group.vertical_id = vert.id
-                group.department_id = dept.id
-                db.commit()
-
-            print(
-                f"✅ Stealth Hierarchy Provisioned: {org.name} -> {dept.name} -> {vert.name}"
-            )
-
-        print("✨ System Identity Protocol Stabilized.")
+        # Platform Admin — org-less by design (get_user_jwt_payload exempts it).
+        _enforce_admin(
+            db,
+            email=settings.APP_ADMIN_EMAIL,
+            password=settings.APP_ADMIN_PASSWORD,
+            role="PlatformAdmin",
+        )
+        # L&D Admin — owns the seed organization.
+        _enforce_admin(
+            db,
+            email=settings.LD_ADMIN_EMAIL,
+            password=settings.LD_ADMIN_PASSWORD,
+            role="LDAdmin",
+            org=org,
+            dept=dept,
+        )
+        print("✨ System identity + seed operators stabilized.")
     except Exception as e:
-        print(f"❌ Error setting up system identity: {e}")
+        print(f"❌ Error in ensure_system: {e}")
         db.rollback()
+        raise
     finally:
         if should_close:
             db.close()

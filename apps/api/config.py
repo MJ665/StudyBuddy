@@ -20,8 +20,17 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
-    # ADMIN CREDENTIALS
+    # ADMIN CREDENTIALS / SEED IDENTITIES
+    # These drive ensure_system_identity.py, which runs on every startup AND
+    # whenever the database is initialized from zero (scripts/reset_and_seed.py).
+    # Platform Admin owns /platform (top of hierarchy). L&D Admin owns the seed
+    # organization. Change here or in .env; the seed enforces them idempotently.
+    APP_ADMIN_EMAIL: str = "meet.jain563@gmail.com"
     APP_ADMIN_PASSWORD: str = ""
+    LD_ADMIN_EMAIL: str = "contact.hackathonmj@gmail.com"
+    LD_ADMIN_PASSWORD: str = ""
+    SEED_ORG_NAME: str = "Sigmoid HQ"
+    SEED_ORG_SLUG: str = "sigmoid-hq"
 
     # --- CLOUD API CREDENTIALS ---
     GEMINI_API_KEY: Optional[str] = None
