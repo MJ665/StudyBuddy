@@ -74,6 +74,25 @@
 - **Deploy readiness**: `scripts/verify_all.sh` = every §17 gate in one command (PROVEN all-green incl. live KT E2E); `.github/workflows/ci.yml` ready for a remote (pgvector service container).
 **PLAN STATUS: every engineering item COMPLETE.** Open items are all owner-side: (1) actual hosting deploy (README runbook + Dockerfile ready; set HMAC_KEY_SECRET + prod env), (2) add a git remote to activate CI. Rolling policy (not tasks): new frontend data-access goes through the typed hooks; ApiService is frozen and shrinks opportunistically.
 
+### ✅ AUDIT ROUND 2 + CORE-PRODUCT E2E (2026-07-23, post-close-out)
+Second veteran audit (2 agents: backend new-surface, frontend new-surface — every claim cross-verified before acting) + the deepest browser E2E yet.
+
+**Core-product E2E, browser-proven (member journey):** login as browser.demo → dashboard → course "E2E Python Fundamentals" → bank "E2E Basics Quiz" (3 seeded MCQs) → start modal → take at `/assessment/run` → finalize → `/assessment/result` scored 2/3 (1 answered-skipped handled correctly) → Attempt row persisted. Real bugs found on the way, all fixed:
+- **Dashboard.tsx `if (!user.group_id) return`** — group id 0 (falsy) never loaded courses; fixed to `== null` (same class fixed in LDAdminDashboard mentor guard).
+- **Fresh-DB fixture gaps**: SuperOrganization missing (org 1 unlinked → `assert_same_super_org` fail-closed 404 on every bank); seeded + linked. Course/bank seeds must set `super_organization_id` + `created_by`.
+- Ops trap reconfirmed: `npm run build` under a running dev server kills HMR → hydration dead → forms native-submit. Dev server restarted after every build.
+
+**Legacy-login retirement — final sweep (audit-verified findings, all fixed):**
+- SECURITY: deleted anonymous `GET /auth/public/groups/{id}/users` (user enumeration) and anonymous `POST /auth/groups/register` (unauthenticated group+GroupAdmin creation); `GET /auth/groups` now requires auth (remaining consumer: assignment modal). Public-endpoints guardrail allow-list updated; live-verified 404/404/401.
+- **Recovery flow rebuilt email-only end-to-end**: ForgotPasswordPage group dropdown removed, ResetPasswordPage/route drops groupId, backend forgot/reset filter by email alone, schemas cleaned. Browser-proven: forgot → OTP → reset → login 200.
+- **REAL BUG surfaced by that E2E: `password_reset_tokens.expires_at` was naive `DateTime`** — the asyncpg path 500'd on tz-aware writes; column → timestamptz (model + conditional ALTER in phase1_provision.py, applied to dev DB).
+- password_pattern purged from the API surface: schemas (GroupCreate/GroupRegisterAdmin deleted; GroupUpdate/BulkUserCreate fields dropped), org create/update, system_config vocab, onboarding seed, bulk-create write; `Group.password_pattern` now nullable (kept for old rows only). change_password group-pattern fallback replaced with a clear "use recovery" 400.
+- Frontend dead code deleted: `superAdminLogin` (backend `/superadmin/login` KEPT as env-gated break-glass), `EditProfileModal.tsx` (zero importers), stale `ApiService.ts.orig`, `LOGIN` viewRoutes entry, password-pattern inputs in BulkAddModal + AdminOnboardingOverlay (+ ctx/destructure cleanup in all 10 admin tabs).
+- `schema.d.ts` regenerated from the live OpenAPI (280 paths).
+
+**Accepted as-is (do not re-chase):** loose `Record<string, any>` tab ctx typing (migration pattern); Sidebar `window.location.href` for cross-layout routes; ~349 `: any` density (frozen ApiService owns most).
+**Verification:** 523 tests green · route shadowing clean · async-scope sweep 0 · tsc clean · build green (`verify_all.sh` ALL GATES GREEN) · retired endpoints live-verified gone · recovery + quiz journeys browser-proven.
+
 ---
 
 > **EXECUTION LOG (2026-07-22):**
