@@ -14,7 +14,12 @@ import pathlib
 
 import pytest
 
-INTERACTION = pathlib.Path(__file__).resolve().parent.parent / "routers" / "interaction.py"
+# 5a move: implementation lives in the assessment module now (routers/
+# interaction.py is a module-alias stub).
+INTERACTION = (
+    pathlib.Path(__file__).resolve().parent.parent
+    / "modules" / "assessment" / "routers" / "interaction.py"
+)
 
 # handler -> the tenant-key parameter it must validate
 GUARDED = {

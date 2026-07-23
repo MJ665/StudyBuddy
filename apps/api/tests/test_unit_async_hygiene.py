@@ -13,7 +13,11 @@ import pathlib
 
 import pytest
 
-ROUTERS = sorted((pathlib.Path(__file__).resolve().parent.parent / "routers").glob("*.py"))
+# routers/ aggregators+stubs plus the modular router files (Phase 3/5a moves).
+_API = pathlib.Path(__file__).resolve().parent.parent
+ROUTERS = sorted((_API / "routers").glob("*.py")) + sorted(
+    (_API / "modules").glob("*/routers/*.py")
+)
 
 # `db.add()` is a plain synchronous method on AsyncSession — legitimate.
 SYNC_ONLY_SESSION_CALLS = {"query", "commit", "refresh", "delete", "flush", "rollback"}
