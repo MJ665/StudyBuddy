@@ -1,16 +1,16 @@
 # Graph Report - StudyHubV2  (2026-07-23)
 
 ## Corpus Check
-- 367 files · ~364,020 words
+- 367 files · ~361,926 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3784 nodes · 5804 edges · 329 communities (273 shown, 56 thin omitted)
-- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 650 edges (avg confidence: 0.79)
+- 3877 nodes · 5910 edges · 369 communities (317 shown, 52 thin omitted)
+- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 660 edges (avg confidence: 0.79)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0d1228fb`
+- Built from commit: `e7f2c4f5`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -264,18 +264,56 @@
 - [[_COMMUNITY_Community 326|Community 326]]
 - [[_COMMUNITY_Community 327|Community 327]]
 - [[_COMMUNITY_Community 328|Community 328]]
+- [[_COMMUNITY_Community 329|Community 329]]
+- [[_COMMUNITY_Community 330|Community 330]]
+- [[_COMMUNITY_Community 331|Community 331]]
+- [[_COMMUNITY_Community 332|Community 332]]
+- [[_COMMUNITY_Community 333|Community 333]]
+- [[_COMMUNITY_Community 334|Community 334]]
+- [[_COMMUNITY_Community 335|Community 335]]
+- [[_COMMUNITY_Community 336|Community 336]]
+- [[_COMMUNITY_Community 337|Community 337]]
+- [[_COMMUNITY_Community 338|Community 338]]
+- [[_COMMUNITY_Community 339|Community 339]]
+- [[_COMMUNITY_Community 340|Community 340]]
+- [[_COMMUNITY_Community 341|Community 341]]
+- [[_COMMUNITY_Community 342|Community 342]]
+- [[_COMMUNITY_Community 343|Community 343]]
+- [[_COMMUNITY_Community 344|Community 344]]
+- [[_COMMUNITY_Community 345|Community 345]]
+- [[_COMMUNITY_Community 346|Community 346]]
+- [[_COMMUNITY_Community 347|Community 347]]
+- [[_COMMUNITY_Community 348|Community 348]]
+- [[_COMMUNITY_Community 349|Community 349]]
+- [[_COMMUNITY_Community 350|Community 350]]
+- [[_COMMUNITY_Community 351|Community 351]]
+- [[_COMMUNITY_Community 352|Community 352]]
+- [[_COMMUNITY_Community 353|Community 353]]
+- [[_COMMUNITY_Community 354|Community 354]]
+- [[_COMMUNITY_Community 355|Community 355]]
+- [[_COMMUNITY_Community 356|Community 356]]
+- [[_COMMUNITY_Community 357|Community 357]]
+- [[_COMMUNITY_Community 358|Community 358]]
+- [[_COMMUNITY_Community 359|Community 359]]
+- [[_COMMUNITY_Community 360|Community 360]]
+- [[_COMMUNITY_Community 361|Community 361]]
+- [[_COMMUNITY_Community 362|Community 362]]
+- [[_COMMUNITY_Community 363|Community 363]]
+- [[_COMMUNITY_Community 364|Community 364]]
+- [[_COMMUNITY_Community 365|Community 365]]
+- [[_COMMUNITY_Community 366|Community 366]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `ApiService` - 262 edges
 2. `useToast()` - 69 edges
 3. `log_admin_action()` - 64 edges
 4. `useSessionStore` - 47 edges
-5. `assert_group_in_org()` - 45 edges
-6. `assert_same_super_org()` - 40 edges
+5. `assert_group_in_org()` - 46 edges
+6. `assert_same_super_org()` - 41 edges
 7. `paths` - 32 edges
-8. `useKTNavStore` - 29 edges
-9. `assert_batch_in_org()` - 29 edges
-10. `caller_org_id()` - 23 edges
+8. `assert_batch_in_org()` - 30 edges
+9. `useKTNavStore` - 29 edges
+10. `caller_org_id()` - 24 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `main()` --calls--> `run_rag_query()`  [INFERRED]
@@ -284,12 +322,12 @@
   tests/test_kt_stream.py → apps/api/services/kt_langraph.py
 - `test_validation()` --calls--> `KTDocumentCreate`  [INFERRED]
   scratch/test_validation.py → apps/api/kt_schemas.py
+- `get_daily_challenge()` --calls--> `generate_daily_challenges()`  [INFERRED]
+  apps/api/routers/quiz.py → apps/api/tasks.py
 - `get_my_attempts()` --calls--> `scope_to_org()`  [INFERRED]
   apps/api/routers/code.py → apps/api/auth_utils.py
-- `get_attempt_detail()` --calls--> `assert_same_org()`  [INFERRED]
-  apps/api/routers/code.py → apps/api/auth_utils.py
 
-## Communities (329 total, 56 thin omitted)
+## Communities (369 total, 52 thin omitted)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.07
@@ -300,40 +338,40 @@ Cohesion: 0.06
 Nodes (34): UserDetailsModal(), QuestionReportUI(), ForgotPasswordPage(), ResetPasswordPage(), AdministrationEngine(), AdminView, AssignmentCreationModal(), BankCreationModal() (+26 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.04
-Nodes (51): delete_notification(), get_active_sessions(), get_current_user(), get_group_members(), get_my_detailed_profile(), get_my_roles(), get_notifications(), get_profile_by_slug() (+43 more)
+Cohesion: 0.11
+Nodes (14): create_user(), get_current_user(), get_my_roles(), logout(), ProfilePhotoUploadRequest, STRAT-RBAC-02: Returns all context-specific roles assigned to the user.     Used, STRAT-RBAC-02: Returns all context-specific roles assigned to the user.     Used, Real-time Server-Sent Events (SSE) stream for unread notifications. (+6 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.08
-Nodes (30): StaleCodingAttempt, StaleS3Object, auto_lock_assignments(), calculate_global_intel(), cleanup_stale_data(), fix_orphaned_records(), maintain_streaks(), merge_duplicate_users() (+22 more)
+Nodes (33): StaleCodingAttempt, StaleS3Object, auto_lock_assignments(), calculate_global_intel(), cleanup_stale_data(), fix_orphaned_records(), generate_daily_challenges(), maintain_streaks() (+25 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.04
-Nodes (44): 1.1 Root Configuration, 1. Prerequisites, 1. System Topology & Monorepo Landscape, 2.1 Relational Schema & ORM Layer (`models/`), 2.2 Core Service Layer (`services/`), 2. Backend Architecture Deep Dive (`apps/api`), 2. Environment Variables, 3.1 Role Hierarchy & Oversight Scopes (+36 more)
+Cohesion: 0.20
+Nodes (10): 6. Optimization Recommendations, API Reference, code:block10 (groups          — Study groups with auth), Common Issues, Database Schema (Key Tables), Environment Variable Reference, Features, Screenshots (+2 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.06
-Nodes (35): ai_suggest_improvements(), _audit(), chat_feedback(), create_document(), delete_document(), deprecate_document(), document_versions(), endorse_document() (+27 more)
+Cohesion: 0.07
+Nodes (19): create_company(), create_project(), get_kt_suggestions(), group_insights(), knowledge_gaps(), my_doc_traction(), SSE streaming version of send_message., Author sees traction/analytics for their own documents only. (+11 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.04
-Nodes (48): _certificate_token(), check_attempt_eligibility(), create_bank(), create_course(), download_certificate(), generate_certificate(), get_bank_library(), get_bank_questions() (+40 more)
+Nodes (48): _certificate_token(), check_attempt_eligibility(), create_course(), download_certificate(), generate_certificate(), get_bank(), get_bank_library(), get_bank_questions() (+40 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.09
 Nodes (34): BatchCreate, create_batch(), create_dept(), create_group(), create_org(), create_vertical(), delete_batch(), delete_dept() (+26 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.10
+Cohesion: 0.09
 Nodes (27): KnowledgeDiscovery(), Suggestion, GraphLink, GraphNode, KnowledgeExplorer(), NODE_CONFIG, Document, KnowledgeRegistry() (+19 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.09
-Nodes (35): AIQuizQuestionBase, AIAskRequest, AIQuery, ask_ai(), _check_rate_limit(), explain_question(), ExplainRequest, generate_learning_path() (+27 more)
+Cohesion: 0.10
+Nodes (33): AIQuizQuestionBase, AIAskRequest, AIQuery, ask_ai(), _check_rate_limit(), explain_question(), ExplainRequest, generate_learning_path() (+25 more)
 
 ### Community 12 - "Community 12"
-Cohesion: 0.10
-Nodes (27): AccessLevelEnum, ComplexityEnum, DocStatusEnum, DocTypeEnum, KnowledgeDomainEnum, ReviewActionEnum, SensitivityEnum, UserRoleEnum (+19 more)
+Cohesion: 0.09
+Nodes (34): AccessLevelEnum, ComplexityEnum, DocStatusEnum, DocTypeEnum, KnowledgeDomainEnum, ReviewActionEnum, SensitivityEnum, UserRoleEnum (+26 more)
 
 ### Community 13 - "Community 13"
 Cohesion: 0.06
@@ -341,79 +379,79 @@ Nodes (31): CoAuthorOut, CoAuthorPickRequest, GenerateKeyRequest, KTAttachmentOu
 
 ### Community 14 - "Community 14"
 Cohesion: 0.06
-Nodes (30): bulk_admin_action(), get_all_task_status(), get_batch_ai_insights(), get_executive_report(), get_global_analytics_insights(), get_global_intelligence(), get_question_reports(), get_security_highlights() (+22 more)
+Nodes (34): bulk_admin_action(), get_all_task_status(), get_batch_ai_insights(), get_batch_executive_summary(), get_batch_intelligence(), get_executive_report(), get_global_analytics_insights(), get_global_intelligence() (+26 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.12
-Nodes (25): forgot_password(), Stage 1: Generate OTP and propagate via email., Stage 1: Generate OTP and propagate via email., contact_support(), Handles inbound contact/support requests from the frontend ContactMe component., create_user(), Deliver auto-generated individual credentials to a new user.      Part of the em, Low-level send helper. Returns True on success. (+17 more)
+Nodes (25): contact_support(), Handles inbound contact/support requests from the frontend ContactMe component., bulk_create_users(), create_user(), Deliver auto-generated individual credentials to a new user.      Part of the em, Low-level send helper. Returns True on success., _send(), send_access_key() (+17 more)
 
 ### Community 16 - "Community 16"
-Cohesion: 0.10
-Nodes (29): Base, CodingHintCache, CodingQuestion, CodingTestCase, KTAccessKey, KTAuditLog, KTChatMessage, KTChatSession (+21 more)
+Cohesion: 0.14
+Nodes (15): KTDocumentReview, KTIngestionJob, _audit(), chat_feedback(), delete_document(), feed_document(), generate_key(), initiate_handoff() (+7 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.10
-Nodes (21): metadata, Branding, BrandingContext, BrandingProvider(), CoBrand(), DEFAULT, PoweredByStudyBuddy(), useBranding() (+13 more)
+Cohesion: 0.18
+Nodes (10): metadata, Branding, BrandingContext, BrandingProvider(), CoBrand(), DEFAULT, PoweredByStudyBuddy(), useBranding() (+2 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.07
-Nodes (30): assert_tenant_active(), caller_super_org_id_async(), get_mentor_ids_for_group(), _org_of_batch(), _org_of_group(), Block users whose customer account is suspended (or not yet approved).      Susp, Decodes token but does not raise 401 if missing/invalid., Blocks anyone except someone with GroupAdmin (scoped) or LDAdmin (global) roles. (+22 more)
+Cohesion: 0.14
+Nodes (14): _org_of_batch(), _org_of_group(), Blocks anyone except L&D Super Admin (Verified against DB).      PlatformAdmin i, Blocks anyone except L&D Super Admin (Verified against DB).      PlatformAdmin i, Blocks anyone except the Platform Super Admin — the top of the hierarchy,     ab, Blocks anyone except the Platform Super Admin — the top of the hierarchy,     ab, Factory: enforces Mentor scope for a specific group., Factory: enforces Mentor scope for a specific group. (+6 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.08
-Nodes (31): _assert_user_in_scope(), _assert_user_in_scope_async(), bulk_review_attempts(), BulkReviewRequest, get_ai_student_insight(), get_attempt_comments(), get_batch_insights(), get_group_activity_feed() (+23 more)
+Cohesion: 0.09
+Nodes (28): _assert_user_in_scope(), _assert_user_in_scope_async(), bulk_review_attempts(), BulkReviewRequest, get_ai_student_insight(), get_attempt_comments(), get_batch_insights(), get_group_activity_feed() (+20 more)
 
 ### Community 20 - "Community 20"
 Cohesion: 0.07
 Nodes (30): dependencies, clsx, d3, date-fns, framer-motion, highlight.js, katex, lucide-react (+22 more)
 
 ### Community 21 - "Community 21"
-Cohesion: 0.07
-Nodes (25): BulkAddModal(), CreationModal(), DeleteModal(), ResourceModal(), AuditLogTable(), EmailLogTable(), QuestionReportTable(), SecurityPulse() (+17 more)
+Cohesion: 0.08
+Nodes (24): BulkAddModal(), CreationModal(), DeleteModal(), ResourceModal(), AuditLogTable(), EmailLogTable(), QuestionReportTable(), SecurityPulse() (+16 more)
 
 ### Community 22 - "Community 22"
 Cohesion: 0.05
 Nodes (42): ask_ai(), generate_learning_path(), get_saved_learning_paths(), advisory endpoints (moved verbatim from modules/ai/routers/generation.py)., Analyzes a user's quiz history and recommends the most valuable next topic to st, Retrieves all saved learning paths for the current user., Generalized AI assistant endpoint with context fallback., Generates a personalised, week-by-week learning path for a given goal. (+34 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.07
-Nodes (17): AICache, Caches Gemini AI responses keyed on question_id + user_answer to avoid redundant, Question, QuestionBank, UserBookmark, DailyChallenge, QuestionDiscussion, STRAT-AI-ROADMAP (Section 5.5): Stores AI-generated learning paths for users. (+9 more)
+Cohesion: 0.06
+Nodes (31): Base, AICache, Caches Gemini AI responses keyed on question_id + user_answer to avoid redundant, Assignment, AssignmentCompletion, Question, QuestionBank, UserBookmark (+23 more)
 
 ### Community 24 - "Community 24"
-Cohesion: 0.08
-Nodes (26): notify_intervention(), SECTION 12: Trigger targeted performance interventions.     Enables L&D Executiv, create_user(), deactivate_user(), hard_delete_user(), impersonate_group(), LDAdmin can impersonate any group to diagnose issues (audit logged)., LDAdmin can impersonate any group to diagnose issues (audit logged). (+18 more)
+Cohesion: 0.07
+Nodes (33): admin_reset_password(), notify_intervention(), SECTION 12: Trigger targeted performance interventions.     Enables L&D Executiv, PHASE-3: Emergency password override for L&D Global Administrators (AUD-Logged)., bulk_create_users(), deactivate_user(), get_password_hash(), Standardized hashing protocol (SEC-104).     Ensures Bcrypt 72-byte limit compli (+25 more)
 
 ### Community 25 - "Community 25"
 Cohesion: 0.08
 Nodes (15): _kt_router_sources(), Regression tests for KT knowledge-access scoping.  Background: `routers/kt.py` s, Both retrieval paths must filter on sensitivity, not just tenancy., Both retrieval paths must filter on sensitivity, not just tenancy., (Phase 7) The pgvector retriever must bind the sensitivity filter., `high` sensitivity means credentials/PII are present., `high` sensitivity means credentials/PII are present., External access-key callers are never project members. (+7 more)
 
 ### Community 26 - "Community 26"
-Cohesion: 0.06
-Nodes (15): AppInner(), RootRedirect(), LoginViewProps, Notification, NotificationsViewProps, Bank, QuestionLibraryProps, AttemptHistoryProps (+7 more)
+Cohesion: 0.08
+Nodes (13): AppInner(), RootRedirect(), LoginViewProps, Notification, NotificationsViewProps, Bank, QuestionLibraryProps, Leaderboard() (+5 more)
 
 ### Community 27 - "Community 27"
-Cohesion: 0.09
-Nodes (23): assign_user_role(), get_ai_intelligence_summary(), get_hierarchy_with_users(), get_profile_atlas(), get_profile_by_slug(), get_profile_registry(), get_user_intelligence(), get_user_roles() (+15 more)
+Cohesion: 0.15
+Nodes (12): get_profile_by_slug(), get_user_intelligence(), post_profile_comment(), User Intelligence Router — StudyHub Enterprise Provides 30 intelligence dimensio, Remove a scoped role from a user., Remove a scoped role from a user., PHASE-3: Strategic profile resolution via custom slugs. Consolidated for Public, PHASE-3: Strategic profile resolution via custom slugs. Consolidated for Public (+4 more)
 
 ### Community 28 - "Community 28"
-Cohesion: 0.08
-Nodes (25): compare_batches(), export_batch_csv(), export_batch_report(), export_batch_xlsx(), get_batch_report(), get_coding_leaderboard(), get_cohort_health(), get_comparative_analytics() (+17 more)
+Cohesion: 0.06
+Nodes (39): assert_batch_in_org(), Guard reports/analytics entry points that take a batch id.      These endpoints, Guard reports/analytics entry points that take a batch id.      These endpoints, compare_batches(), export_batch_csv(), export_batch_report(), export_batch_xlsx(), get_batch_report() (+31 more)
 
 ### Community 29 - "Community 29"
 Cohesion: 0.12
 Nodes (11): Neo4jKTClient, Connect to Neo4j. Returns True if successful, False if not configured., Initialize indexes and constraints for KT graph., Purge episodes and relationships for a specific document., Expand retrieval via entity relationships (Multi-hop RAG).          This carries, Execute a custom Cypher query., Returns the D3-compatible nodes and links for a given company hierarchy., Execute a query and return a single record. (+3 more)
 
 ### Community 30 - "Community 30"
-Cohesion: 0.09
-Nodes (14): is_platform_admin(), PlatformAdmin is cross-tenant BY DESIGN (it administers every org)., list_companies(), list_companies(), Tests for the SuperOrganization (paying customer) tier.      PlatformAdmin (us), Suspension used to be cosmetic: /platform flipped a column nobody read., Minimal stand-in so scope logic can be tested without a database., The whole point: two Organizations under one customer share banks. (+6 more)
+Cohesion: 0.11
+Nodes (10): Tests for the SuperOrganization (paying customer) tier.      PlatformAdmin (us), Suspension used to be cosmetic: /platform flipped a column nobody read., Minimal stand-in so scope logic can be tested without a database., The whole point: two Organizations under one customer share banks., A row with a NULL super org must match nobody, not everybody., _Row, _StubDB, TestSchema (+2 more)
 
 ### Community 31 - "Community 31"
-Cohesion: 0.10
-Nodes (22): add_project_member(), company_insights(), feed_document(), generate_onboarding_bundle(), get_handoff(), get_project(), _get_project_or_404(), initiate_handoff() (+14 more)
+Cohesion: 0.12
+Nodes (20): add_project_member(), company_insights(), deprecate_document(), generate_onboarding_bundle(), get_handoff(), get_project(), _get_project_or_404(), list_handoffs() (+12 more)
 
 ### Community 32 - "Community 32"
-Cohesion: 0.21
-Nodes (14): delete_profile_photo(), Remove user's profile photo and cleanup S3., Remove user's profile photo and cleanup S3., delete_s3_object(), generate_image_resource_url(), generate_kt_attachment_upload_url(), generate_presigned_get_url(), generate_resource_upload_url() (+6 more)
+Cohesion: 0.31
+Nodes (10): generate_image_resource_url(), generate_kt_attachment_upload_url(), generate_presigned_get_url(), generate_resource_upload_url(), get_s3_client(), get_s3_object_content(), object_exists(), put_s3_object_content() (+2 more)
 
 ### Community 33 - "Community 33"
 Cohesion: 0.09
@@ -424,8 +462,8 @@ Cohesion: 0.09
 Nodes (26): AdminPage(), AssignmentsPage(), DashboardPage(), DiscussionsPage(), GroupAdminPage(), HistoryPage(), IntelInner(), LeaderboardPage() (+18 more)
 
 ### Community 35 - "Community 35"
-Cohesion: 0.10
-Nodes (20): assert_same_super_org_async(), Async twin of assert_same_super_org (404 on mismatch, fail closed)., add_discussion(), delete_discussion(), DiscussionCreate, get_bookmark_status(), get_discussions(), get_global_discussions() (+12 more)
+Cohesion: 0.11
+Nodes (16): delete_discussion(), DiscussionCreate, get_bookmark_status(), get_discussions(), Increment/Decrement discussion upvotes., Allow user or admin to delete a comment., Increment/Decrement discussion upvotes., Allow user or admin to delete a comment. (+8 more)
 
 ### Community 36 - "Community 36"
 Cohesion: 0.22
@@ -437,31 +475,31 @@ Nodes (10): ActivityHeatmapProps, DAYS, HeatmapDay, MONTHS, ExecutiveGrowthAtlas
 
 ### Community 38 - "Community 38"
 Cohesion: 0.12
-Nodes (10): RichText(), NextTopicData, TopicRec, Dashboard(), QuestionManagement(), getIconSlug(), ICON_SLUG_MAP, ResourceCenter() (+2 more)
+Nodes (11): RichText(), AILearningPath(), AILearningPathProps, LearningPath, PathPhase, NextTopicData, TopicRec, Dashboard() (+3 more)
 
 ### Community 39 - "Community 39"
-Cohesion: 0.11
-Nodes (24): _can_edit_doc(), explore_graph(), get_document(), get_key_scope(), get_specific_key_scope(), knowledge_timeline(), list_attachments(), list_documents() (+16 more)
+Cohesion: 0.16
+Nodes (16): ask_kt_question(), get_document(), get_key_scope(), get_specific_key_scope(), list_attachments(), list_documents(), _normalize_grant_list(), Grant lists must fail CLOSED. A NULL/absent list means 'no grants', never     'a (+8 more)
 
 ### Community 40 - "Community 40"
-Cohesion: 0.07
-Nodes (38): _correct_text(), decode_answer(), grade_answer_set(), GradedItem, GradedSet, Unified answer-set grading engine (Phase 3).  ONE implementation of the per-ques, Multi-select answers arrive as a JSON-array string; decode so the     grader rec, Grade one submission.      `answers` is positional (quiz: List aligned with orde (+30 more)
+Cohesion: 0.05
+Nodes (47): _exam_paper(), ExamCreate, ExamSubmit, _now(), ProctorEventIn, Proctored Exam service endpoints.  Reuses the shared Question engine + grading d, Single secure attempt: reuse an in-progress attempt or create one; block     onc, Render the paper for the candidate — shuffled deterministically, NO answers. (+39 more)
 
 ### Community 41 - "Community 41"
 Cohesion: 0.10
 Nodes (6): Tests for KT retrieval quality: reranking, confidence, injection defence.  All t, The stub trusted vector order; a topically-close but lexically wrong         pas, Three chunks from ONE document is not three independent sources., TestConfidence, TestInjectionDefence, TestLexicalRerank
 
 ### Community 42 - "Community 42"
-Cohesion: 0.15
-Nodes (14): Group, MentorGroupAssignment, PasswordResetToken, Maps mentors (Users with role=Mentor) to Groups they oversee., # NOTE: the physical DB columns are role_name/resource_type/resource_id (legacy), RefreshToken, User, Batch (+6 more)
+Cohesion: 0.13
+Nodes (16): Group, MentorGroupAssignment, PasswordResetToken, Maps mentors (Users with role=Mentor) to Groups they oversee., Maps mentors (Users with role=Mentor) to Groups they oversee., # NOTE: the physical DB columns are role_name/resource_type/resource_id (legacy), # NOTE: the physical DB columns are role_name/resource_type/resource_id (legacy), RefreshToken (+8 more)
 
 ### Community 43 - "Community 43"
 Cohesion: 0.19
 Nodes (5): List all keys matching a glob pattern via SCAN., Returns True if the Redis connection is healthy., Increments the integer value of a key by one., Decrements the integer value of a key by one., RedisService
 
 ### Community 44 - "Community 44"
-Cohesion: 0.11
-Nodes (16): assert_same_org(), Guard a single fetched row against cross-tenant access.      Use after loading a, get_attempt_details(), Retrieve full analysis of a specific quiz attempt including mentor feedback., Retrieve full analysis of a specific quiz attempt including mentor feedback., Regression tests for multi-tenant isolation.  Background: the core content table, `organization_id = 4` and `Organization.first()` silently placed users         i, Stand-in for an ORM row carrying a tenant key. (+8 more)
+Cohesion: 0.10
+Nodes (17): assert_same_org(), Guard a single fetched row against cross-tenant access.      Use after loading a, Guard a single fetched row against cross-tenant access.      Use after loading a, get_attempt_details(), Retrieve full analysis of a specific quiz attempt including mentor feedback., Retrieve full analysis of a specific quiz attempt including mentor feedback., Regression tests for multi-tenant isolation.  Background: the core content table, `organization_id = 4` and `Organization.first()` silently placed users         i (+9 more)
 
 ### Community 45 - "Community 45"
 Cohesion: 0.14
@@ -484,36 +522,36 @@ Cohesion: 0.12
 Nodes (15): devDependencies, turbo, engines, node, name, packageManager, private, scripts (+7 more)
 
 ### Community 50 - "Community 50"
-Cohesion: 0.17
-Nodes (5): HintResult, _node_validate_hint(), AI code-evaluation engine (LangGraph eval/hint flows).  Language/prompt configur, Hint Node 3: Validate hint is appropriate (not a solution giveaway)., Hint Node 3: Validate hint is appropriate (not a solution giveaway).
+Cohesion: 0.10
+Nodes (13): CodeEvalState, HintResult, HintState, _node_build_eval_prompt(), _node_validate_hint(), AI code-evaluation engine (LangGraph eval/hint flows).  Language/prompt configur, Hint Node 3: Validate hint is appropriate (not a solution giveaway)., Node 1: Build the evaluation prompt with language-specific context. (+5 more)
 
 ### Community 52 - "Community 52"
-Cohesion: 0.11
-Nodes (18): main(), compute_confidence(), Calibrated 0-100 confidence for a grounded answer.      The old value was `top_c, Calibrated 0-100 confidence for a grounded answer.      The old value was `top_c, chunk_by_temporal_headers(), _execute_pipeline(), _is_refusal(), True when the model declined to answer for lack of grounding.      Used to decid (+10 more)
+Cohesion: 0.21
+Nodes (9): chunk_by_temporal_headers(), _execute_pipeline(), _is_refusal(), True when the model declined to answer for lack of grounding.      Used to decid, True when the model declined to answer for lack of grounding.      Used to decid, Bucket a reference date (YYYY-MM-DD) into a quarter 'sprint' label like 'Q1 2024, run_pipeline(), _sprint_label() (+1 more)
 
 ### Community 53 - "Community 53"
 Cohesion: 0.13
 Nodes (36): post, post, post, post, post, post, post, post (+28 more)
 
 ### Community 54 - "Community 54"
-Cohesion: 0.10
-Nodes (21): caller_org_id(), caller_super_org_id(), The caller's organization, or None when it could not be resolved., Resolve the caller's SuperOrganization from their Organization.      Returns Non, Restrict a query for SHARED CONTENT to the caller's super organization.      Fai, scope_to_super_org(), clone_bank(), create_bank() (+13 more)
+Cohesion: 0.07
+Nodes (32): caller_org_id(), caller_super_org_id(), is_platform_admin(), The caller's organization, or None when it could not be resolved., PlatformAdmin is cross-tenant BY DESIGN (it administers every org)., The caller's organization, or None when it could not be resolved., PlatformAdmin is cross-tenant BY DESIGN (it administers every org)., Resolve the caller's SuperOrganization from their Organization.      Returns Non (+24 more)
 
 ### Community 55 - "Community 55"
-Cohesion: 0.16
-Nodes (10): Props, QCard, TYPE_ACCENT, TYPE_LABEL, renderMixedLatex(), RichText(), ExamRunnerPage(), fmtTime() (+2 more)
+Cohesion: 0.13
+Nodes (12): MathText(), renderMixedLatex(), Props, QCard, TYPE_ACCENT, TYPE_LABEL, renderMixedLatex(), RichText() (+4 more)
 
 ### Community 56 - "Community 56"
 Cohesion: 0.24
 Nodes (7): chunk_by_temporal_headers(), Split markdown on '### YYYY-MM-DD' / '### Q1 2024' headers.      Same proven log, TestTemporalChunker, Unit tests for KT pipeline pure logic (no network): chunking, citations, context, test_chunk_by_temporal_headers_quarter_header(), test_chunk_by_temporal_headers_splits_on_dates(), test_chunk_no_headers_single_chunk()
 
 ### Community 57 - "Community 57"
-Cohesion: 0.10
-Nodes (18): extract_temporal_range(), GeminiClient, is_injection(), Relevance-judge reranker: ask the model to score each candidate.      Falls back, Relevance-judge reranker: ask the model to score each candidate.      Falls back, Extracts date ranges from the message. Stubbed for now., Extracts date ranges from the message. Stubbed for now., Detect prompt-injection attempts in untrusted text.      Previously `return Fals (+10 more)
+Cohesion: 0.12
+Nodes (17): extract_temporal_range(), is_injection(), Relevance-judge reranker: ask the model to score each candidate.      Falls back, Relevance-judge reranker: ask the model to score each candidate.      Falls back, Extracts date ranges from the message. Stubbed for now., Extracts date ranges from the message. Stubbed for now., Detect prompt-injection attempts in untrusted text.      Previously `return Fals, Detect prompt-injection attempts in untrusted text.      Previously `return Fals (+9 more)
 
 ### Community 58 - "Community 58"
-Cohesion: 0.18
-Nodes (10): AIUsage, One row per AI (Gemini) call — powers the Platform Admin cost dashboard.      Re, _estimate_cost(), extract_tokens(), AI usage metering — records tokens + estimated cost for every Gemini call.  Desi, Pull (input_tokens, output_tokens) from a google-genai response, if present., Persist one usage row. Best-effort; never raises., Convenience: extract tokens from a genai response and record. (+2 more)
+Cohesion: 0.16
+Nodes (12): AIUsage, One row per AI (Gemini) call — powers the Platform Admin cost dashboard.      Re, _estimate_cost(), extract_tokens(), AI usage metering — records tokens + estimated cost for every Gemini call.  Desi, Pull (input_tokens, output_tokens) from a google-genai response, if present., Persist one usage row. Best-effort; never raises., Convenience: extract tokens from a genai response and record. (+4 more)
 
 ### Community 59 - "Community 59"
 Cohesion: 0.11
@@ -524,12 +562,12 @@ Cohesion: 0.20
 Nodes (13): ai_usage_dashboard(), approve_organization(), list_organizations(), _org_out(), platform_stats(), PlatformStats, Platform Admin governance — the top tier above L&D Admin.  Owns organization app, Per-org and per-feature AI cost/utilization over the last `days` days. (+5 more)
 
 ### Community 61 - "Community 61"
-Cohesion: 0.12
-Nodes (23): create_access_token(), create_refresh_token(), get_user_jwt_payload(), Constructs the standard JWT payload with multi-tenant context., Generates a long-lived refresh token (STRAT-SEC-01) with unique JTI., login(), Handles the SSO callback, verifies the token, and establishes a local session., Handles the SSO callback, verifies the token, and establishes a local session. (+15 more)
+Cohesion: 0.09
+Nodes (28): create_access_token(), create_refresh_token(), get_user_jwt_payload(), Constructs the standard JWT payload with multi-tenant context., Generates a long-lived refresh token (STRAT-SEC-01) with unique JTI., impersonate_group(), login(), LDAdmin can impersonate any group to diagnose issues (audit logged). (+20 more)
 
 ### Community 62 - "Community 62"
-Cohesion: 0.16
-Nodes (17): Check validity without consuming a use., verify_key_endpoint(), generate_key(), Only mentors+ can generate passkeys., Check validity without consuming a use., verify_key_endpoint(), generate_access_key(), Create a high-entropy key: sh_kt_<random>_<hmac> (+9 more)
+Cohesion: 0.18
+Nodes (15): Check validity without consuming a use., verify_key_endpoint(), Check validity without consuming a use., verify_key_endpoint(), generate_access_key(), Create a high-entropy key: sh_kt_<random>_<hmac>, Create a high-entropy key: sh_kt_<random>_<hmac>, verify_access_key_signature() (+7 more)
 
 ### Community 63 - "Community 63"
 Cohesion: 0.20
@@ -540,16 +578,16 @@ Cohesion: 0.07
 Nodes (30): ChatMessage, ChatStatus, KTChatStore, useKTChatStore, DocStatus, DocType, HandoffChecklistItem, HandoffGapAnalysis (+22 more)
 
 ### Community 65 - "Community 65"
-Cohesion: 0.21
-Nodes (12): _get_llm(), node_check_relevancy(), node_finalize_review(), node_generate_review(), AI Review Engine — StudyHub Phase 4 Uses LangGraph for refined question review,, Node 2: Generates the actual explanation/review., Node 3: Formats the final output for the UI., Guardrail: Classifies whether the query is suitable for a study platform. (+4 more)
+Cohesion: 0.14
+Nodes (17): _get_llm(), node_check_relevancy(), node_finalize_review(), node_generate_review(), AI Review Engine — StudyHub Phase 4 Uses LangGraph for refined question review,, Node 2: Generates the actual explanation/review., Node 2: Generates the actual explanation/review., Node 3: Formats the final output for the UI. (+9 more)
 
 ### Community 66 - "Community 66"
 Cohesion: 0.15
 Nodes (4): EnterpriseMarkdownPreviewProps, Attachment, Document, KnowledgeDetailProps
 
 ### Community 67 - "Community 67"
-Cohesion: 0.07
-Nodes (37): assert_group_in_org(), Guard reports/analytics entry points that take a group id., get_group_leaderboard_admin(), Alias for the group leaderboard endpoint used by the admin dashboard., get_group_leaderboard_admin(), Alias for the group leaderboard endpoint used by the admin dashboard., get_coding_leaderboard(), get_cohort_health() (+29 more)
+Cohesion: 0.11
+Nodes (18): get_coding_leaderboard(), get_cohort_health(), get_comparative_analytics(), get_composite_health_index(), get_engagement_decay(), get_group_health(), get_lnd_stats(), get_performance_distribution() (+10 more)
 
 ### Community 68 - "Community 68"
 Cohesion: 0.21
@@ -576,24 +614,24 @@ Cohesion: 0.24
 Nodes (9): _batch_member_stmt(), _calculate_slope(), get_batch_vectors(), get_global_vectors(), get_user_vectors(), PerformanceEngine, SECTION 12: Strategic Performance Intelligence (30 Scientific Vectors).     Calc, Core logic to aggregate individual user vectors into a single 30-metric profile. (+1 more)
 
 ### Community 74 - "Community 74"
-Cohesion: 0.12
-Nodes (17): build_rag_prompt(), Builds a formatted RAG prompt from the query and context., Builds a formatted RAG prompt from the query and context., _build_context(), _extract_citations(), node_generate(), Numbered, title-tagged source blocks for the LLM to cite., Numbered, title-tagged source blocks for the LLM to cite. (+9 more)
+Cohesion: 0.09
+Nodes (25): build_rag_prompt(), Builds a formatted RAG prompt from the query and context., Builds a formatted RAG prompt from the query and context., _build_context(), _enrich_with_titles(), _extract_citations(), node_generate(), node_retrieve() (+17 more)
 
 ### Community 75 - "Community 75"
-Cohesion: 0.20
-Nodes (10): check_scoped_role(), Core RBAC engine (Section 6.2).     Checks if a user has a specific role within, Ensures Mentor is actually assigned to this specific group via UserRole (V3) or, Ensures GroupAdmin can only access their own group via DB lookup., Ensures Mentor has access to at least one group in the specified batch or is a B, require_group_admin_for_group(), require_mentor_for_batch(), require_mentor_for_group() (+2 more)
+Cohesion: 0.15
+Nodes (13): check_scoped_role(), Core RBAC engine (Section 6.2).     Checks if a user has a specific role within, Core RBAC engine (Section 6.2).     Checks if a user has a specific role within, Ensures Mentor is actually assigned to this specific group via UserRole (V3) or, Ensures Mentor is actually assigned to this specific group via UserRole (V3) or, Ensures GroupAdmin can only access their own group via DB lookup., Ensures GroupAdmin can only access their own group via DB lookup., Ensures Mentor has access to at least one group in the specified batch or is a B (+5 more)
 
 ### Community 76 - "Community 76"
-Cohesion: 0.16
-Nodes (14): list_languages(), Returns the supported languages for the code editor.     This drives the Monaco, Returns the supported languages for the code editor.     This drives the Monaco, get_language_config(), get_system_config(), System Configuration Router — StudyHub Enterprise Serves dynamic configuration t, Returns complete system configuration for the frontend.     Used to replace all, Returns only the language registry. Lightweight endpoint for CodeEditor. (+6 more)
+Cohesion: 0.14
+Nodes (16): list_languages(), Returns the supported languages for the code editor.     This drives the Monaco, Returns the supported languages for the code editor.     This drives the Monaco, get_language_config(), get_system_config(), System Configuration Router — StudyHub Enterprise Serves dynamic configuration t, Returns complete system configuration for the frontend.     Used to replace all, Returns only the language registry. Lightweight endpoint for CodeEditor. (+8 more)
 
 ### Community 77 - "Community 77"
 Cohesion: 0.20
 Nodes (10): complete_onboarding(), OnboardingComplete, org_signup(), OrgSignupRequest, Public organization onboarding.  Flow: org signs up (status=pending) → Platform, Public (token-gated): create the org's L&D Admin and store branding., Public: create a PENDING organization awaiting Platform Admin approval., Public: validate a one-time onboarding token and return org info for the wizard. (+2 more)
 
 ### Community 78 - "Community 78"
-Cohesion: 0.09
-Nodes (22): add_resource_comment(), CommentCreate, delete_resource(), get_image_presigned_upload(), get_resource_comments(), ImageUploadRequest, mark_attempt_reviewed(), MarkReviewedRequest (+14 more)
+Cohesion: 0.08
+Nodes (27): assert_group_in_org(), Guard reports/analytics entry points that take a group id., Guard reports/analytics entry points that take a group id., get_group_leaderboard_admin(), Alias for the group leaderboard endpoint used by the admin dashboard., get_group_leaderboard_admin(), Alias for the group leaderboard endpoint used by the admin dashboard., get_group_leaderboard() (+19 more)
 
 ### Community 79 - "Community 79"
 Cohesion: 0.15
@@ -604,28 +642,28 @@ Cohesion: 0.18
 Nodes (10): dependsOn, outputs, cache, persistent, $schema, tasks, build, dev (+2 more)
 
 ### Community 81 - "Community 81"
-Cohesion: 0.12
-Nodes (16): Restrict a SQLAlchemy query to the caller's organization.      Fails CLOSED: if, scope_to_org(), exam_attempts_for_review(), Proctor review: attempts with score + integrity flag counts., Proctor review: attempts with score + integrity flag counts., export_deep(), export_standard(), # NOTE: this handler deliberately keeps the SYNC Session. `iter_csv` below is a (+8 more)
+Cohesion: 0.11
+Nodes (17): Restrict a SQLAlchemy query to the caller's organization.      Fails CLOSED: if, Restrict a SQLAlchemy query to the caller's organization.      Fails CLOSED: if, scope_to_org(), exam_attempts_for_review(), Proctor review: attempts with score + integrity flag counts., Proctor review: attempts with score + integrity flag counts., export_deep(), export_standard() (+9 more)
 
 ### Community 82 - "Community 82"
-Cohesion: 0.09
-Nodes (26): Junction table for scoped role assignments.     Enables one user to be 'GroupAdm, UserRole, get_ai_student_insight(), get_mentor_groups(), get_student_profile(), AI-powered mentor insight: Analyzes a student's performance history     and gene, bulk_review_attempts(), get_attempt_comments() (+18 more)
+Cohesion: 0.15
+Nodes (15): get_mentor_groups(), get_student_profile(), bulk_review_attempts(), get_attempt_comments(), get_pending_reviews(), get_unified_inbox(), mentor_reviews endpoints (moved verbatim from routers/mentor.py)., Unified mentor workspace inbox (Phase 6 — mentor merge).      ONE queue for ever (+7 more)
 
 ### Community 83 - "Community 83"
-Cohesion: 0.10
-Nodes (23): assert_user_in_org(), Guard per-learner reports (growth atlas, consistency, velocity)., get_learning_velocity(), get_member_growth_atlas(), get_member_registry(), get_user_activity_heatmap(), get_user_consistency(), member_reports endpoints (moved verbatim from routers/reports.py). (+15 more)
+Cohesion: 0.15
+Nodes (13): assert_user_in_org(), Guard per-learner reports (growth atlas, consistency, velocity)., Guard per-learner reports (growth atlas, consistency, velocity)., get_learning_velocity(), get_member_growth_atlas(), get_member_registry(), get_user_activity_heatmap(), get_user_consistency() (+5 more)
 
 ### Community 84 - "Community 84"
-Cohesion: 0.15
-Nodes (13): paginate(), PaginatedResponse, get_audit_logs(), get_email_logs(), PHASE-3: Visibility into all outgoing system communications., PHASE-3: High-fidelity audit retrieval with recursive search for L&D Global Admi, get_banks(), get_audit_logs() (+5 more)
+Cohesion: 0.13
+Nodes (15): paginate(), PaginatedResponse, get_audit_logs(), get_email_logs(), PHASE-3: Visibility into all outgoing system communications., PHASE-3: High-fidelity audit retrieval with recursive search for L&D Global Admi, get_banks(), get_audit_logs() (+7 more)
 
 ### Community 85 - "Community 85"
-Cohesion: 0.13
-Nodes (15): admin_reset_password(), PHASE-3: Emergency password override for L&D Global Administrators (AUD-Logged)., bulk_create_users(), change_password(), get_password_hash(), Standardized hashing protocol (SEC-104).     Ensures Bcrypt 72-byte limit compli, Stage 2: Verify OTP and finalize new synchronization credentials., Stage 2: Verify OTP and finalize new synchronization credentials. (+7 more)
+Cohesion: 0.33
+Nodes (6): change_password(), Allows a logged-in user to change their own password.     Requires verification, Allows a logged-in user to change their own password.     Requires verification, Standardized verification protocol (SEC-104).     Ensures Bcrypt 72-byte limit c, Standardized verification protocol (SEC-104).     Ensures Bcrypt 72-byte limit c, verify_password()
 
 ### Community 86 - "Community 86"
-Cohesion: 0.24
-Nodes (8): _enrich_with_titles(), node_retrieve(), LangGraph-based Knowledge Transfer Chatbot with Citations & Streaming.  Architec, Embed → vector search (scoped) → enrich with titles → rerank., Embed → vector search (scoped) → enrich with titles → rerank., Attach doc_title / project_name to vector-search chunks via Postgres.      vecto, Attach doc_title / project_name to vector-search chunks via Postgres.      vecto, _retrieve_and_rerank()
+Cohesion: 0.15
+Nodes (12): get_learning_velocity(), get_member_growth_atlas(), get_member_registry(), get_user_consistency(), member_reports endpoints (moved verbatim from routers/reports.py)., PHASE-3: Generate exactly 30 granular growth insights for a learner., FUNC-004: Comprehensive usage registry for a specific member., FUNC-004: Comprehensive usage registry for a specific member. (+4 more)
 
 ### Community 87 - "Community 87"
 Cohesion: 0.24
@@ -680,8 +718,8 @@ Cohesion: 0.29
 Nodes (6): Course, GroupCourseSubscription, Fully dynamic — no hardcoded course names., Join table: which courses are available to which vertical., FUNC-008: Group-level Course Entitlement.     Ensures cohorts only see courses m, VerticalCourse
 
 ### Community 100 - "Community 100"
-Cohesion: 0.16
-Nodes (8): _kt_router_files(), Tests for the durable background job queue.  KT ingestion, document enrichment a, Without SKIP LOCKED, two replicas would run the same job twice —         double-, A worker that dies holding a claim must not park the job in `running`         fo, Enqueue must join the caller's transaction: a rolled-back request must         n, The point of the exercise: this work must no longer be in-process., TestClaimSafety, TestLosableWorkIsQueued
+Cohesion: 0.29
+Nodes (4): Without SKIP LOCKED, two replicas would run the same job twice —         double-, A worker that dies holding a claim must not park the job in `running`         fo, Enqueue must join the caller's transaction: a rolled-back request must         n, TestClaimSafety
 
 ### Community 101 - "Community 101"
 Cohesion: 0.38
@@ -692,16 +730,16 @@ Cohesion: 0.25
 Nodes (10): _anonymous_endpoints(), Guards which endpoints may be reached WITHOUT authentication.  Five endpoints (`, Guards the guard — a broken matcher would make this vacuously pass., Guards the guard — a broken matcher would make this vacuously pass., These leaked every customer's structure to anonymous callers., These leaked every customer's structure to anonymous callers., test_coding_portal_questions_require_auth(), test_no_unapproved_anonymous_endpoints() (+2 more)
 
 ### Community 103 - "Community 103"
-Cohesion: 0.29
-Nodes (7): create_company(), create_project(), group_insights(), GroupAdmin sees analytics for their group's memberTs' documents., _require_group_admin_plus(), _require_ld_admin_plus(), _require_role()
+Cohesion: 0.17
+Nodes (13): KTDocumentAttachment, ai_suggest_improvements(), _can_edit_doc(), document_versions(), get_attachment_upload_url(), _get_doc_or_404(), get_document_version(), ingestion_status() (+5 more)
 
 ### Community 104 - "Community 104"
-Cohesion: 0.17
-Nodes (13): evaluate_code(), Pure AI evaluation endpoint.     1. Fetches question details.     2. Runs LangGr, Pure AI evaluation endpoint.     1. Fetches question details.     2. Runs LangGr, get_language_entry(), Pure AI code evaluation. No sandbox. No subprocess.     Supports all 50+ enterpr, AI-powered progressive hint system. Three levels, language-aware.     Returns AI, Find language entry from registry, fallback to generic., Pure AI code evaluation. No sandbox. No subprocess.     Supports all 50+ enterpr (+5 more)
+Cohesion: 0.14
+Nodes (15): evaluate_code(), Pure AI evaluation endpoint.     1. Fetches question details.     2. Runs LangGr, Pure AI evaluation endpoint.     1. Fetches question details.     2. Runs LangGr, get_language_entry(), Pure AI code evaluation. No sandbox. No subprocess.     Supports all 50+ enterpr, AI-powered progressive hint system. Three levels, language-aware.     Returns AI, Find language entry from registry, fallback to generic., Pure AI code evaluation. No sandbox. No subprocess.     Supports all 50+ enterpr (+7 more)
 
 ### Community 105 - "Community 105"
-Cohesion: 0.13
-Nodes (20): generate_key(), get_specific_key_scope(), list_keys(), Access keys and verification, Only mentors+ can generate passkeys., revoke_key(), delete_document(), deprecate_document() (+12 more)
+Cohesion: 0.12
+Nodes (16): KTAuditLog, delete_document(), deprecate_document(), feed_document(), Mentor clicks FEED → triggers temporal graph ingestion pipeline., get_handoff(), initiate_handoff(), list_handoffs() (+8 more)
 
 ### Community 106 - "Community 106"
 Cohesion: 0.38
@@ -712,8 +750,8 @@ Cohesion: 0.47
 Nodes (5): get_url(), Run migrations in 'offline' mode.      This configures the context with just a U, Run migrations in 'online' mode.      In this scenario we need to create an Engi, run_migrations_offline(), run_migrations_online()
 
 ### Community 109 - "Community 109"
-Cohesion: 0.15
-Nodes (21): document_versions(), get_attachment_upload_url(), get_document_version(), list_attachments(), doc_assets endpoints (moved verbatim from modules/kt/routers/documents.py)., Restore a document's title/body from an earlier snapshot.      The restore itsel, register_attachment(), restore_document_version() (+13 more)
+Cohesion: 0.14
+Nodes (20): KTEndorsement, document_versions(), get_attachment_upload_url(), get_document_version(), list_attachments(), doc_assets endpoints (moved verbatim from modules/kt/routers/documents.py)., Restore a document's title/body from an earlier snapshot.      The restore itsel, register_attachment() (+12 more)
 
 ### Community 110 - "Community 110"
 Cohesion: 0.33
@@ -748,8 +786,12 @@ Cohesion: 0.50
 Nodes (4): _host_reachable(), live_ready(), Shared test setup.  Forces development mode (so config.validate_production_confi, Skip live tests unless a Gemini key is available.      Phase 6: Neo4j reachabili
 
 ### Community 120 - "Community 120"
-Cohesion: 0.40
-Nodes (3): FLAG_STYLE, GradeRow, Item
+Cohesion: 0.07
+Nodes (14): FLAG_STYLE, GradeRow, Item, Exam, CodeEditor(), FONT_SIZES, THEMES, Attempt (+6 more)
+
+### Community 121 - "Community 121"
+Cohesion: 0.17
+Nodes (11): get_ai_student_insight(), get_batch_insights(), get_group_activity_feed(), get_group_ai_summary(), get_group_stats(), get_group_students(), mentor_insights endpoints (moved verbatim from routers/mentor.py)., PHASE-3: Generate high-level strategic batch insights for mentors (STRAT-INSIGHT (+3 more)
 
 ### Community 123 - "Community 123"
 Cohesion: 0.29
@@ -760,8 +802,8 @@ Cohesion: 0.29
 Nodes (3): Guards that interaction.py endpoints keyed on a non-user id are tenant-checked., Questions/banks are shared CONTENT, so they scope by SUPER-org (a sibling     bu, test_scope_helpers_use_super_org_for_content()
 
 ### Community 125 - "Community 125"
-Cohesion: 0.29
-Nodes (7): EvaluationResult, _node_validate_eval_output(), Node 3: Parse and validate Gemini output with Guardrails., Guardrails: enforces structured, validated output from Gemini for every evaluati, Node 3: Parse and validate Gemini output with Guardrails., Guardrails: enforces structured, validated output from Gemini for every evaluati, RubricDetail
+Cohesion: 0.25
+Nodes (8): EvaluationResult, _node_validate_eval_output(), Node 3: Parse and validate Gemini output with Guardrails., Guardrails: enforces structured, validated output from Gemini for every evaluati, Node 3: Parse and validate Gemini output with Guardrails., Node 3: Parse and validate Gemini output with Guardrails., Guardrails: enforces structured, validated output from Gemini for every evaluati, RubricDetail
 
 ### Community 126 - "Community 126"
 Cohesion: 0.80
@@ -780,20 +822,20 @@ Cohesion: 0.20
 Nodes (9): Attempt, CodingAttempt, CodingHint, Tracks hint history for a user on a specific question., Tracks hint history for a user on a specific question., Stores coding practice module submissions with AI evaluation., get_coding_hint(), AI-powered progressive hint generation.     Checks for existing hints first to p (+1 more)
 
 ### Community 133 - "Community 133"
-Cohesion: 0.09
-Nodes (21): 10. Database relationships (target), 11. API interactions, 12. Business rules, 13. Feature-by-feature first-principles verdict, 14. Feature dependencies, 15. Roadmap & prioritized implementation plan, 16. Risks, gaps, recommendations, 17. Verification (per phase & final) (+13 more)
+Cohesion: 0.08
+Nodes (25): 10. Database relationships (target), 11. API interactions, 12. Business rules, 13. Feature-by-feature first-principles verdict, 14. Feature dependencies, 15. Roadmap & prioritized implementation plan, 16. Risks, gaps, recommendations, 17. Verification (per phase & final) (+17 more)
 
 ### Community 134 - "Community 134"
 Cohesion: 0.50
 Nodes (3): description, name, requestFramePermissions
 
 ### Community 135 - "Community 135"
-Cohesion: 0.50
-Nodes (4): CodeEvalState, HintState, ReviewState, TypedDict
+Cohesion: 0.20
+Nodes (10): main(), compute_confidence(), Calibrated 0-100 confidence for a grounded answer.      The old value was `top_c, Calibrated 0-100 confidence for a grounded answer.      The old value was `top_c, run_rag_query(), _cleanup(), _first_company_and_project(), Live end-to-end KT test on the pgvector pipeline (Phase 6 rewrite).  ingest a th (+2 more)
 
 ### Community 136 - "Community 136"
-Cohesion: 0.11
-Nodes (20): assert_batch_in_org(), Guard reports/analytics entry points that take a batch id.      These endpoints, get_batch_executive_summary(), get_batch_intelligence(), Returns full 30-dimension aggregate intelligence for a batch., Generates a professional executive summary for a batch., compare_batches(), export_batch_csv() (+12 more)
+Cohesion: 0.30
+Nodes (9): atLeast(), isGroupAdminPlus(), isLDAdminPlus(), isMentorPlus(), ktPermissions, ROLE_TIER, KTRole, Sidebar() (+1 more)
 
 ### Community 137 - "Community 137"
 Cohesion: 0.50
@@ -804,16 +846,16 @@ Cohesion: 0.50
 Nodes (3): builds, routes, version
 
 ### Community 159 - "Community 159"
-Cohesion: 0.22
-Nodes (9): ask_kt_question(), Send a message. scope (company_id + project_ids) is read from the     LOCKED ses, Which document sensitivities may this chat session retrieve?      `high` sensiti, Direct ask KT question endpoint. Alias of /chat/message for frontend parity., send_message(), _sensitivities_for_session(), Map a caller's project membership roles to the sensitivities they may read., Map a caller's project membership roles to the sensitivities they may read. (+1 more)
+Cohesion: 0.17
+Nodes (12): delete_profile_photo(), hard_delete_user(), GDPR-Compliant Hard Delete. Fully purges user data including attempts and profil, GDPR-Compliant Hard Delete. Fully purges user data including attempts and profil, Remove user's profile photo and cleanup S3., Remove user's profile photo and cleanup S3., delete_profile_photo(), Remove user's profile photo and cleanup S3. (+4 more)
 
 ### Community 175 - "Community 175"
 Cohesion: 0.07
-Nodes (31): assert_same_super_org(), Guard a single fetched CONTENT row against cross-customer access.      Returns 4, delete_bank(), delete_question(), get_bank(), get_bank_library(), get_unique_topics(), publish_bank() (+23 more)
+Nodes (34): assert_same_super_org(), Guard a single fetched CONTENT row against cross-customer access.      Returns 4, Guard a single fetched CONTENT row against cross-customer access.      Returns 4, create_bank(), delete_bank(), delete_question(), get_bank(), get_bank_library() (+26 more)
 
 ### Community 176 - "Community 176"
-Cohesion: 0.40
-Nodes (4): Exam, ExamAttempt, ProctorEvent, Proctored Exam service — a formal-assessment layer on top of the shared Question
+Cohesion: 0.22
+Nodes (10): Junction table for scoped role assignments.     Enables one user to be 'GroupAdm, Junction table for scoped role assignments.     Enables one user to be 'GroupAdm, UserRole, _assert_user_in_scope_async(), BulkReviewRequest, _mentor_scope_group_ids_async(), Shared imports/helpers/schemas for the split mentor router (moved verbatim from, Async twin of `_assert_user_in_scope`. (+2 more)
 
 ### Community 177 - "Community 177"
 Cohesion: 0.08
@@ -825,23 +867,27 @@ Nodes (3): downgrade(), _insp(), upgrade()
 
 ### Community 224 - "Community 224"
 Cohesion: 0.10
-Nodes (20): forgot_password(), get_active_sessions(), get_current_user(), get_my_roles(), logout(), logout_all(), session endpoints (moved verbatim from routers/auth.py)., PHASE-3: Strategic session revocation (Security Protocol). (+12 more)
+Nodes (20): Standardized verification protocol (SEC-104).     Ensures Bcrypt 72-byte limit c, verify_password(), change_password(), forgot_password(), get_active_sessions(), get_current_user(), get_my_roles(), logout() (+12 more)
 
 ### Community 225 - "Community 225"
 Cohesion: 0.67
 Nodes (3): _calls_in(), Guards that write/admin handlers keyed on a resource id enforce a tenant check., test_write_handler_has_a_tenant_check()
 
 ### Community 226 - "Community 226"
-Cohesion: 0.11
-Nodes (19): get_key_scope(), Returns what a key is allowed to access.     Used by frontend to render scoped U, Chat sessions and messaging, Start a chat session.     - JWT users: provide project_ids + company_id     - Ex, SSE streaming version of send_message., Send a message. scope (company_id + project_ids) is read from the     LOCKED ses, send_message(), start_chat_session() (+11 more)
+Cohesion: 0.12
+Nodes (15): KTUnansweredQuery, Chat sessions and messaging, Start a chat session.     - JWT users: provide project_ids + company_id     - Ex, SSE streaming version of send_message., Send a message. scope (company_id + project_ids) is read from the     LOCKED ses, send_message(), start_chat_session(), stream_message() (+7 more)
 
 ### Community 227 - "Community 227"
-Cohesion: 0.10
-Nodes (20): get_password_hash(), Standardized hashing protocol (SEC-104).     Ensures Bcrypt 72-byte limit compli, admin_reset_password(), bulk_admin_action(), get_email_logs(), get_question_reports(), get_security_highlights(), get_target_levels() (+12 more)
+Cohesion: 0.09
+Nodes (22): get_password_hash(), Standardized hashing protocol (SEC-104).     Ensures Bcrypt 72-byte limit compli, admin_reset_password(), bulk_admin_action(), get_question_reports(), get_security_highlights(), get_target_levels(), governance endpoints (moved verbatim from routers/admin.py). (+14 more)
 
 ### Community 228 - "Community 228"
-Cohesion: 0.12
-Nodes (13): AppAreaInner(), NO_SIDEBAR_PREFIXES, AILearningPath(), AILearningPathProps, LearningPath, PathPhase, AIQuizGenerator(), AIQuizGeneratorProps (+5 more)
+Cohesion: 0.15
+Nodes (10): AppAreaInner(), NO_SIDEBAR_PREFIXES, AIQuizGenerator(), AIQuizGeneratorProps, GeneratedQuestion, VIEW_TO_ROUTE, viewForPath(), AppLayout() (+2 more)
+
+### Community 229 - "Community 229"
+Cohesion: 0.24
+Nodes (11): get_key_scope(), Returns what a key is allowed to access.     Used by frontend to render scoped U, list_documents(), _normalize_grant_list(), Grant lists must fail CLOSED. A NULL/absent list means 'no grants', never     'a, The single source of truth for which projects a user may RETRIEVE knowledge from, THE enforcement point for every KT retrieval path.      Returns `(company_id, pr, Validate a raw `sh_kt_…` access key and return its active record.      (Reconstr (+3 more)
 
 ### Community 230 - "Community 230"
 Cohesion: 0.10
@@ -856,8 +902,8 @@ Cohesion: 0.14
 Nodes (16): group_insights(), GroupAdmin sees analytics for their group's memberTs' documents., create_document(), create_project(), Shared helpers, common imports, and utilities for KT routers. Used by all KT sub, # NOTE: these helpers were recovered verbatim from the original routers/kt.py, Verify user has one of the allowed roles for a specific project.     Uses the re, Strict, membership-only company check for RETRIEVAL paths.      Deliberately dis (+8 more)
 
 ### Community 233 - "Community 233"
-Cohesion: 0.12
-Nodes (13): generate_daily_challenges(), STRAT-DCC-02: Advanced Weakness-Based Seeding.     Runs at midnight IST or on-de, create_course(), get_courses(), get_daily_challenge(), get_daily_challenge_results(), courses endpoints (moved verbatim from routers/quiz.py)., Admin endpoint to link a course to a vertical (all batches/groups in it). (+5 more)
+Cohesion: 0.13
+Nodes (12): create_course(), get_courses(), get_daily_challenge_results(), courses endpoints (moved verbatim from routers/quiz.py)., Admin endpoint to link a course to a vertical (all batches/groups in it)., Admin endpoint to link a course to a vertical (all batches/groups in it)., Admin endpoint to link a course to a specific group only., Admin endpoint to link a course to a specific group only. (+4 more)
 
 ### Community 234 - "Community 234"
 Cohesion: 0.17
@@ -872,24 +918,24 @@ Cohesion: 0.67
 Nodes (3): get_group_users(), Paginated list of users within a specific group., Paginated list of users within a specific group.
 
 ### Community 237 - "Community 237"
-Cohesion: 0.14
-Nodes (13): delete_profile_photo(), get_my_detailed_profile(), get_profile_by_slug(), get_user_insights(), profile endpoints (moved verbatim from routers/auth.py)., Remove user's profile photo and cleanup S3., PHASE-3: Retrieve the current user's high-fidelity profile with performance vect, Enterprise-grade Member Intel Engine.     Synthesizes recursive activity, algori (+5 more)
+Cohesion: 0.15
+Nodes (12): discovery_users(), get_my_detailed_profile(), get_profile_by_slug(), get_user_insights(), profile endpoints (moved verbatim from routers/auth.py)., PHASE-3: Retrieve the current user's high-fidelity profile with performance vect, Enterprise-grade Member Intel Engine.     Synthesizes recursive activity, algori, User-driven profile enhancement. (+4 more)
 
 ### Community 238 - "Community 238"
-Cohesion: 0.19
-Nodes (12): _exam_paper(), ExamCreate, ExamSubmit, list_exams(), _now(), ProctorEventIn, Proctored Exam service endpoints.  Reuses the shared Question engine + grading d, Single secure attempt: reuse an in-progress attempt or create one; block     onc (+4 more)
+Cohesion: 0.27
+Nodes (4): QuestionManagement(), ResourceCenter(), ConfirmationModal(), ConfirmationModalProps
 
 ### Community 239 - "Community 239"
-Cohesion: 0.14
-Nodes (5): Integration tests for the rebuilt email-first login (Phase 3).  Uses TestClient, A pattern-era user (no password_hash) logs in with the group         pattern unt, Email-first lifecycle: creating a user WITHOUT a password must still     issue i, TestCredentialIssuance, TestEmailLogin
+Cohesion: 0.18
+Nodes (3): Integration tests for the rebuilt email-first login (Phase 3).  Uses TestClient, A pattern-era user (no password_hash) logs in with the group         pattern unt, TestEmailLogin
 
 ### Community 240 - "Community 240"
 Cohesion: 0.18
 Nodes (11): get_profile_presigned_url(), get_upload_url(), Generates a pre-signed POST policy for the frontend to upload a profile photo., Generates a pre-signed POST policy for the frontend to upload a profile photo., PHASE-3: S3 Presigned URL for direct secure uploads., PHASE-3: S3 Presigned URL for direct secure uploads., get_profile_presigned_url(), get_upload_url() (+3 more)
 
 ### Community 241 - "Community 241"
-Cohesion: 0.15
-Nodes (12): company_insights(), knowledge_gaps(), mentor_inbox(), my_doc_traction(), org_insights_summary(), analytics endpoints (moved verbatim from modules/kt/routers/insights.py)., Mentor+ sees all companies' analytics in the org. GroupAdmin sees only their gro, Aggregated organizational analytics for Admin/Mentor views. (+4 more)
+Cohesion: 0.14
+Nodes (18): generate_key(), get_specific_key_scope(), list_keys(), Access keys and verification, Only mentors+ can generate passkeys., revoke_key(), company_insights(), mentor_inbox() (+10 more)
 
 ### Community 242 - "Community 242"
 Cohesion: 0.20
@@ -908,16 +954,16 @@ Cohesion: 0.17
 Nodes (11): AIAskRequest, AIQuery, ExplainRequest, _get_llm(), LeaderboardSummaryRequest, LearningPathRequest, NextTopicRequest, AI Feature Router — StudyHub Enterprise Exposes AI-powered endpoints:   - POST / (+3 more)
 
 ### Community 246 - "Community 246"
-Cohesion: 0.10
-Nodes (23): Analyzes a user's quiz history and recommends the most valuable next topic to st, recommend_next_topic(), get_user_insights(), Enterprise-grade Member Intel Engine.     Synthesizes recursive activity, algori, Enterprise-grade Member Intel Engine.     Synthesizes recursive activity, algori, explore_graph(), explore_graph_neighborhood(), graph_stats() (+15 more)
+Cohesion: 0.12
+Nodes (20): Analyzes a user's quiz history and recommends the most valuable next topic to st, recommend_next_topic(), explore_graph(), explore_graph_neighborhood(), graph_stats(), knowledge_timeline(), explorer endpoints (moved verbatim from modules/kt/routers/insights.py)., Explore the knowledge graph.     Supports both JWT (internal) and Access Key (ex (+12 more)
 
 ### Community 247 - "Community 247"
-Cohesion: 0.17
-Nodes (4): workspace endpoints (moved verbatim from modules/kt/routers/insights.py)., # NOTE: this is the ADMIN LISTING only — it does NOT widen knowledge, Search for users within the org to pick as co-authors.     Returns list of {user, search_coauthors()
+Cohesion: 0.13
+Nodes (7): knowledge_gaps(), get_kt_suggestions(), workspace endpoints (moved verbatim from modules/kt/routers/insights.py)., # NOTE: this is the ADMIN LISTING only — it does NOT widen knowledge, Direct endpoint for KT discovery suggestions. Parity with frontend expectations., Search for users within the org to pick as co-authors.     Returns list of {user, search_coauthors()
 
 ### Community 248 - "Community 248"
-Cohesion: 0.18
-Nodes (8): main(), Phase 2 gate: live KT E2E on pgvector (no Neo4j anywhere).  Creates an isolated, invoke_kt_chatbot(), Non-streaming: run the graph and return the final state., Non-streaming: run the graph and return the final state., pgvector similarity search — drop-in replacement for neo4j.vector_search.  Retur, vector_search(), TestRetrievalFailClosed
+Cohesion: 0.15
+Nodes (9): main(), Phase 2 gate: live KT E2E on pgvector (no Neo4j anywhere).  Creates an isolated, invoke_kt_chatbot(), Non-streaming: run the graph and return the final state., Non-streaming: run the graph and return the final state., pgvector similarity search — drop-in replacement for neo4j.vector_search.  Retur, vector_search(), Unit tests for the pgvector KT pipeline (Phase 2) — no network, no DB. (+1 more)
 
 ### Community 249 - "Community 249"
 Cohesion: 0.67
@@ -940,8 +986,8 @@ Cohesion: 0.18
 Nodes (11): 6. MIGRATION SEQUENCING: 8 PHASES, code:sql (-- New tables (no deletes)), Overview, Phase 1: FOUNDATION (2 weeks), Phase 2: KT RE-ARCHITECTURE (2.5 weeks), Phase 3: SPLIT MONOLITH ROUTERS (2 weeks), Phase 4: FRONTEND ROUTING + API CLIENT (2 weeks), Phase 5: DATA MIGRATION: ORGUNITS (1.5 weeks) (+3 more)
 
 ### Community 254 - "Community 254"
-Cohesion: 0.24
-Nodes (8): project_insights(), Mentor+ sees project-level analytics., add_project_member(), get_project(), KT projects and membership, update_project(), _get_project_or_404(), generate_onboarding_bundle()
+Cohesion: 0.32
+Nodes (6): add_project_member(), get_project(), KT projects and membership, update_project(), _get_project_or_404(), generate_onboarding_bundle()
 
 ### Community 255 - "Community 255"
 Cohesion: 0.27
@@ -968,8 +1014,8 @@ Cohesion: 0.31
 Nodes (10): patch, patch, description, operationId, parameters, security, summary, tags (+2 more)
 
 ### Community 261 - "Community 261"
-Cohesion: 0.28
-Nodes (7): KTDocumentChunk, pgvector-backed KT chunk storage — replaces the Neo4j episode graph.  An approve, _execute(), KT ingestion pipeline on Postgres/pgvector — replaces the Neo4j pipeline.  Flow, Entry point — same signature as the legacy KTIngestionService.run_pipeline     s, run_pipeline(), _set_ingestion_state()
+Cohesion: 0.19
+Nodes (10): KTDocumentChunk, pgvector-backed KT chunk storage — replaces the Neo4j episode graph.  An approve, _doc_context_preamble(), _execute(), KT ingestion pipeline on Postgres/pgvector — replaces the Neo4j pipeline.  Flow, Entry point — same signature as the legacy KTIngestionService.run_pipeline     s, Structured KT fields prepended to the first chunk's context.      The legacy gra, run_pipeline() (+2 more)
 
 ### Community 262 - "Community 262"
 Cohesion: 0.31
@@ -996,16 +1042,16 @@ Cohesion: 0.25
 Nodes (8): 1.2 Router Splitting Strategy (God File Refactor), **admin.py (814 lines → 3 routers)**, **ai.py (1,119 lines → 2 routers, ~500 + ~200 lines)**, **auth.py (2,381 lines → 2 routers, ~1,100 + ~200 lines)**, **kt.py (3,893 lines → 8 routers, ~600 lines each)**, **Others remain mostly as-is:**, **quiz.py (2,119 lines → 2 routers, ~1,000 + ~800 lines)**, **reports.py (1,861 lines → 2 routers)**
 
 ### Community 268 - "Community 268"
-Cohesion: 0.33
-Nodes (4): _doc_context_preamble(), Structured KT fields prepended to the first chunk's context.      The legacy gra, Unit tests for the pgvector KT pipeline (Phase 2) — no network, no DB., TestDocPreamble
+Cohesion: 0.20
+Nodes (10): explore_graph(), knowledge_timeline(), The single source of truth for which projects a user may RETRIEVE knowledge from, THE enforcement point for every KT retrieval path.      Returns `(company_id, pr, Start a chat session.     - JWT users: provide project_ids + company_id     - Ex, Explore the knowledge graph.     Supports both JWT (internal) and Access Key (ex, Get a timeline of knowledge events.     Supports both JWT (internal) and Access, _resolve_granted_project_ids() (+2 more)
 
 ### Community 269 - "Community 269"
 Cohesion: 0.33
 Nodes (4): KTProjectsView(), KTProjectsViewProps, KTQuickKeyModalProps, KTProject
 
 ### Community 270 - "Community 270"
-Cohesion: 0.29
-Nodes (7): _get_llm(), _node_call_ai_eval(), _node_call_ai_hint(), Hint Node 2: Call Gemini for hint generation., Node 2: Call Gemini for evaluation., Hint Node 2: Call Gemini for hint generation., Node 2: Call Gemini for evaluation.
+Cohesion: 0.22
+Nodes (10): _get_llm(), _node_call_ai_eval(), _node_call_ai_hint(), Hint Node 2: Call Gemini for hint generation., Node 2: Call Gemini for evaluation., Hint Node 2: Call Gemini for hint generation., Hint Node 2: Call Gemini for hint generation., Node 2: Call Gemini for evaluation. (+2 more)
 
 ### Community 271 - "Community 271"
 Cohesion: 0.29
@@ -1028,8 +1074,8 @@ Cohesion: 0.40
 Nodes (5): 5.1 Endpoint Audit, 5.2 Endpoint Mapping (by module), 5.3 Versioning Convention, 5. API SURFACE RATIONALIZATION: 314 → ~200 ENDPOINTS, code:block24 (/api/v1/                       # Current stable (2026-07-22 )
 
 ### Community 278 - "Community 278"
-Cohesion: 0.50
-Nodes (4): Standardized verification protocol (SEC-104).     Ensures Bcrypt 72-byte limit c, verify_password(), change_password(), Allows a logged-in user to change their own password.     Requires verification
+Cohesion: 0.22
+Nodes (9): assert_tenant_active(), Block users whose customer account is suspended (or not yet approved).      Susp, Decodes token but does not raise 401 if missing/invalid., Decodes token but does not raise 401 if missing/invalid., Resolve the organization a user belongs to, or None if unattributable.      `use, resolve_user_organization_id(), verify_token(), verify_token_optional() (+1 more)
 
 ### Community 279 - "Community 279"
 Cohesion: 0.50
@@ -1042,6 +1088,18 @@ Nodes (3): AIEnvelope, STRAT-AI-FALLBACK: Standardized response envelope for all
 ### Community 282 - "Community 282"
 Cohesion: 0.67
 Nodes (3): DescriptiveAnswerItem, Strict structure for descriptive_answers JSONB field., Strict structure for descriptive_answers JSONB field.
+
+### Community 283 - "Community 283"
+Cohesion: 0.25
+Nodes (8): assert_same_super_org_async(), caller_super_org_id_async(), Async twin of caller_super_org_id for AsyncSession handlers.      `caller_super_, Async twin of caller_super_org_id for AsyncSession handlers.      `caller_super_, Async twin of assert_same_super_org (404 on mismatch, fail closed)., Async twin of assert_same_super_org (404 on mismatch, fail closed)., add_discussion(), get_global_discussions()
+
+### Community 285 - "Community 285"
+Cohesion: 0.25
+Nodes (7): 1.1 Root Configuration, 1. System Topology & Monorepo Landscape, Auth model, code:block1 (apps/api        FastAPI backend (Python 3.12, venv at .venv)), Layout, Production notes, StudyHub — Enterprise Assessment & Knowledge Transfer Platform
+
+### Community 286 - "Community 286"
+Cohesion: 0.25
+Nodes (8): get_profile_atlas(), get_profile_registry(), Resolve a profile slug to a user (custom slug, reserved name, id, or email prefi, SECTION 12: Generate 30 AI Insights (Growth Atlas).     Consolidated route for p, SECTION 12: Generate 30 AI Insights (Growth Atlas).     Consolidated route for p, PHASE-3: Strategic usage registry via slug/ID resolution., PHASE-3: Strategic usage registry via slug/ID resolution., _resolve_user_by_slug_async()
 
 ### Community 288 - "Community 288"
 Cohesion: 0.67
@@ -1056,31 +1114,179 @@ Cohesion: 0.67
 Nodes (3): get_presigned_upload_url(), Generates a pre-signed POST policy for the frontend to upload a PDF directly to, Generates a pre-signed POST policy for the frontend to upload a PDF directly to
 
 ### Community 291 - "Community 291"
-Cohesion: 0.67
-Nodes (3): _node_build_eval_prompt(), Node 1: Build the evaluation prompt with language-specific context., Node 1: Build the evaluation prompt with language-specific context.
+Cohesion: 0.25
+Nodes (8): 1. Prerequisites, 2. Environment Variables, 3. Backend Setup, 4. Frontend Setup, code:bash (# Python 3.12+, Node.js 18+), code:bash (cd /path/to/study-group-quiz-app-V2), code:bash (# In a new terminal, from project root), Local Development
 
 ### Community 292 - "Community 292"
+Cohesion: 0.50
+Nodes (4): _node_build_hint_prompt(), Hint Node 1: Build context-rich hint prompt., Hint Node 1: Build context-rich hint prompt., Hint Node 1: Build context-rich hint prompt.
+
+### Community 329 - "Community 329"
+Cohesion: 0.38
+Nodes (4): _kt_router_files(), Tests for the durable background job queue.  KT ingestion, document enrichment a, The point of the exercise: this work must no longer be in-process., TestLosableWorkIsQueued
+
+### Community 331 - "Community 331"
+Cohesion: 0.29
+Nodes (7): Architecture, Backend → Railway, code:block7 ([Vercel]           →  Frontend (React SPA, static)), code:block8 (VITE_API_BASE = https://your-backend.railway.app/api), code:block9 (uvicorn backend.main:app --host 0.0.0.0 --port $PORT), Frontend → Vercel, Production Deployment
+
+### Community 332 - "Community 332"
+Cohesion: 0.33
+Nodes (5): OrgUnitType, Canonical enums and constants shared across modules.  Single source of truth for, Canonical role strings as persisted in the database., Node types in the OrgUnit tree, top to bottom.      Mirrors the legacy 5-table h, Role
+
+### Community 333 - "Community 333"
+Cohesion: 0.40
+Nodes (4): CommentCreate, ImageUploadRequest, MarkReviewedRequest, ResourceUploadRequest
+
+### Community 334 - "Community 334"
+Cohesion: 0.40
+Nodes (5): create_document(), Verify user has one of the allowed roles for a specific project.     Uses the re, AUTHORING-side check: may this user create/contribute in this company?      NOTE, _require_project_access(), _user_can_access_company()
+
+### Community 335 - "Community 335"
+Cohesion: 0.40
+Nodes (5): 2.1 Relational Schema & ORM Layer (`models/`), 2.2 Core Service Layer (`services/`), 2. Backend Architecture Deep Dive (`apps/api`), code:bash (# Backend (needs .env at repo root: DATABASE_URL, GEMINI_API), Run locally
+
+### Community 336 - "Community 336"
+Cohesion: 0.40
+Nodes (5): 3.1 Role Hierarchy & Oversight Scopes, 3.2 Secure Knowledge Gateway (sk-kt signed keys), 3.3 Role Promotion Quality Locks, 3. RBAC & Security Gateway Protocol, code:mermaid (graph TD)
+
+### Community 337 - "Community 337"
+Cohesion: 0.50
+Nodes (4): 5.1 Bcrypt 72-Byte Truncation Patch, 5.2 Co-Author Verification System, 5.3 Daily Challenge `bank_id` Sync, 5. Critical Bug Remediation Summary
+
+### Community 338 - "Community 338"
 Cohesion: 0.67
-Nodes (3): _node_build_hint_prompt(), Hint Node 1: Build context-rich hint prompt., Hint Node 1: Build context-rich hint prompt.
+Nodes (3): get_mentor_ids_for_group(), Retrieves all user IDs with Mentor role assigned to a specific group., Retrieves all user IDs with Mentor role assigned to a specific group.
+
+### Community 339 - "Community 339"
+Cohesion: 0.67
+Nodes (3): Blocks anyone except someone with GroupAdmin (scoped) or LDAdmin (global) roles., Blocks anyone except someone with GroupAdmin (scoped) or LDAdmin (global) roles., require_group_admin()
+
+### Community 340 - "Community 340"
+Cohesion: 0.67
+Nodes (3): Blocks anyone except Mentor or LDAdmin., Blocks anyone except Mentor or LDAdmin., require_mentor()
+
+### Community 341 - "Community 341"
+Cohesion: 0.67
+Nodes (3): Mentor, GroupAdmin, LDAdmin — or PlatformAdmin, which outranks them all.      NO, Mentor, GroupAdmin, LDAdmin — or PlatformAdmin, which outranks them all.      NO, require_mentor_or_above()
+
+### Community 342 - "Community 342"
+Cohesion: 0.67
+Nodes (3): Factory: returns a FastAPI Depends-compatible function that enforces     GroupAd, Factory: returns a FastAPI Depends-compatible function that enforces     GroupAd, require_admin_for()
+
+### Community 343 - "Community 343"
+Cohesion: 0.67
+Nodes (3): KTDocumentVersion, Immutable snapshot of a document's body at a point in time.      NOTE: this clas, Immutable snapshot of a document's body at a point in time.      NOTE: this clas
+
+### Community 344 - "Community 344"
+Cohesion: 0.67
+Nodes (3): KTHandoff, Offboarding handoff. Column names follow the router's domain language     (depar, Offboarding handoff. Column names follow the router's domain language     (depar
+
+### Community 345 - "Community 345"
+Cohesion: 0.67
+Nodes (3): delete_notification(), Delete a specific notification., Delete a specific notification.
+
+### Community 346 - "Community 346"
+Cohesion: 0.67
+Nodes (3): forgot_password(), Stage 1: Generate OTP and propagate via email., Stage 1: Generate OTP and propagate via email.
+
+### Community 347 - "Community 347"
+Cohesion: 0.67
+Nodes (3): get_active_sessions(), Lists active refresh tokens (sessions) for the current user.     SEC-102: Strate, Lists active refresh tokens (sessions) for the current user.     SEC-102: Strate
+
+### Community 348 - "Community 348"
+Cohesion: 0.67
+Nodes (3): get_group_members(), List all members of a group. Available to GroupAdmin, Mentor, LDAdmin., List all members of a group. Available to GroupAdmin, Mentor, LDAdmin.
+
+### Community 349 - "Community 349"
+Cohesion: 0.67
+Nodes (3): get_my_detailed_profile(), PHASE-3: Retrieve the current user's high-fidelity profile with performance vect, PHASE-3: Retrieve the current user's high-fidelity profile with performance vect
+
+### Community 350 - "Community 350"
+Cohesion: 0.67
+Nodes (3): get_notifications(), Fetch notifications for the current user, newest first with pagination., Fetch notifications for the current user, newest first with pagination.
+
+### Community 351 - "Community 351"
+Cohesion: 0.67
+Nodes (3): get_profile_by_slug(), Retrieve public profile by custom slug., Retrieve public profile by custom slug.
+
+### Community 352 - "Community 352"
+Cohesion: 0.67
+Nodes (3): get_promotable_roles(), Returns a list of roles the current user is allowed to promote others to.     LD, Returns a list of roles the current user is allowed to promote others to.     LD
+
+### Community 353 - "Community 353"
+Cohesion: 0.67
+Nodes (3): get_public_group_users(), Publicly accessible list of users in a group (names and IDs only) for the login, Publicly accessible list of users in a group (names and IDs only) for the login
+
+### Community 354 - "Community 354"
+Cohesion: 0.67
+Nodes (3): get_user_insights(), Enterprise-grade Member Intel Engine.     Synthesizes recursive activity, algori, Enterprise-grade Member Intel Engine.     Synthesizes recursive activity, algori
+
+### Community 355 - "Community 355"
+Cohesion: 0.67
+Nodes (3): mark_all_notifications_read(), Mark all notifications as read for the current user., Mark all notifications as read for the current user.
+
+### Community 356 - "Community 356"
+Cohesion: 0.67
+Nodes (3): Fuzzy user search by name or email — available to GroupAdmin, Mentor, LDAdmin., Fuzzy user search by name or email — available to GroupAdmin, Mentor, LDAdmin., search_users()
+
+### Community 357 - "Community 357"
+Cohesion: 0.67
+Nodes (3): Revokes a specific session (refresh token)., Revokes a specific session (refresh token)., revoke_session()
+
+### Community 358 - "Community 358"
+Cohesion: 0.67
+Nodes (3): Redirects the user to Auth0/SAML IdP for the given organization., Redirects the user to Auth0/SAML IdP for the given organization., sso_login()
+
+### Community 359 - "Community 359"
+Cohesion: 0.67
+Nodes (3): User-driven profile enhancement., User-driven profile enhancement., update_my_profile()
+
+### Community 360 - "Community 360"
+Cohesion: 0.67
+Nodes (3): assign_user_role(), Assign a scoped role to a user (enables multi-group participation)., Assign a scoped role to a user (enables multi-group participation).
+
+### Community 361 - "Community 361"
+Cohesion: 0.67
+Nodes (3): get_ai_intelligence_summary(), AI-powered natural language intelligence summary for this user.     Uses Gemini, AI-powered natural language intelligence summary for this user.     Uses Gemini
+
+### Community 362 - "Community 362"
+Cohesion: 0.67
+Nodes (3): get_hierarchy_with_users(), Returns the full org tree with users embedded at each group node.     Used by th, Returns the full org tree with users embedded at each group node.     Used by th
+
+### Community 363 - "Community 363"
+Cohesion: 0.67
+Nodes (3): get_user_roles(), Returns all scoped roles for a user (multi-group role assignments)., Returns all scoped roles for a user (multi-group role assignments).
+
+### Community 364 - "Community 364"
+Cohesion: 0.67
+Nodes (3): get_user_activity_heatmap(), Returns 52 weeks (364 days) of daily activity counts — quiz + coding attempts., Returns 52 weeks (364 days) of daily activity counts — quiz + coding attempts.
+
+### Community 365 - "Community 365"
+Cohesion: 0.67
+Nodes (3): get_image_presigned_upload(), STRAT-IMAGE-V4: Specialized endpoint for uploading content images (e.g. for Rich, STRAT-IMAGE-V4: Specialized endpoint for uploading content images (e.g. for Rich
+
+### Community 366 - "Community 366"
+Cohesion: 0.67
+Nodes (3): 4.1 UI Layout System, 4.2 Key Visual Components, 4. Frontend Architecture Deep Dive (`apps/web-next`)
 
 ## Knowledge Gaps
-- **338 isolated node(s):** `venvPath`, `venv`, `executionEnvironments`, `version`, `builds` (+333 more)
+- **345 isolated node(s):** `venvPath`, `venv`, `executionEnvironments`, `version`, `builds` (+340 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **56 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **52 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `assert_same_super_org()` connect `Community 175` to `Community 130`, `Community 35`, `Community 7`, `Community 104`, `Community 238`, `Community 79`, `Community 81`, `Community 18`, `Community 177`, `Community 54`, `Community 30`, `Community 95`?**
+- **Why does `assert_same_super_org()` connect `Community 175` to `Community 130`, `Community 35`, `Community 7`, `Community 40`, `Community 104`, `Community 79`, `Community 81`, `Community 18`, `Community 177`, `Community 54`, `Community 30`, `Community 95`?**
+  _High betweenness centrality (0.042) - this node is a cross-community bridge._
+- **Why does `log_admin_action()` connect `Community 24` to `Community 3`, `Community 7`, `Community 14`, `Community 15`, `Community 19`, `Community 27`, `Community 159`, `Community 35`, `Community 46`, `Community 175`, `Community 177`, `Community 54`, `Community 61`, `Community 70`, `Community 78`, `Community 82`, `Community 92`, `Community 227`, `Community 230`, `Community 360`, `Community 233`, `Community 123`?**
   _High betweenness centrality (0.033) - this node is a cross-community bridge._
-- **Why does `assert_group_in_org()` connect `Community 67` to `Community 227`, `Community 7`, `Community 233`, `Community 75`, `Community 46`, `Community 78`, `Community 14`, `Community 18`, `Community 19`, `Community 84`, `Community 85`, `Community 54`, `Community 24`, `Community 28`, `Community 61`, `Community 30`?**
-  _High betweenness centrality (0.029) - this node is a cross-community bridge._
-- **Why does `is_platform_admin()` connect `Community 30` to `Community 67`, `Community 35`, `Community 136`, `Community 44`, `Community 175`, `Community 81`, `Community 18`, `Community 83`, `Community 54`?**
-  _High betweenness centrality (0.028) - this node is a cross-community bridge._
+- **Why does `assert_group_in_org()` connect `Community 78` to `Community 67`, `Community 227`, `Community 233`, `Community 75`, `Community 237`, `Community 46`, `Community 15`, `Community 14`, `Community 18`, `Community 19`, `Community 84`, `Community 54`, `Community 24`, `Community 121`, `Community 28`, `Community 61`, `Community 159`?**
+  _High betweenness centrality (0.027) - this node is a cross-community bridge._
 - **Are the 61 inferred relationships involving `log_admin_action()` (e.g. with `assign_user_role()` and `remove_user_role()`) actually correct?**
   _`log_admin_action()` has 61 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `venvPath`, `venv`, `executionEnvironments` to the rest of the system?**
-  _1223 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _1300 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.01649377593360996 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**

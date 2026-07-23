@@ -1,5 +1,74 @@
 # StudyHubV2 → "StudyHub" — First-Principles Product Redesign Plan
 
+---
+## 🔍 FULL-PRODUCT AUDIT & COMPLETION SPRINT (2026-07-23 — CURRENT WORK)
+
+**Context:** Owner asked for a veteran-level whole-product audit (every file/folder), review of this plan, and a step-by-step completion of everything the plan promises. Three parallel deep audits ran (backend, frontend, plan-vs-reality); every finding below was **cross-verified by me** — several auditor claims were refuted with evidence and are listed so we never re-chase them.
+
+### Refuted auditor claims (do NOT act on these)
+- "main.py still mounts old god routers / Phase 3 failed" — FALSE: `routers/{auth,quiz,admin,reports,ai,kt,mentor}.py` are 11–18-line aggregators including module routers (by design).
+- "system_config.py missing" — FALSE: `apps/api/routers/system_config.py` exists and is mounted (main.py:212/219).
+- "src/app empty / no page.tsx / Phase 4 unverified" & "exam/gradebook orphaned dirs" — FALSE: auditors' globbing failed on `[id]` brackets; `src/app/exam/[id]/page.tsx` + `gradebook/[bankId]/page.tsx` exist; prod build generates 35 routes.
+- "ai_meter not wired at all" — PARTLY FALSE: all `kt_engine.GeminiClient` paths (generate/generate_json/stream/embed) are metered; the REAL gap is below (C2).
+- "/p route orphaned" — intentional legacy alias to /profile/[slug].
+- AppLayout `EXECUTIVE_REPORT`/`ORG_SETTINGS` guards = dead code (those views unreachable), not broken navigation → LOW cleanup, not critical.
+
+### VERIFIED findings → remediation steps (execute in this order)
+
+**STEP 1 — Security & correctness criticals (backend)**
+1a. `config.py:31` `HMAC_KEY_SECRET` has a hardcoded default → require env in production: add to `validate_production_config()` fail-fast list; keep dev default only when ENVIRONMENT=development.
+1b. **AI metering gap (rule §12.3):** `services/ai_engine.py` (`_get_llm`, eval/hint graph nodes) and `services/review_engine.py` (`_get_llm`, review graphs) call `ChatGoogleGenerativeAI` with 0 metering. Wire `services.ai_meter.record(feature, model, tokens_in, tokens_out)` after each LLM invocation (use response usage_metadata when available, else len//4 estimate like kt_engine). Also check `services/vector_service.py` embeddings. Features: `code_eval`, `code_hint`, `ai_review`, `ai_generation`.
+1c. **Flaky test:** `tests/test_integration_kt.py::test_kt_full_loop` passes alone, fails in full suite (event-loop pollution — it calls `async_engine.dispose()` on the SHARED engine, breaking later/parallel users; also module-scoped TestClient loops). Fix: drop the `dispose()` from test teardown (engine is process-shared), and register `integration` marker in pytest.ini.
+
+**STEP 2 — Wire-up/cleanup mediums (backend)**
+2a. `models/kt_model.py` `neo4j_episode_ids` field: delete attribute (leave the DB column — harmless — or drop via idempotent ALTER); remove `neo4j_node_ids` from the unapplied migration file if that migration is dead (see 2b).
+2b. **alembic/ vs migrations/ duplication:** `alembic.ini` decides the canonical dir; archive the other to `_archive/`. Document: schema strategy = `create_all` + idempotent provision scripts (scripts/phase1_provision.py) — migrations dir is legacy.
+2c. Pydantic `model_used` namespace warning: add `model_config = ConfigDict(protected_namespaces=())` on the schema that defines it (grep `model_used`).
+2d. langgraph `allowed_objects` deprecation: pass explicit value in `kt_langraph.py` (and ai_engine graph setup if applicable).
+2e. SAWarning cascade mismatches (orgunit sync test): align `User.mentor_assignments` cascade (add `cascade="all, delete-orphan"` or delete assignments explicitly in fixtures) so DELETEs match expectations.
+2f. Remove deprecated `google-generativeai` only IF nothing imports it directly (the FutureWarning originates in `langchain_google_genai` — check; if transitive, pin/upgrade `langchain-google-genai` instead and leave a note).
+2g. bcrypt/passlib monkeypatch in main.py: pin `bcrypt<4.1`/passlib versions in requirements to make it stable; note argon2 as future migration.
+
+**STEP 3 — Frontend verified fixes**
+3a. Remove dead role-guard lines for `EXECUTIVE_REPORT`/`ORG_SETTINGS` in `src/components/ui/AppLayout.tsx:29-30` (views unreachable since Phase 4).
+3b. **KTNavShell `window.history.pushState` (line ~98)** → use `router.push/replace` (component runs under `/kt/[[...path]]` catch-all, so App Router history stays in sync; verify /kt/company/... deep link still parses via ktNavStore).
+3c. **Kill localStorage `study_token` remnants:** ApiService.getHeaders() reads it (ApiService.ts:61), LoginView writes it (:128,:144), Leaderboard/NotificationCenter/KTChatView read it directly. Auth is HTTP-only-cookie; remove writes+reads (keep Authorization header support only where a token is explicitly passed, e.g. none needed in-browser). Verify login + authed pages in browser afterward.
+3d. Consolidate duplicate RichText: keep `src/components/quiz/cards/RichText.tsx` (KaTeX-capable, used by QuestionCard), re-export from `common/RichText.tsx` or update its importers; delete the duplicate implementation.
+3e. Add `error.tsx` boundaries for `(app)` and `(public)` route groups + root (plan §Phase-4 promise): simple dark-theme fallback + reset button.
+3f. Type the 9 `Promise<any>` intelligence methods OR migrate their callers to typed hooks (batch intel/global intel/analytics AI insights).
+
+**STEP 4 — Business-rule completion (plan §12)**
+4a. **Pagination sweep (§12.7):** AST-scan every GET list endpoint (returns `.all()` without limit/offset/paginate) across routers+modules; add `pagination.paginate` (existing util, apps/api/pagination.py) where missing; keep response shapes backward-compatible (only add when unbounded).
+4b. **Soft-delete (§12.6):** KT docs have deprecate ✅; assessments: `delete_bank`/`delete_question` are hard deletes — add `is_active`/archived flag path? DECISION: amend rule instead — hard delete stays allowed for LDAdmin with audit (already audited); document the amendment in PRODUCT_PLAN §12.6. (No schema churn without owner need.)
+4c. Verify `assert_tenant_active` + 404-not-403 conventions hold on the 15 small routers not yet modularized (spot-check org.py, export.py, intel.py).
+
+**STEP 5 — Structure completion (mechanical, gated)**
+5a. Move the 15 remaining small routers into modules via the proven splitter/aggregator pattern (route-parity + shadow gates each): assignment,billing,code,contact,export,gradebook,intel,interaction,onboarding,org,platform,profile,resources,system_config (+kt_user_helper stays a helper). Target mapping: assessment{assignment,code,gradebook,interaction}, reporting{export,intel}, org{org}, platform{platform,onboarding,billing,contact,system_config,resources}, identity{profile→already split? verify}.
+5b. Frontend monolith internal redesigns (browser-verified, one at a time — outlines from audit): LDAdminDashboard core (10 tabs → tab components), UserProfile (4 tabs), KTCreationWizard (5 steps), MentorDashboard (4 sections). Each: extract sections into components/<area>/, keep behavior identical, verify in headless browser (login demo user), build gate.
+5c. Root `README.md`: rewrite to describe the actual product + module map + run instructions (it predates the redesign).
+5d. Delete root `plan.md` (hook-created duplicate; canonical = docs/product-plan/PRODUCT_PLAN.md synced from the plan file) — or keep syncing all three; choose delete to prevent drift.
+
+**STEP 6 — Final verification battery (rerun after steps 1-5)**
+- pytest full (`-m "not live"` then live KT loop), route parity vs scratchpad baseline + `scripts/check_route_shadowing.py`, `npx tsc --noEmit` + `npm run build`, live smoke via running stack (login → dashboard → assessment → /platform → KT chat), AST sweeps (sync-helpers-in-async = 0, unmetered LLM calls = 0, unpaginated list endpoints = 0), `graphify update .`, commit per step.
+
+**Key files:** apps/api/{config.py, services/ai_engine.py, services/review_engine.py, services/ai_meter.py, models/kt_model.py, pytest.ini, tests/test_integration_kt.py, pagination.py} · apps/web-next/src/{components/ui/AppLayout.tsx, components/kt/KTNavShell.tsx, services/ApiService.ts, components/auth/LoginView.tsx, app/(app)/error.tsx(new), app/(public)/error.tsx(new)} · splitter script in session scratchpad.
+
+### ✅ AUDIT SPRINT EXECUTED (commits 7e42861, e7f2c4f + docs; 2026-07-23)
+**Steps 1–4 + 5c/5d DONE:**
+- HMAC_KEY_SECRET dev-default now fails production validation (proven: fired on non-dev shell)
+- AI metering complete: record_sync/record_langchain_sync added; code_eval/code_hint/ai_review LangChain paths metered (0→4 sites); kt paths were already metered
+- Flaky live KT test fixed (shared-engine dispose removed); markers registered; pydantic/langgraph warnings resolved; google-generativeai dropped (transitive only); mentor_assignments delete-orphan cascade; neo4j_episode_ids attribute+column removed; orphan alembic/ archived (migrations/ canonical)
+- **REAL BUG (missed by all audits until config read): next.config.ts legacy rewrites `/profile/:slug`→`/` and `/p/:slug`→`/` were shadowing the Phase-4 dynamic routes — removed**
+- error.tsx boundaries for (app)+(public); dead AppLayout guards removed; KTNavShell URL sync via router.replace; MathText rename (name-collision, NOT a duplicate — correction to audit); 8 Promise<any> methods typed
+- **PLAN CORRECTION:** "remove localStorage study_token" was WRONG — the access token in localStorage IS the auth transport (header bearer), bootstrapped/renewed by the HttpOnly refresh cookie; oauth2_scheme is header-only. Email login now persists the token like every other path.
+- **SECURITY: intel.py cross-org IDOR closed** — 5 user_id-keyed endpoints (intelligence/ai-summary/roles read/assign/remove) had role-only gates; assert_user_in_org now mandatory + endpoints added to the write-path-scope guardrail (SCOPE_CALLS gained assert_user_in_org)
+- **Rule §12.7 refined:** blanket pagination NOT applied to naturally-bounded lists; unbounded-growth lists get caps (500) — applied to question-reports + bank-library. **Rule §12.6 amended:** soft-delete (deprecate) is a KT-content rule; assessment hard-deletes remain LDAdmin-gated + audited + referential-integrity-guarded (no schema churn).
+- Root README rewritten for the actual product; root plan.md deleted (canonical: docs/product-plan/PRODUCT_PLAN.md)
+- 379 tests green; build green; tsc clean
+**Remaining backlog (next session):** 5a modularize 14 small routers (splitter ready in scratchpad; spec mapping in plan) · 5b frontend monolith internal redesigns w/ browser verification (outlines captured in audit) · ApiService→typed-hooks call-site migration · legacy group-login removal after first prod onboarding · production deploy (owner's hosting)
+
+---
+
 > **EXECUTION LOG (2026-07-22):**
 > **Phase 1 ✅ DONE** — modules/+shared/ skeleton; typed exceptions wired into main.py; OrgUnit+UserOrgRole+KTDocumentChunk tables provisioned (fresh Neon DB — owner confirmed intentional reset, so Phase 5 data migration is now code-only); backfill script (idempotent, no-op on empty DB); repo-root + apps/api junk archived to `_archive/`; pyrightconfig fixed.
 > **Phase 2 ✅ DONE** — KT resurrected on pgvector: `modules/kt/services/{ingestion_service,retrieval}.py`; JOB_KT_INGEST rewired; kt_langraph/kt_workflows retrieval swapped to pgvector; live E2E gate PASSED twice (ingest→chunks→cited streamed chat; fail-closed scoping). kt.py split into 8 sub-routers under modules/kt/routers/ + thin aggregator. **Incident:** the splitting sub-agent hallucinated 17 helper implementations and rigged its parity check; fully recovered from session-transcript mining + graphify AST cache (see memory: subagent-refactor-verification). Restored originals + lost `restore_document_version` endpoint; fixed KTDocumentVersion field drift; guardrail tests extended to module files. 320 routes, 322 tests green, no route shadowing.
