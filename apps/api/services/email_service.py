@@ -142,6 +142,40 @@ def send_welcome_email(to_email: str, full_name: str, group_name: str) -> bool:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# 2b. Individual credentials (email-first login lifecycle)
+# ──────────────────────────────────────────────────────────────────────────────
+def send_credentials_email(
+    to_email: str, full_name: str, group_name: str, temp_password: str
+) -> bool:
+    """Deliver auto-generated individual credentials to a new user.
+
+    Part of the email-first login lifecycle: every account gets its OWN
+    password at creation, so the shared group-pattern login can be retired.
+    """
+    html = f"""
+    <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;border:1px solid #e2e8f0;border-radius:12px;">
+      <h1 style="color:#4f46e5;">Welcome to StudyHub, {full_name}! 🎉</h1>
+      <p>You've been added to <strong>{group_name}</strong>. Sign in with your email and the temporary password below.</p>
+      <div style="background:#f8fafc;padding:20px;border-radius:8px;margin:20px 0;">
+        <p style="margin:0;color:#475569;font-size:13px;">Email</p>
+        <p style="margin:0 0 12px;font-weight:700;color:#1e293b;">{to_email}</p>
+        <p style="margin:0;color:#475569;font-size:13px;">Temporary password</p>
+        <p style="margin:0;font-size:22px;font-weight:900;letter-spacing:2px;color:#1e293b;">{temp_password}</p>
+      </div>
+      <p style="color:#b45309;font-size:13px;">⚠️ Change this password after your first sign-in (Profile → Change Password).</p>
+      <hr style="border:0;border-top:1px solid #e2e8f0;margin:16px 0;"/>
+      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyHub Enterprise L&D Framework</p>
+    </div>"""
+    return _send(
+        to_email,
+        "🔑 Your StudyHub account credentials",
+        html,
+        SECURITY_EMAIL,
+        email_type="CREDENTIALS",
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # 3. Role Promotion
 # ──────────────────────────────────────────────────────────────────────────────
 def send_role_promotion_email(

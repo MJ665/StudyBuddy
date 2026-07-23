@@ -214,10 +214,18 @@ def create_user(
         raise HTTPException(status_code=400, detail="User already exists in this group")
     user_data = user.model_dump()
     password = user_data.pop("password", None)
+    temp_password = None
     if password:
         # Explicitly truncate to 72 chars to satisfy passlib/bcrypt 4.0 constraints
         pw_str = password[:72]
         user_data["password_hash"] = pwd_context.hash(pw_str)
+    else:
+        # Email-first lifecycle: EVERY account gets individual credentials at
+        # creation (no more shared group-pattern fallback for new users).
+        import secrets
+
+        temp_password = secrets.token_urlsafe(9)
+        user_data["password_hash"] = pwd_context.hash(temp_password)
 
     group = db.query(models.Group).filter(models.Group.id == user.group_id).first()
     if not group:
@@ -244,16 +252,29 @@ def create_user(
         },
     )
 
-    # TRIGGER-001: Strategic Onboarding Notification (Welcome Email)
+    # TRIGGER-001: Strategic Onboarding Notification. When credentials were
+    # auto-generated, the email CARRIES them (email-first login lifecycle);
+    # otherwise the plain welcome is sent. Best-effort: creation never fails
+    # on email problems.
     try:
         if new_user.email:
-            from services.email_service import send_welcome_email
+            if temp_password:
+                from services.email_service import send_credentials_email
 
-            send_welcome_email(
-                to_email=new_user.email,
-                full_name=new_user.full_name,
-                group_name=group.name if group else "Strategic Sector",
-            )
+                send_credentials_email(
+                    to_email=new_user.email,
+                    full_name=new_user.full_name,
+                    group_name=group.name if group else "Strategic Sector",
+                    temp_password=temp_password,
+                )
+            else:
+                from services.email_service import send_welcome_email
+
+                send_welcome_email(
+                    to_email=new_user.email,
+                    full_name=new_user.full_name,
+                    group_name=group.name if group else "Strategic Sector",
+                )
     except Exception as email_err:
         logger.warning(
             f"Onboarding Notification failed for {new_user.email}: {email_err}"
@@ -497,25 +518,39 @@ def bulk_create_users(
                 "member_id": item.member_id,
                 "custom_slug": unique_slug,
             }
+            temp_pw = None
             if item.password:
                 user_data["password_hash"] = get_password_hash(item.password)
+            else:
+                # Email-first lifecycle: auto-issue individual credentials.
+                import secrets
+
+                temp_pw = secrets.token_urlsafe(9)
+                user_data["password_hash"] = get_password_hash(temp_pw)
 
             user = models.User(**user_data)
             db.add(user)
-            new_users.append(user)
+            new_users.append((user, temp_pw))
 
     db.commit()
 
-    # NEW: Send welcome emails to newly created users
-    from services.email_service import send_welcome_email
+    # Send onboarding emails — credentials when auto-generated, welcome otherwise.
+    from services.email_service import send_credentials_email, send_welcome_email
 
-    for user in new_users:
+    for user, temp_pw in new_users:
         try:
-            send_welcome_email(
-                to_email=user.email, full_name=user.full_name, group_name=db_group.name
-            )
+            if temp_pw:
+                send_credentials_email(
+                    to_email=user.email, full_name=user.full_name,
+                    group_name=db_group.name, temp_password=temp_pw,
+                )
+            else:
+                send_welcome_email(
+                    to_email=user.email, full_name=user.full_name,
+                    group_name=db_group.name,
+                )
         except Exception as e:
-            logger.error(f"Failed to send welcome email to {user.email}: {e}")
+            logger.error(f"Failed to send onboarding email to {user.email}: {e}")
 
     log_admin_action(
         db=db,

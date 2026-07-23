@@ -128,3 +128,43 @@ class TestEmailLogin:
     def test_missing_both_shapes_is_422(self, client):
         r = client.post("/api/auth/login", json={"password": "x"})
         assert r.status_code == 422
+
+
+class TestCredentialIssuance:
+    """Email-first lifecycle: creating a user WITHOUT a password must still
+    issue individual credentials (auto-generated + hashed), so no new account
+    ever depends on the shared group pattern."""
+
+    def test_create_user_without_password_gets_hash(self, seeded_user):
+        import schemas
+        from modules.identity.routers.users import create_user
+
+        user, group = seeded_user
+        db = SessionLocal()
+        try:
+            created = create_user(
+                user=schemas.UserCreate(
+                    email=f"nopw.{uuid.uuid4().hex[:8]}@studyhub-tests.dev",
+                    full_name="No Password Given",
+                    group_id=group.id,
+                    role="Member",
+                ),
+                db=db,
+                current_user={
+                    "sub": str(user.id),
+                    "role": "GroupAdmin",
+                    "group_id": group.id,
+                    "organization_id": user.organization_id,
+                },
+            )
+            fresh = db.query(models.User).filter(models.User.id == created.id).first()
+            assert fresh.password_hash, "auto-generated credentials missing"
+            db.delete(fresh)
+            # create_user audit-logs the actor (the seeded admin) — clear it so
+            # the seeded_user fixture teardown isn't FK-blocked.
+            db.query(models.AdminAuditLog).filter(
+                models.AdminAuditLog.actor_id == user.id
+            ).delete()
+            db.commit()
+        finally:
+            db.close()
