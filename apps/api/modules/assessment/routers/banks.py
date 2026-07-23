@@ -449,7 +449,8 @@ def get_bank_library(
     if difficulty:
         query = query.filter(models.QuestionBank.difficulty == difficulty)
 
-    banks = query.order_by(models.QuestionBank.created_at.desc()).all()
+    # Defensive cap (rule §12.7): the org-public library grows unbounded.
+    banks = query.order_by(models.QuestionBank.created_at.desc()).limit(500).all()
     result = []
     for bank in banks:
         q_count = (

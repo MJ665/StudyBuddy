@@ -14,7 +14,7 @@ import os
 from typing import Optional
 
 import models
-from auth_utils import verify_token
+from auth_utils import assert_user_in_org, verify_token
 from cache_manager import cache_manager
 from database import get_async_db, get_db
 from fastapi import APIRouter, Depends, HTTPException
@@ -94,6 +94,8 @@ async def get_user_intelligence(
         raise HTTPException(status_code=403, detail="Forbidden")
 
     # performance_engine handles caching internally if refresh=False
+    # Tenancy (404-not-403): role gates alone allowed cross-org reads.
+    await db.run_sync(lambda s: assert_user_in_org(user_id, s, current_user))
     intel = await performance_engine.get_user_vectors(user_id, db, refresh=refresh)
     if not intel:
         raise HTTPException(status_code=404, detail="User not found")
@@ -141,6 +143,8 @@ async def get_ai_intelligence_summary(
     if not api_key:
         raise HTTPException(status_code=503, detail="AI unavailable")
 
+    # Tenancy (404-not-403): role gates alone allowed cross-org reads.
+    await db.run_sync(lambda s: assert_user_in_org(user_id, s, current_user))
     intel = await performance_engine.get_user_vectors(user_id, db, refresh=refresh)
     if not intel:
         raise HTTPException(status_code=404, detail="User not found")
@@ -190,6 +194,8 @@ def get_user_roles(
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    # Tenancy (404-not-403): scope to the caller's org.
+    assert_user_in_org(user_id, db, current_user)
 
     scoped_roles = (
         db.query(models.UserRole)
@@ -242,6 +248,8 @@ def assign_user_role(
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    # Tenancy (404-not-403): scope to the caller's org.
+    assert_user_in_org(user_id, db, current_user)
 
     # Check if already assigned
     existing = (
@@ -311,6 +319,9 @@ def remove_user_role(
     """Remove a scoped role from a user."""
     if current_user.get("role") != "LDAdmin":
         raise HTTPException(status_code=403, detail="Forbidden")
+
+    # Tenancy (404-not-403): an LDAdmin can only manage users in their org.
+    assert_user_in_org(user_id, db, current_user)
 
     role = (
         db.query(models.UserRole)

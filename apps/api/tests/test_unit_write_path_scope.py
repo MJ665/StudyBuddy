@@ -29,11 +29,16 @@ GUARDED = [
     ("mentor.py", "get_group_ai_summary"),
     ("auth.py", "impersonate_group"), ("auth.py", "bulk_create_users"), ("auth.py", "discovery_users"),
     ("assignment.py", "get_group_assignments"),
+    # intel.py: user_id-keyed intelligence + scoped-role management previously
+    # had role-only gates (cross-org IDOR class) — org scope is now mandatory.
+    ("intel.py", "get_user_intelligence"), ("intel.py", "get_ai_intelligence_summary"),
+    ("intel.py", "get_user_roles"), ("intel.py", "assign_user_role"),
+    ("intel.py", "remove_user_role"),
 ]
 
 SCOPE_CALLS = {
     "assert_same_org", "assert_same_super_org", "assert_group_in_org", "assert_batch_in_org",
-    "scope_to_org", "scope_to_super_org",
+    "assert_user_in_org", "scope_to_org", "scope_to_super_org",
 }
 
 

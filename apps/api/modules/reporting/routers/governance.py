@@ -261,7 +261,10 @@ def get_question_reports(
     if resolved is not None:
         query = query.filter(models.QuestionReport.is_resolved == resolved)
 
-    reports = query.order_by(models.QuestionReport.created_at.desc()).all()
+    # Defensive cap (rule §12.7): report volume grows unbounded over time.
+    reports = (
+        query.order_by(models.QuestionReport.created_at.desc()).limit(500).all()
+    )
 
     # Map explicitly: the response schema uses reporter_id/reason/comment while the
     # model columns are user_id/issue_type/description. `model_validate(r)` therefore
