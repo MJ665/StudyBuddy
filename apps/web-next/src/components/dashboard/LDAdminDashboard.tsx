@@ -35,6 +35,7 @@ import TelemetryTab from '../admin/tabs/TelemetryTab';
 import IntegrityTab from '../admin/tabs/IntegrityTab';
 import HierarchyTab from '../admin/tabs/HierarchyTab';
 import UsersTab from '../admin/tabs/UsersTab';
+import AdminOnboardingOverlay from '../admin/AdminOnboardingOverlay';
 
 const filterTree = (nodes: any[], term: string): any[] => {
   if (!term || term.trim() === '') return nodes;
@@ -726,189 +727,7 @@ export default function LDAdminDashboard({
 
           <AnimatePresence mode="wait">
             {view !== 'dashboard' ? (
-              <motion.div
-                key={view}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                className="bg-surface-container border border-surface-bright rounded-[3rem] p-10 shadow-2xl"
-              >
-                <div className="flex justify-between items-center mb-10">
-                  <div>
-                    <h3 className="text-3xl font-black text-white">{view === 'onboarding' ? 'Bulk Onboarding Protocol' : view === 'addUser' ? 'Ad-Hoc Member Registration' : 'Register Strategic Mentor'}</h3>
-                    <p className="text-[10px] text-indigo-400 font-black uppercase tracking-[0.3em] mt-2">Node: {nodeDetails?.name || 'Global Registry'}</p>
-                  </div>
-                  <button onClick={() => setView('dashboard')} className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-all text-slate-500 hover:text-white"><ArrowLeft size={24} /></button>
-                </div>
-
-                {view === 'onboarding' ? (
-                  <div className="space-y-8">
-                    <div>
-                      <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-[0.2em]">Target Group Link</label>
-                      <select
-                        className="w-full bg-slate-900 border border-white/5 rounded-2xl p-5 text-white font-bold outline-none"
-                        value={nodeDetails?.id || ''}
-                        onChange={(e) => {
-                          const id = parseInt(e.target.value);
-                          const g = findGroupInTree(id, tree);
-                          setNodeDetails({ type: 'GROUP', id, name: g?.name || 'Unknown' });
-                        }}
-                      >
-                        <option value="">Select Target Synchronicity Point...</option>
-                        {allPossibleGroups.map(g => (
-                          <option key={g.id} value={g.id}>{g.context ? `${g.context} / ` : ''}{g.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="block text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Auth Pattern (e.g. &lt;name&gt;sig@123)</label>
-                        <div className="flex gap-2">
-                          {['<name>sigmoid@123', '<name>@2026', 'sigmoid@<year>'].map(tpl => (
-                            <button
-                              key={tpl}
-                              onClick={() => setPasswordPatternInline(tpl)}
-                              className="text-[8px] font-black uppercase px-2 py-1 bg-white/5 hover:bg-brand-primary hover:text-slate-950 rounded-lg transition-all border border-white/10"
-                            >
-                              {tpl}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <input
-                        value={passwordPatternInline}
-                        onChange={(e) => setPasswordPatternInline(e.target.value)}
-                        placeholder="&lt;name&gt;sigmoid@123"
-                        className="w-full bg-slate-900 border border-white/5 rounded-2xl p-5 text-white font-bold outline-none ring-1 ring-white/10 mb-4"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-[0.2em]">Data Stream (Full Name, Email, MemberID*)</label>
-                      <textarea
-                        value={onboardingData}
-                        onChange={(e) => setOnboardingData(e.target.value)}
-                        placeholder="John Wick, bobby@continental.com, EMP001&#10;Winston Scott, winston@continental.com, EMP002"
-                        className="w-full h-48 bg-slate-900 border border-white/5 rounded-3xl p-6 text-white font-mono text-sm resize-none outline-none ring-1 ring-white/10"
-                      />
-                      <p className="text-[9px] text-slate-600 mt-2 italic">* CSV Format: One entity per line. MemberID is optional but recommended.</p>
-                    </div>
-                    <button
-                      disabled={!nodeDetails?.id || !onboardingData.trim() || processing}
-                      onClick={async () => {
-                        setProcessing(true);
-                        try {
-                          const lines = onboardingData.split('\n').filter(l => l.includes(','));
-                          const users = lines.map(line => {
-                            const [name, email, memberId] = line.split(',').map(s => s.trim());
-                            return { full_name: name, email, role: 'Member', member_id: memberId || null };
-                          });
-                          await ApiService.bulkAddUsers(nodeDetails.id, users, passwordPatternInline);
-                          toast('success', `${users.length} entities integrated into protocol`);
-                          setOnboardingData('');
-                          setView('dashboard');
-                          fetchData();
-                        } catch (err: any) { toast('error', err.message); }
-                        finally { setProcessing(false); }
-                      }}
-                      className="w-full bg-indigo-600 text-white py-5 rounded-[2rem] font-black uppercase tracking-widest shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-3 disabled:opacity-30"
-                    >
-                      {processing ? <Loader2 className="animate-spin" /> : <BadgeCheck />}
-                      Execute Integration Flow
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-[0.2em]">Target Group</label>
-                        <select
-                          className="w-full bg-slate-900 border border-white/5 rounded-2xl p-4 text-white font-bold text-sm outline-none"
-                          value={nodeDetails?.id || ''}
-                          onChange={(e) => {
-                            const id = parseInt(e.target.value);
-                            const g = findGroupInTree(id, tree);
-                            setNodeDetails({ type: 'GROUP', id, name: g?.name || 'Unknown' });
-                          }}
-                        >
-                          <option value="">Select Target...</option>
-                          {allPossibleGroups.map(g => (
-                            <option key={g.id} value={g.id}>{g.context ? `${g.context} / ` : ''}{g.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-[0.2em]">Corporate Role</label>
-                        <input value={view === 'addMentor' ? 'Mentor' : 'Member'} disabled className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-slate-500 font-bold text-sm" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-[0.2em]">Full Legal Name</label>
-                        <input
-                          value={individualUser.fullName}
-                          onChange={e => setIndividualUser({ ...individualUser, fullName: e.target.value })}
-                          placeholder="e.g. Satoshi Nakamoto"
-                          className="w-full bg-slate-900 border border-white/5 rounded-2xl p-4 text-white font-bold outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-[0.2em]">Registry Email</label>
-                        <input
-                          value={individualUser.email}
-                          onChange={e => setIndividualUser({ ...individualUser, email: e.target.value })}
-                          placeholder="satoshi@bitcoin.org"
-                          className="w-full bg-slate-900 border border-white/5 rounded-2xl p-4 text-white font-bold outline-none"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-[0.2em]">Strategic Entity ID (Optional)</label>
-                        <input
-                          value={individualUser.memberId}
-                          onChange={e => setIndividualUser({ ...individualUser, memberId: e.target.value })}
-                          placeholder="e.g. EMP-99"
-                          className="w-full bg-slate-900 border border-white/5 rounded-2xl p-4 text-white font-bold outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-[0.2em]">Identity Password (Override)</label>
-                        <input
-                          type="password"
-                          value={individualUser.password}
-                          onChange={e => setIndividualUser({ ...individualUser, password: e.target.value })}
-                          placeholder="••••••••"
-                          className="w-full bg-slate-900 border border-white/5 rounded-2xl p-4 text-white font-bold outline-none ring-1 ring-brand-primary/20"
-                        />
-                      </div>
-                    </div>
-                    <button
-                      disabled={!nodeDetails?.id || !individualUser.fullName || !individualUser.email || processing}
-                      onClick={async () => {
-                        setProcessing(true);
-                        try {
-                          await ApiService.bulkAddUsers(nodeDetails.id, [{
-                            full_name: individualUser.fullName,
-                            email: individualUser.email,
-                            role: view === 'addMentor' ? 'Mentor' : 'Member',
-                            member_id: individualUser.memberId,
-                            password: individualUser.password // Explicitly passing override password
-                          }]);
-                          toast('success', 'Individual entity registered successfully');
-                          setIndividualUser({ fullName: '', email: '', role: 'Member', password: '', memberId: '' });
-                          setView('dashboard');
-                          fetchData();
-                        } catch (err: any) { toast('error', err.message); }
-                        finally { setProcessing(false); }
-                      }}
-                      className="w-full bg-emerald-600 text-white py-5 rounded-[2rem] font-black uppercase tracking-widest shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-3 disabled:opacity-30"
-                    >
-                      {processing ? <Loader2 className="animate-spin" /> : <Check />}
-                      Register Entity
-                    </button>
-                  </div>
-                )}
-              </motion.div>
+              <AdminOnboardingOverlay ctx={adminCtx} />
             ) : activeTab === 'Curriculum' ? (
               <CurriculumTab ctx={adminCtx} />
             ) : activeTab === 'Coding' ? (
@@ -1164,5 +983,6 @@ export default function LDAdminDashboard({
     </div>
   );
 }
+
 
 
