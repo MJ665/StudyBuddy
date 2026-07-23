@@ -149,11 +149,6 @@
     "ast_hash": "9cf1198fef7e762b37e128e893882b69",
     "semantic_hash": ""
   },
-  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/auth/LoginView.tsx": {
-    "mtime": 1784666878.3335354,
-    "ast_hash": "665e8d2c7ceb7d62267ea89fa400e762",
-    "semantic_hash": ""
-  },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/resources/ResourceCenter.tsx": {
     "mtime": 1783334050.0,
     "ast_hash": "f055a5d03708c8c9c257ac5db11e079a",
@@ -240,8 +235,8 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/dashboard/LDAdminDashboard.tsx": {
-    "mtime": 1784743859.6194923,
-    "ast_hash": "b9e957098f96f5fd3c7b6e3e35468133",
+    "mtime": 1784824851.412456,
+    "ast_hash": "0228ff70434d9a7fd4b81aa3639430b6",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/dashboard/AINextTopicWidget.tsx": {
@@ -290,8 +285,8 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/dashboard/MentorDashboard.tsx": {
-    "mtime": 1784752052.9189656,
-    "ast_hash": "558c2e733d9b0f0060183ccb6a70bdf1",
+    "mtime": 1784822988.7139702,
+    "ast_hash": "7d5213811885507dfa9dc992536c6acd",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/dashboard/AssignmentsView.tsx": {
@@ -345,8 +340,8 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/profile/UserProfile.tsx": {
-    "mtime": 1783345317.0,
-    "ast_hash": "4b2e50db0313c832196f1403d0e0aac4",
+    "mtime": 1784821896.8601854,
+    "ast_hash": "4872bc99dcea3f3b499014a0ae9f987f",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/profile/AttemptHistory.tsx": {
@@ -405,8 +400,8 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/kt/KTCreationWizard.tsx": {
-    "mtime": 1783932125.0,
-    "ast_hash": "152f0bad6cc38ebf63ea74a09b412656",
+    "mtime": 1784822855.7206101,
+    "ast_hash": "4020102c37241893e3c94cfa50e6c479",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/kt/KTDocumentEditor.tsx": {
@@ -515,8 +510,8 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/services/ApiService.ts": {
-    "mtime": 1784784834.5638626,
-    "ast_hash": "a48c294a7911d0e3924330abed3a457c",
+    "mtime": 1784824584.9232717,
+    "ast_hash": "c4623b978e2665d0f6e88af2b51425cf",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/kt_schemas.py": {
@@ -570,8 +565,8 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/schemas.py": {
-    "mtime": 1784784411.6874456,
-    "ast_hash": "6f8f250abe0fc6757745868680aef3da",
+    "mtime": 1784824549.7346427,
+    "ast_hash": "826b92e12213a81c9158ae004fa1682c",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/package.json": {
@@ -605,8 +600,8 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/intel.py": {
-    "mtime": 1784785134.9343247,
-    "ast_hash": "c4a593c9a69ef88e766299f510916711",
+    "mtime": 1784821047.8920376,
+    "ast_hash": "ddeb1f424d8a3ffa6e93aae66d147694",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/quiz.py": {
@@ -615,8 +610,8 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/org.py": {
-    "mtime": 1784667787.108639,
-    "ast_hash": "8a47eb770bdb06ec255b3cd7c9e17025",
+    "mtime": 1784821047.8921533,
+    "ast_hash": "7406eead690ec774ce2913e4700a6d04",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/exam.py": {
@@ -625,18 +620,18 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/billing.py": {
-    "mtime": 1784586273.2758598,
-    "ast_hash": "36d7ec4e36237f0b548b48988d8386be",
+    "mtime": 1784821047.8925035,
+    "ast_hash": "ef66a7922281d64f7226ee36182c396f",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/interaction.py": {
-    "mtime": 1784669902.4469233,
-    "ast_hash": "76c3282a1490a38edc8efcacc3bf47a4",
+    "mtime": 1784821047.8918037,
+    "ast_hash": "49e735c197e6ab71dbc64ea066a77c87",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/onboarding.py": {
-    "mtime": 1784660552.4648817,
-    "ast_hash": "ff89a1a1439117066656a17705b5b483",
+    "mtime": 1784821047.8923807,
+    "ast_hash": "8ff9db16b4cfffb2b5f5a27a2f11ab91",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/kt_user_helper.py": {
@@ -650,13 +645,13 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/profile.py": {
-    "mtime": 1784657908.1441193,
-    "ast_hash": "e98a3e5b923c3c37b5889da390c572cf",
+    "mtime": 1784821047.8929455,
+    "ast_hash": "18330136f35aead4f582a1deac173c4f",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/code.py": {
-    "mtime": 1784667969.1509633,
-    "ast_hash": "cecec003f21a6a31859c05c65fa4a53f",
+    "mtime": 1784821047.8915296,
+    "ast_hash": "cd2a753a4e02f7617c5aab1cf26430c4",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/__init__.py": {
@@ -665,13 +660,13 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/export.py": {
-    "mtime": 1784665365.7599123,
-    "ast_hash": "671779e76d449ba0bf86c3b9ec9faa55",
+    "mtime": 1784821047.8919244,
+    "ast_hash": "a0abed9e7e6d086dd80b7861e96e4d23",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/platform.py": {
-    "mtime": 1784660588.4917293,
-    "ast_hash": "606c559e34a820423fff16bf48035469",
+    "mtime": 1784821047.8922658,
+    "ast_hash": "1bd14c951cbc5dfdd03f12131c083481",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/admin.py": {
@@ -685,8 +680,8 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/system_config.py": {
-    "mtime": 1781111906.0,
-    "ast_hash": "09af0c73d5d53769822641c3464d5b4a",
+    "mtime": 1784821047.8927336,
+    "ast_hash": "c1197037a730c2bd128b735ea787d5c6",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/reports.py": {
@@ -695,23 +690,23 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/assignment.py": {
-    "mtime": 1784696527.577982,
-    "ast_hash": "997d57985656622415bdec474864d98f",
+    "mtime": 1784821047.891293,
+    "ast_hash": "44bc50243e5c4f3aae9102d5092aaf35",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/resources.py": {
-    "mtime": 1784696143.9135613,
-    "ast_hash": "ea18a8f219202831e1472e8545d82313",
+    "mtime": 1784821047.8928413,
+    "ast_hash": "5676f66273a3dfa87c2ed60da66b90ad",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/gradebook.py": {
-    "mtime": 1784660439.9407814,
-    "ast_hash": "27aeb13395bf0dba2acd5d72f88c6dbc",
+    "mtime": 1784821047.8916798,
+    "ast_hash": "fcf839974854f065ad3e368e63649618",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/routers/contact.py": {
-    "mtime": 1781111906.0,
-    "ast_hash": "ebf8980c151a04a790fa3054cf63df4f",
+    "mtime": 1784821047.8926237,
+    "ast_hash": "07fb6d22671739e68fc4166cc8415fb4",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/migrations/env.py": {
@@ -905,8 +900,8 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/tests/test_unit_async_hygiene.py": {
-    "mtime": 1784663265.4667966,
-    "ast_hash": "54cd8ee623a505544ec640f569332d03",
+    "mtime": 1784821273.8288913,
+    "ast_hash": "ad35a9f461624ede8924ccbbb3c2a9fd",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/tests/test_unit_kt.py": {
@@ -1225,8 +1220,8 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/tests/test_unit_interaction_scope.py": {
-    "mtime": 1784670048.9746382,
-    "ast_hash": "cb6cce489cabe3574c79b3429ee2ec9b",
+    "mtime": 1784821272.2951093,
+    "ast_hash": "4c293fc05c643e9c38e1a87d303121c3",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/tests/test_unit_public_endpoints.py": {
@@ -1365,8 +1360,8 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/app/(public)/login/page.tsx": {
-    "mtime": 1784743194.1810145,
-    "ast_hash": "0269b331d5cbc462c57e41e19373fe29",
+    "mtime": 1784824623.2778742,
+    "ast_hash": "74fa2e074ab51ecb77769edcc83f9148",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/app/p/[slug]/page.tsx": {
@@ -1420,8 +1415,8 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/tests/test_integration_email_login.py": {
-    "mtime": 1784777447.0145304,
-    "ast_hash": "06e7546c5de0f29e8120854bda516eab",
+    "mtime": 1784824645.6673203,
+    "ast_hash": "0d35130930ee7e903a74d12dd6d1853f",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/tests/test_integration_orgunit_sync.py": {
@@ -1550,8 +1545,8 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/identity/routers/session.py": {
-    "mtime": 1784742388.7960773,
-    "ast_hash": "bffa517be26568e3a00c9873fdbf4226",
+    "mtime": 1784824540.3880336,
+    "ast_hash": "8ebede8eb0adf58835d44464ccd6747c",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/identity/routers/__init__.py": {
@@ -1820,8 +1815,8 @@
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/docs/product-plan/PRODUCT_PLAN.md": {
-    "mtime": 1784785512.5882874,
-    "ast_hash": "df0da1459b9d74e773eea1f2c9c98618",
+    "mtime": 1784823949.7520475,
+    "ast_hash": "3df0b09771b556b2fb2a63703887cc66",
     "semantic_hash": ""
   },
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/docs/product-plan/TARGET_ARCHITECTURE.md": {
@@ -1857,6 +1852,251 @@
   "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/quiz/cards/MathText.tsx": {
     "mtime": 1784784765.677926,
     "ast_hash": "dc005a7b9a9232351e2bd0933583db66",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/scripts/verify_all.sh": {
+    "mtime": 1784825001.228026,
+    "ast_hash": "130a15da0e08fba79a7ae108980db2c2",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/admin/AdminOnboardingOverlay.tsx": {
+    "mtime": 1784824851.411249,
+    "ast_hash": "efeede4ea6ec2548f585816159155f4f",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/admin/tabs/HierarchyTab.tsx": {
+    "mtime": 1784823500.120109,
+    "ast_hash": "6e0bad79bec40f39a818c391286ac2f1",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/admin/tabs/UsersTab.tsx": {
+    "mtime": 1784823500.1208375,
+    "ast_hash": "9b28785bd2dcddc34050551409123057",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/admin/tabs/AuditTab.tsx": {
+    "mtime": 1784823500.1215365,
+    "ast_hash": "d8b0cafa264160c200758da7db3b7679",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/admin/tabs/InventoryTab.tsx": {
+    "mtime": 1784823500.121825,
+    "ast_hash": "7551ac9e060e0ef7ec47142a528fc410",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/admin/tabs/TelemetryTab.tsx": {
+    "mtime": 1784823500.1221912,
+    "ast_hash": "f3ad1357b180338eee2cdc57c55b47b1",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/admin/tabs/types.ts": {
+    "mtime": 1784823353.9491997,
+    "ast_hash": "7339beadfa1c853448787259e0bd76ba",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/admin/tabs/AnalyticsTab.tsx": {
+    "mtime": 1784823500.122696,
+    "ast_hash": "f1b6a2f619264aff37d65043d63b6892",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/admin/tabs/CurriculumTab.tsx": {
+    "mtime": 1784823500.1229439,
+    "ast_hash": "f115bfa73bb75018a57adaf0303c87e2",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/admin/tabs/ReportsTab.tsx": {
+    "mtime": 1784823500.123195,
+    "ast_hash": "c1d75895875d89c6b2fe32ae1d1d37a4",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/admin/tabs/CodingTab.tsx": {
+    "mtime": 1784823500.1234298,
+    "ast_hash": "0b98219c7c30c1c3dc80d6900aa57968",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/admin/tabs/IntegrityTab.tsx": {
+    "mtime": 1784823500.123668,
+    "ast_hash": "9c2c0f25816d76a9cbd77cb8227bf511",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/dashboard/mentor/MentorStudentsTab.tsx": {
+    "mtime": 1784822988.7146487,
+    "ast_hash": "cc22c1beab52c2ded8aada9c1ce78c83",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/dashboard/mentor/MentorOverviewTab.tsx": {
+    "mtime": 1784822988.714849,
+    "ast_hash": "44d99f3126dfec6a674fe284d9631ccd",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/dashboard/mentor/types.ts": {
+    "mtime": 1784822942.8020349,
+    "ast_hash": "c60759b36a6865aa9c729cbc9c4a0e6b",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/profile/tabs/RegistryTab.tsx": {
+    "mtime": 1784821896.8531091,
+    "ast_hash": "f09817baca133e49c2fe2f894f4465ed",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/profile/tabs/shared.tsx": {
+    "mtime": 1784821779.9095085,
+    "ast_hash": "a74369d60fa0d85f689008abb637db15",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/profile/tabs/SecurityTab.tsx": {
+    "mtime": 1784821896.8548477,
+    "ast_hash": "13c38ab278536a27bf807b38ddc84585",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/profile/tabs/types.ts": {
+    "mtime": 1784821779.9091363,
+    "ast_hash": "4369b21ab497b3852b6a28bc6bb2dcce",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/profile/tabs/PerformanceTab.tsx": {
+    "mtime": 1784821896.85571,
+    "ast_hash": "494c317fb1e3b21abf9f0d7eb2ac644d",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/profile/tabs/SkillsTab.tsx": {
+    "mtime": 1784821896.856478,
+    "ast_hash": "cd28a9b80405b05358b4e91f0c625edb",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/profile/tabs/GrowthTab.tsx": {
+    "mtime": 1784821896.8574684,
+    "ast_hash": "037c1810e085bad7238b551326bc89b5",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/profile/tabs/InsightsTab.tsx": {
+    "mtime": 1784821896.8592026,
+    "ast_hash": "777528254307a1df7dd780510b8a2921",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/kt/wizard/WizardStep2.tsx": {
+    "mtime": 1784822855.720975,
+    "ast_hash": "48db6e95e69f955b0b967c5872228663",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/kt/wizard/WizardStep3.tsx": {
+    "mtime": 1784822855.721343,
+    "ast_hash": "810effb7f4a22ac3c3e7d901651069ec",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/kt/wizard/WizardStep1.tsx": {
+    "mtime": 1784822855.7216501,
+    "ast_hash": "af73caa918614b4a3b1382b7fc45cf92",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/kt/wizard/WizardStep0.tsx": {
+    "mtime": 1784822855.7219238,
+    "ast_hash": "263f6622b1daa00847c686ecc32c0896",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/kt/wizard/WizardStep4.tsx": {
+    "mtime": 1784822855.7221618,
+    "ast_hash": "0b4ac9f87eb8d75efcaa8c97e4954136",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/kt/wizard/WizardStep5.tsx": {
+    "mtime": 1784822855.7224123,
+    "ast_hash": "3696c87d9802a6625108da72b89d2a32",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/web-next/src/components/kt/wizard/types.ts": {
+    "mtime": 1784822831.3090978,
+    "ast_hash": "63b6c32013f4944777576a1f46d890d1",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/reporting/routers/intel.py": {
+    "mtime": 1784785134.9343247,
+    "ast_hash": "c4a593c9a69ef88e766299f510916711",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/reporting/routers/export.py": {
+    "mtime": 1784665365.7599123,
+    "ast_hash": "671779e76d449ba0bf86c3b9ec9faa55",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/identity/routers/profile_social.py": {
+    "mtime": 1784657908.1441193,
+    "ast_hash": "e98a3e5b923c3c37b5889da390c572cf",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/org/routers/org.py": {
+    "mtime": 1784667787.108639,
+    "ast_hash": "8a47eb770bdb06ec255b3cd7c9e17025",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/org/routers/__init__.py": {
+    "mtime": 1784820803.8498812,
+    "ast_hash": "5511f2bac13dbb40ff90dff34e7d8a69",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/platform/routers/billing.py": {
+    "mtime": 1784586273.2758598,
+    "ast_hash": "36d7ec4e36237f0b548b48988d8386be",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/platform/routers/onboarding.py": {
+    "mtime": 1784660552.4648817,
+    "ast_hash": "ff89a1a1439117066656a17705b5b483",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/platform/routers/__init__.py": {
+    "mtime": 1784820803.8634923,
+    "ast_hash": "e4c72cb07f42a062292d788512a1be51",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/platform/routers/platform.py": {
+    "mtime": 1784660588.4917293,
+    "ast_hash": "606c559e34a820423fff16bf48035469",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/platform/routers/system_config.py": {
+    "mtime": 1781111906.0,
+    "ast_hash": "09af0c73d5d53769822641c3464d5b4a",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/platform/routers/resources.py": {
+    "mtime": 1784696143.9135613,
+    "ast_hash": "ea18a8f219202831e1472e8545d82313",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/platform/routers/contact.py": {
+    "mtime": 1781111906.0,
+    "ast_hash": "ebf8980c151a04a790fa3054cf63df4f",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/assessment/routers/interaction.py": {
+    "mtime": 1784669902.4469233,
+    "ast_hash": "76c3282a1490a38edc8efcacc3bf47a4",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/assessment/routers/code.py": {
+    "mtime": 1784667969.1509633,
+    "ast_hash": "cecec003f21a6a31859c05c65fa4a53f",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/assessment/routers/assignment.py": {
+    "mtime": 1784696527.577982,
+    "ast_hash": "997d57985656622415bdec474864d98f",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/apps/api/modules/assessment/routers/gradebook.py": {
+    "mtime": 1784660439.9407814,
+    "ast_hash": "27aeb13395bf0dba2acd5d72f88c6dbc",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/plan.md": {
+    "mtime": 1784820703.0064118,
+    "ast_hash": "7773be402b5c4d122ddda776898b21ad",
+    "semantic_hash": ""
+  },
+  "/Users/meet/Desktop/Desktop/~Coding/QuizConnect/StudyHubV2/.github/workflows/ci.yml": {
+    "mtime": 1784825009.4204257,
+    "ast_hash": "f45a5b51fd931078a497ad1c94e85d68",
     "semantic_hash": ""
   }
 }
