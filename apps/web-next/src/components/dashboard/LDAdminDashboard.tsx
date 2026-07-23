@@ -25,6 +25,16 @@ import SystemHealthMonitor from './SystemHealthMonitor';
 import { StatCard, OrgNode, DeptNode, SystemHealthPanel, PerformanceMetricGrid } from '../admin/AdminWidgets';
 import { ResourceModal, DeleteModal, BulkAddModal, UserDetailsModal, CreationModal } from '../admin/AdminModals';
 import { AuditLogTable, EmailLogTable, QuestionReportTable, SecurityPulse } from '../admin/AdminTables';
+import CurriculumTab from '../admin/tabs/CurriculumTab';
+import CodingTab from '../admin/tabs/CodingTab';
+import AuditTab from '../admin/tabs/AuditTab';
+import AnalyticsTab from '../admin/tabs/AnalyticsTab';
+import ReportsTab from '../admin/tabs/ReportsTab';
+import InventoryTab from '../admin/tabs/InventoryTab';
+import TelemetryTab from '../admin/tabs/TelemetryTab';
+import IntegrityTab from '../admin/tabs/IntegrityTab';
+import HierarchyTab from '../admin/tabs/HierarchyTab';
+import UsersTab from '../admin/tabs/UsersTab';
 
 const filterTree = (nodes: any[], term: string): any[] => {
   if (!term || term.trim() === '') return nodes;
@@ -458,6 +468,128 @@ export default function LDAdminDashboard({
     return matchesSearch && matchesRole && matchesVertical && matchesBatch && matchesGroup;
   });
 
+  // Context handed to the extracted tab components (5b decomposition).
+  const adminCtx = { toast, loading,
+    setLoading,
+    tree,
+    setTree,
+    stats,
+    setStats,
+    expandedNodes,
+    setExpandedNodes,
+    showAddModal,
+    setShowAddModal,
+    showEditModal,
+    setShowEditModal,
+    showDeleteConfirm,
+    setShowDeleteConfirm,
+    showTaskModal,
+    setShowTaskModal,
+    taskData,
+    setTaskData,
+    ADMIN_TABS,
+    activeTab,
+    setActiveTabState,
+    setActiveTab,
+    users,
+    setUsers,
+    userSearch,
+    setUserSearch,
+    roleFilter,
+    setRoleFilter,
+    verticalFilter,
+    setVerticalFilter,
+    batchFilter,
+    setBatchFilter,
+    groupFilter,
+    setGroupFilter,
+    showAssignmentModal,
+    setShowAssignmentModal,
+    showCourseModal,
+    setShowCourseModal,
+    showCodingModal,
+    setShowCodingModal,
+    showBankModal,
+    setShowBankModal,
+    courses,
+    setCourses,
+    selectedUserDetails,
+    setSelectedUserDetails,
+    view,
+    setView,
+    nodeDetails,
+    setNodeDetails,
+    onboardingData,
+    setOnboardingData,
+    passwordPatternInline,
+    setPasswordPatternInline,
+    processing,
+    setProcessing,
+    individualUser,
+    setIndividualUser,
+    promoteId,
+    setPromoteId,
+    promoteRole,
+    setPromoteRole,
+    selectedUserIds,
+    setSelectedUserIds,
+    bulkProcessing,
+    setBulkProcessing,
+    newCourseName,
+    setNewCourseName,
+    addingCourse,
+    setAddingCourse,
+    bankCourseId,
+    setBankCourseId,
+    auditSubTab,
+    setAuditSubTab,
+    selectedAnalyticsBatch,
+    setSelectedAnalyticsBatch,
+    batchIntel,
+    setBatchIntel,
+    fetchingInsights,
+    setFetchingInsights,
+    executiveSummary,
+    setExecutiveSummary,
+    globalInsights,
+    setGlobalInsights,
+    fetchingGlobal,
+    setFetchingGlobal,
+    globalSummary,
+    setGlobalSummary,
+    codingQuestions,
+    setCodingQuestions,
+    addingCoding,
+    setAddingCoding,
+    codingLoading,
+    setCodingLoading,
+    codingFields,
+    setCodingFields,
+    getAllGroups,
+    findGroupInTree,
+    allPossibleGroups,
+    getAllBatches,
+    allPossibleBatches,
+    fetchData,
+    toggleNode,
+    handleAdd,
+    handleUpdateResource,
+    handleDeleteResource,
+    handleAddCourse,
+    handleCreateCodingQuestion,
+    fetchCodingQuestions,
+    handleFetchBatchInsights,
+    handleFetchGlobalInsights,
+    globalMetrics,
+    setGlobalMetrics,
+    handleBulkAction,
+    handleEmergencyReset,
+    filteredUsers,
+    user,
+    onLogout,
+    onViewReport,
+    onViewPremium };
+
   return (
     <div className="flex-1 overflow-y-auto px-8 py-10 bg-slate-950">
       <header className="mb-10 flex items-center justify-between">
@@ -778,803 +910,25 @@ export default function LDAdminDashboard({
                 )}
               </motion.div>
             ) : activeTab === 'Curriculum' ? (
-              <motion.div
-                key="curriculum"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                className="space-y-8"
-              >
-                {/* Courses Management */}
-                <div className="bg-surface-container border border-surface-bright rounded-[3rem] p-8">
-                  <div className="flex justify-between items-center mb-8">
-                    <div>
-                      <h3 className="text-2xl font-black text-white">Dynamic Curriculum</h3>
-                      <p className="text-[10px] text-brand-primary font-black uppercase tracking-[0.3em] mt-1">Course Catalog & Strategy</p>
-                    </div>
-                    <button
-                      onClick={() => setAddingCourse(!addingCourse)}
-                      className="px-6 py-3 bg-brand-primary text-slate-950 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-primary/90 transition-all shadow-lg shadow-brand-primary/20 flex items-center gap-2"
-                    >
-                      <Plus size={14} /> {addingCourse ? 'Cancel' : 'New Course'}
-                    </button>
-                  </div>
-
-                  {addingCourse && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-6 bg-white/5 border border-white/10 rounded-3xl mb-8 flex gap-4 items-end"
-                    >
-                      <div className="flex-1">
-                        <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-widest">Course Designation</label>
-                        <input
-                          value={newCourseName}
-                          onChange={e => setNewCourseName(e.target.value)}
-                          className="w-full bg-slate-900 border border-white/5 rounded-2xl p-4 text-white font-bold outline-none ring-1 ring-white/10 focus:ring-brand-primary/30"
-                          placeholder="e.g. Advanced Distributed Systems"
-                        />
-                      </div>
-                      <button
-                        onClick={handleAddCourse}
-                        className="bg-brand-primary text-slate-950 font-black uppercase tracking-widest text-[10px] py-4 px-8 rounded-2xl shadow-xl shadow-brand-primary/20"
-                      >
-                        Initialize
-                      </button>
-                    </motion.div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {courses.map(c => (
-                      <div key={c.id} className="p-6 bg-slate-900/50 border border-white/5 rounded-[2.5rem] flex items-center justify-between group hover:border-brand-primary/30 transition-all">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-brand-primary font-black text-xs">
-                            {c.name?.[0]}
-                          </div>
-                          <span className="text-sm font-black text-white">{c.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                          <button className="p-2 text-slate-500 hover:text-white"><Settings size={14} /></button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-
-              </motion.div>
+              <CurriculumTab ctx={adminCtx} />
             ) : activeTab === 'Coding' ? (
-              <motion.div
-                key="coding"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                className="space-y-8"
-              >
-                {/* Coding Challenge Creator */}
-                <div className="bg-surface-container border border-surface-bright rounded-[3rem] p-8">
-                  <div className="flex justify-between items-center mb-8">
-                    <div>
-                      <h3 className="text-2xl font-black text-white">Coding Lab Management</h3>
-                      <p className="text-[10px] text-emerald-400 font-black uppercase tracking-[0.3em] mt-1">Algorithmic Challenge Registry</p>
-                    </div>
-                    <button
-                      onClick={() => setShowCodingModal(true)}
-                      className="px-6 py-3 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2"
-                    >
-                      <Plus size={14} /> New Challenge
-                    </button>
-                  </div>
-
-
-                  {/* Coding Registry Table */}
-                  <div className="bg-slate-900/50 border border-white/5 rounded-[3rem] overflow-hidden">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="border-b border-white/5">
-                          <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Challenge Title</th>
-                          <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">Course Sector</th>
-                          <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest">System ID</th>
-                          <th className="px-8 py-6 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/5">
-                        {(Array.isArray(codingQuestions) ? codingQuestions : []).map(q => (
-                          <tr key={q.id} className="group hover:bg-white/5 transition-all">
-                            <td className="px-8 py-6">
-                              <p className="text-sm font-black text-white">{q.title}</p>
-                              <p className="text-[10px] text-slate-500 truncate max-w-xs">{q.description?.substring(0, 50)}...</p>
-                            </td>
-                            <td className="px-8 py-6">
-                              <span className="px-3 py-1 rounded-lg bg-white/5 text-slate-400 text-[10px] font-black uppercase border border-white/5">
-                                {courses.find(c => c.id === q.course_id)?.name || 'General Registry'}
-                              </span>
-                            </td>
-                            <td className="px-8 py-6 font-mono text-[10px] font-black text-brand-primary/60">
-                              #{q.id}
-                            </td>
-                            <td className="px-8 py-6 text-right">
-                              <button className="p-2 text-slate-500 hover:text-white transition-all"><Settings size={16} /></button>
-                            </td>
-                          </tr>
-                        ))}
-                        {(Array.isArray(codingQuestions) ? codingQuestions : []).length === 0 && (
-                          <tr>
-                            <td colSpan={4} className="px-8 py-20 text-center">
-                              <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest italic">No coding challenges found in current registry.</p>
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </motion.div>
+              <CodingTab ctx={adminCtx} />
             ) : activeTab === 'Audit' ? (
-              <motion.div
-                key="audit"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                className="space-y-6"
-              >
-                <div className="bg-surface-container border border-surface-bright rounded-[3rem] p-8">
-                  <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-8">
-                      <div>
-                        <h3 className="text-2xl font-black text-white">Governance & Auditing</h3>
-                        <p className="text-[10px] text-indigo-400 font-black uppercase tracking-[0.3em] mt-1">Immutable Immutable Audit Trail (AUD-205)</p>
-                      </div>
-                      <div className="flex bg-slate-900 p-1 rounded-xl border border-white/5">
-                        <button
-                          onClick={() => setAuditSubTab('Audit')}
-                          className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${auditSubTab === 'Audit' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-white'}`}
-                        >
-                          Actions
-                        </button>
-                        <button
-                          onClick={() => setAuditSubTab('Email')}
-                          className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${auditSubTab === 'Email' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-white'}`}
-                        >
-                          Mail Logs
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <button
-                        onClick={() => ApiService.export_global_activity()}
-                        className="flex items-center gap-2 px-6 py-3 bg-brand-primary/20 text-brand-primary rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-primary/30 transition-all border border-brand-primary/30 shadow-lg shadow-brand-primary/10"
-                      >
-                        <Download size={16} /> Download Global Activity
-                      </button>
-                      <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400">
-                        <Clock size={20} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <SecurityPulse />
-
-                  {auditSubTab === 'Audit' ? <AuditLogTable /> : <EmailLogTable />}
-                </div>
-              </motion.div>
+              <AuditTab ctx={adminCtx} />
             ) : activeTab === 'Analytics' ? (
-              <motion.div
-                key="analytics"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="space-y-8"
-              >
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="bg-surface-container border border-surface-bright rounded-[3rem] p-8">
-                    <CompositeHealthGauge />
-                  </div>
-                  <div className="bg-surface-container border border-surface-bright rounded-[3rem] p-8">
-                    <EngagementDecayWidget />
-                  </div>
-                </div>
-
-                <div className="bg-surface-container border border-surface-bright rounded-[3rem] p-8">
-                  <h3 className="text-xl font-black text-white mb-6">Strategic Sector Leaderboard</h3>
-                  <LeaderboardTable groupId={1} onIntel={onViewPremium} /> {/* Mock Group ID 1 for now */}
-                </div>
-
-                <div className="bg-surface-container border border-surface-bright rounded-[3rem] p-8">
-                  <PerformanceDistributionChart />
-                </div>
-
-                <div className="p-8 bg-indigo-500/5 border border-indigo-500/20 rounded-[3rem] relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[100px] -mr-32 -mt-32" />
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-6">
-                    <div>
-                      <h3 className="text-xl font-black text-white">Batch Executive Strategy</h3>
-                      <p className="text-[10px] text-indigo-400 font-black uppercase tracking-[0.3em] mt-1">AI-Powered Cross-Cohort Synthesis</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <select
-                        value={selectedAnalyticsBatch || ''}
-                        onChange={(e) => setSelectedAnalyticsBatch(e.target.value ? parseInt(e.target.value) : null)}
-                        className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white outline-none min-w-[200px]"
-                      >
-                        <option value="">Select Cohort...</option>
-                        {allPossibleBatches.map(b => (
-                          <option key={b.id} value={b.id}>{b.context ? `${b.context} / ` : ''}{b.name}</option>
-                        ))}
-                      </select>
-                      <button
-                        disabled={!selectedAnalyticsBatch || fetchingInsights}
-                        onClick={() => handleFetchBatchInsights(false)}
-                        className="px-6 py-3 bg-brand-primary text-slate-950 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-primary/90 transition-all shadow-lg shadow-brand-primary/20 flex items-center gap-2 disabled:opacity-30"
-                      >
-                        {fetchingInsights ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                        Sync Intel
-                      </button>
-                      <button
-                        disabled={!selectedAnalyticsBatch || fetchingInsights}
-                        onClick={() => handleFetchBatchInsights(true)}
-                        className="p-3 bg-white/5 border border-white/5 text-slate-500 hover:text-white rounded-xl transition-all disabled:opacity-30"
-                        title="Force Neural Refresh (Bypass Cache)"
-                      >
-                        <RefreshCw size={16} className={fetchingInsights ? "animate-spin" : ""} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {executiveSummary && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mb-8 p-6 bg-white/5 border border-white/5 rounded-2xl italic text-xs text-slate-300 leading-relaxed border-l-4 border-l-brand-primary"
-                    >
-                      "{executiveSummary}"
-                    </motion.div>
-                  )}
-                  {batchIntel?.fullMetrics?.metrics && (
-                    <div className="mb-10 space-y-8">
-                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-slate-900/40 border border-white/5 p-8 rounded-[2.5rem] relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-brand-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                        <div className="lg:col-span-5">
-                          <p className="text-[10px] font-black text-brand-primary uppercase tracking-[0.2em] mb-6">Cohort Neural Fingerprint</p>
-                          <div className="grid grid-cols-2 gap-4">
-                            {[
-                              { m: batchIntel.fullMetrics.metrics.m02_overall_accuracy, icon: <Target size={14} /> },
-                              { m: batchIntel.fullMetrics.metrics.m17_velocity, icon: <TrendingUp size={14} /> },
-                              { m: batchIntel.fullMetrics.metrics.m18_consistency, icon: <Activity size={14} /> },
-                              { m: batchIntel.fullMetrics.metrics.m03_cognitive_diversity, icon: <Brain size={14} /> },
-                              { m: batchIntel.fullMetrics.metrics.m26_talent_density, icon: <Trophy size={14} /> },
-                              { m: batchIntel.fullMetrics.metrics.m29_risk_profile, icon: <Shield size={14} /> }
-                            ].filter(x => x.m).map((item, idx) => (
-                              <div key={idx} className="bg-slate-950/60 p-4 rounded-2xl border border-white/5 hover:border-brand-primary/30 transition-all">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="text-brand-primary/60">{item.icon}</span>
-                                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest truncate">{item.m.label}</p>
-                                </div>
-                                <p className="text-xl font-black text-white">{item.m.value}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="lg:col-span-7 h-80 relative">
-                          <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                            <Sparkles size={200} className="text-brand-primary animate-pulse" />
-                          </div>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
-                              { subject: "Accuracy", value: batchIntel.fullMetrics.metrics.m02_overall_accuracy?.raw || 0 },
-                              { subject: "Consistency", value: batchIntel.fullMetrics.metrics.m18_consistency?.raw || 0 },
-                              { subject: "Velocity", value: Math.min(100, Math.max(0, (batchIntel.fullMetrics.metrics.m17_velocity?.raw || 0) * 10 + 50)) },
-                              { subject: "Diversity", value: batchIntel.fullMetrics.metrics.m03_cognitive_diversity?.raw || 0 },
-                              { subject: "Density", value: batchIntel.fullMetrics.metrics.m26_talent_density?.raw || 0 },
-                              { subject: "Stability", value: 100 - (batchIntel.fullMetrics.metrics.m29_risk_profile?.raw || 0) },
-                            ]}>
-                              <PolarGrid stroke="rgba(255,255,255,0.05)" />
-                              <PolarAngleAxis dataKey="subject" tick={{ fill: "#64748b", fontSize: 10, fontWeight: 900 }} />
-                              <Radar name="Cohort" dataKey="value" stroke="#6366f1" fill="#6366f1" fillOpacity={0.2} strokeWidth={3} />
-                            </RadarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-
-
-                      <div className="bg-white/5 border border-white/5 p-8 rounded-3xl">
-                        <h4 className="text-[10px] font-black text-brand-primary uppercase tracking-[0.2em] mb-6">High-Fidelity Metric Matrix (30 Vectors)</h4>
-                        <PerformanceMetricGrid metrics={batchIntel.fullMetrics.metrics} />
-                      </div>
-                    </div>
-                  )}
-
-                  {(batchIntel?.insights || []).length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {(Array.isArray(batchIntel?.insights) ? batchIntel.insights : []).map((insight: any, idx: number) => (
-                        <div key={idx} className="p-6 bg-slate-900/50 border border-white/5 rounded-[2rem] hover:border-brand-primary/30 transition-all relative overflow-hidden group">
-                          <div className="flex items-center justify-between mb-4">
-                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter ${insight.impact === 'High' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
-                              insight.impact === 'Medium' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                                'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                              }`}>
-                              {insight.impact} Impact
-                            </span>
-                            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{insight.category}</span>
-                          </div>
-                          <h4 className="text-sm font-black text-white mb-2 group-hover:text-brand-primary transition-colors">{insight.dimension}</h4>
-                          <p className="text-[11px] text-slate-400 leading-relaxed mb-4">{insight.observation}</p>
-                          <div className="pt-4 border-t border-white/5">
-                            <p className="text-[9px] font-black text-brand-primary uppercase tracking-widest mb-2">Executive Action</p>
-                            <p className="text-[10px] font-bold text-slate-300 italic">{insight.actionable_step}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-400 leading-relaxed max-w-2xl">
-                      AI-powered strategic summaries aggregate performance vectors across all synchronized groups to identify high-risk cohorts and high-potential talent pipelines for executive intervention. Select a cohort and synchronize to begin.
-                    </p>
-                  )}
-                </div>
-
-                <div className="p-8 bg-purple-500/5 border border-purple-500/20 rounded-[3rem] relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 blur-[100px] -mr-32 -mt-32" />
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-6">
-                    <div>
-                      <h3 className="text-xl font-black text-white">Global Organization Intelligence</h3>
-                      <p className="text-[10px] text-purple-400 font-black uppercase tracking-[0.3em] mt-1">Cross-Sector Neural Synthesis</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <button
-                        disabled={fetchingGlobal}
-                        onClick={() => handleFetchGlobalInsights(false)}
-                        className="px-6 py-3 bg-purple-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-500 transition-all shadow-lg shadow-purple-600/20 flex items-center gap-2 disabled:opacity-30"
-                      >
-                        {fetchingGlobal ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
-                        Sync Global Intel
-                      </button>
-                      <button
-                        disabled={fetchingGlobal}
-                        onClick={() => handleFetchGlobalInsights(true)}
-                        className="p-3 bg-white/5 border border-white/5 text-slate-500 hover:text-white rounded-xl transition-all disabled:opacity-30"
-                        title="Force Global Neural Refresh (Bypass Cache)"
-                      >
-                        <RefreshCw size={16} className={fetchingGlobal ? "animate-spin" : ""} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {globalSummary && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mb-8 p-8 bg-purple-500/5 border border-purple-500/10 rounded-[2.5rem] italic text-sm text-slate-300 leading-relaxed border-l-4 border-l-purple-500"
-                    >
-                      "{globalSummary}"
-                    </motion.div>
-                  )}
-
-                  {globalMetrics?.metrics && (
-                    <div className="mb-10 space-y-8">
-                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-slate-900/40 border border-white/5 p-8 rounded-[2.5rem] relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                        <div className="lg:col-span-5">
-                          <p className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em] mb-6">Global Performance Fingerprint</p>
-                          <div className="grid grid-cols-2 gap-4">
-                            {[
-                              { m: globalMetrics.metrics.m02_overall_accuracy, icon: <Target size={14} /> },
-                              { m: globalMetrics.metrics.m17_velocity, icon: <TrendingUp size={14} /> },
-                              { m: globalMetrics.metrics.m18_consistency, icon: <Activity size={14} /> },
-                              { m: globalMetrics.metrics.m03_cognitive_diversity, icon: <Brain size={14} /> },
-                              { m: globalMetrics.metrics.m26_talent_density, icon: <Trophy size={14} /> },
-                              { m: globalMetrics.metrics.m29_risk_profile, icon: <Shield size={14} /> }
-                            ].filter(x => x.m).map((item, idx) => (
-                              <div key={idx} className="bg-slate-950/60 p-4 rounded-2xl border border-white/5 hover:border-purple-500/30 transition-all text-left">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="text-purple-400/60">{item.icon}</span>
-                                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest truncate">{item.m.label}</p>
-                                </div>
-                                <p className="text-xl font-black text-white">{item.m.value}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="lg:col-span-7 h-80 relative">
-                          <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                            <Brain size={200} className="text-purple-500 animate-pulse" />
-                          </div>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
-                              { subject: "Accuracy", value: globalMetrics.metrics.m02_overall_accuracy?.raw || 0 },
-                              { subject: "Consistency", value: globalMetrics.metrics.m18_consistency?.raw || 0 },
-                              { subject: "Velocity", value: Math.min(100, Math.max(0, (globalMetrics.metrics.m17_velocity?.raw || 0) * 10 + 50)) },
-                              { subject: "Diversity", value: globalMetrics.metrics.m03_cognitive_diversity?.raw || 0 },
-                              { subject: "Density", value: globalMetrics.metrics.m26_talent_density?.raw || 0 },
-                              { subject: "Stability", value: 100 - (globalMetrics.metrics.m29_risk_profile?.raw || 0) },
-                            ]}>
-                              <PolarGrid stroke="rgba(255,255,255,0.05)" />
-                              <PolarAngleAxis dataKey="subject" tick={{ fill: "#64748b", fontSize: 10, fontWeight: 900 }} />
-                              <Radar name="Global" dataKey="value" stroke="#a855f7" fill="#a855f7" fillOpacity={0.2} strokeWidth={3} />
-                            </RadarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-
-
-                      <div className="bg-white/5 border border-white/5 p-8 rounded-3xl">
-                        <h4 className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em] mb-6">Cross-Organization Metric Matrix (30 Vectors)</h4>
-                        <PerformanceMetricGrid metrics={globalMetrics.metrics} />
-                      </div>
-                    </div>
-                  )}
-
-                  {(Array.isArray(globalInsights) ? globalInsights : []).length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {(Array.isArray(globalInsights) ? globalInsights : []).map((insight, idx) => (
-                        <motion.div
-                          key={idx}
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: idx * 0.05 }}
-                          className="p-6 bg-slate-900/40 border border-white/5 rounded-[2.5rem] hover:border-purple-500/30 transition-all relative overflow-hidden group shadow-xl hover:shadow-purple-500/5"
-                        >
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 blur-3xl -mr-16 -mt-16 group-hover:bg-purple-500/10 transition-all" />
-                          <div className="flex items-center justify-between mb-4 relative z-10">
-                            <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter shadow-sm border ${insight.impact === 'High' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                              insight.impact === 'Medium' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                              }`}>
-                              {insight.impact} Impact
-                            </span>
-                            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{insight.category}</span>
-                          </div>
-                          <h4 className="text-sm font-black text-white mb-2 group-hover:text-purple-400 transition-colors relative z-10">{insight.dimension}</h4>
-                          <p className="text-[11px] text-slate-400 leading-relaxed mb-4 relative z-10">{insight.observation}</p>
-                          <div className="pt-4 border-t border-white/5 relative z-10">
-                            <p className="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                              <Sparkles size={10} /> System Mandate
-                            </p>
-                            <p className="text-[10px] font-bold text-slate-200 italic bg-white/5 p-3 rounded-xl border border-white/5">{insight.actionable_step}</p>
-                          </div>
-                        </motion.div>
-
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-400 leading-relaxed max-w-2xl">
-                      Global neural synthesis analyzes performance trends across all organizations, departments, and verticals to surface macro-patterns and strategic opportunities for L&D leadership.
-                    </p>
-                  )}
-                </div>
-              </motion.div>
+              <AnalyticsTab ctx={adminCtx} />
             ) : activeTab === 'Reports' ? (
-              <motion.div
-                key="reports"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                className="bg-slate-900 border border-white/5 rounded-[3rem] overflow-hidden p-8"
-              >
-                <div className="flex justify-between items-center mb-8">
-                  <div>
-                    <h3 className="text-2xl font-black text-white">Content Quality Audit</h3>
-                    <p className="text-[10px] text-rose-400 font-black uppercase tracking-[0.3em] mt-1">Question Reporting & Remediation</p>
-                  </div>
-                  <div className="p-3 bg-rose-500/10 rounded-2xl text-rose-400">
-                    <ShieldAlert size={20} />
-                  </div>
-                </div>
-                <QuestionReportUI />
-              </motion.div>
+              <ReportsTab ctx={adminCtx} />
             ) : activeTab === 'Inventory' ? (
-              <motion.div
-                key="inventory"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                className="space-y-6"
-              >
-                <div className="bg-surface-container border border-surface-bright rounded-[3rem] p-8">
-                  <div className="flex items-center justify-between mb-8">
-                    <div>
-                      <h3 className="text-2xl font-black text-white">Registry Oversight</h3>
-                      <p className="text-[10px] text-indigo-400 font-black uppercase tracking-[0.3em] mt-1">Global Question & Challenge Inventory</p>
-                    </div>
-                    <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400">
-                      <Database size={20} />
-                    </div>
-                  </div>
-                  <QuestionManagement user={user} />
-                </div>
-              </motion.div>
+              <InventoryTab ctx={adminCtx} />
             ) : activeTab === 'Telemetry' ? (
-              <motion.div
-                key="telemetry"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                className="space-y-6"
-              >
-                <SystemHealthMonitor />
-              </motion.div>
+              <TelemetryTab ctx={adminCtx} />
             ) : activeTab === 'Integrity' ? (
-              <motion.div
-                key="integrity"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                className="space-y-6"
-              >
-                <DataIntegrityDashboard />
-              </motion.div>
+              <IntegrityTab ctx={adminCtx} />
             ) : activeTab === 'Hierarchy' ? (
-              <motion.div
-                key="hierarchy"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-4"
-              >
-                {filterTree(tree, userSearch).map(org => (
-                  <OrgNode
-                    onEdit={setShowEditModal}
-                    onDelete={setShowDeleteConfirm}
-                    key={org.id}
-                    org={org}
-                    expanded={expandedNodes.has(`org-${org.id}`)}
-                    onToggle={() => toggleNode(`org-${org.id}`)}
-                    onAdd={setShowAddModal}
-                    onAction={(action: string, id: number, name: string, targetType?: string) => {
-                      setNodeDetails({ action, id, name, targetType });
-                      if (action === 'MEMBER_ADD') setView('addUser');
-                      else if (action === 'MENTOR_ADD') setView('addMentor');
-                      else if (action === 'MANDATE') setShowAssignmentModal(true);
-                    }}
-                    expandedNodes={expandedNodes}
-                    toggleNode={toggleNode}
-                    onViewReport={onViewReport}
-                  />
-                ))}
-              </motion.div>
+              <HierarchyTab ctx={adminCtx} />
             ) : (
-              <motion.div
-                key="users"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
-              >
-                {/* User Filtering */}
-                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                  {selectedUserIds.size > 0 ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-4 p-3 bg-brand-primary/10 border border-brand-primary/20 rounded-2xl"
-                    >
-                      <span className="text-[10px] font-black text-brand-primary uppercase tracking-widest px-4 border-r border-brand-primary/20">
-                        {selectedUserIds.size} Selected
-                      </span>
-                      <div className="flex gap-2">
-                        <button
-                          disabled={bulkProcessing}
-                          onClick={() => handleBulkAction('activate')}
-                          className="px-4 py-2 bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2"
-                        >
-                          {bulkProcessing ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                          Activate
-                        </button>
-                        <button
-                          disabled={bulkProcessing}
-                          onClick={() => handleBulkAction('deactivate')}
-                          className="px-4 py-2 bg-amber-500/10 text-amber-400 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-amber-500 hover:text-white transition-all flex items-center gap-2"
-                        >
-                          {bulkProcessing ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
-                          Deactivate
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => setSelectedUserIds(new Set())}
-                        className="ml-4 text-on-surface-variant hover:text-white"
-                      >
-                        <X size={16} />
-                      </button>
-                    </motion.div>
-                  ) : null}
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Filter size={14} className="text-on-surface-variant" />
-
-                    <select
-                      value={roleFilter}
-                      onChange={(e) => setRoleFilter(e.target.value)}
-                      className="bg-surface-dim border border-surface-bright rounded-xl px-4 py-3 text-[10px] text-white font-bold outline-none cursor-pointer"
-                    >
-                      <option value="All">All Roles</option>
-                      <option value="Member">Member</option>
-                      <option value="Mentor">Mentor</option>
-                      <option value="LDAdmin">LDAdmin</option>
-                      <option value="GroupAdmin">GroupAdmin</option>
-                    </select>
-
-                    <select
-                      value={verticalFilter}
-                      onChange={(e) => {
-                        setVerticalFilter(e.target.value);
-                        setBatchFilter('All');
-                        setGroupFilter('All');
-                      }}
-                      className="bg-surface-dim border border-surface-bright rounded-xl px-4 py-3 text-[10px] text-white font-bold outline-none cursor-pointer"
-                    >
-                      <option value="All">All Verticals</option>
-                      {[...new Set(users.map(u => u.vertical_name).filter(Boolean))].map(v => (
-                        <option key={v} value={v}>{v}</option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={batchFilter}
-                      disabled={verticalFilter === 'All'}
-                      onChange={(e) => {
-                        setBatchFilter(e.target.value);
-                        setGroupFilter('All');
-                      }}
-                      className="bg-surface-dim border border-surface-bright rounded-xl px-4 py-3 text-[10px] text-white font-bold outline-none cursor-pointer disabled:opacity-30"
-                    >
-                      <option value="All">All Batches</option>
-                      {[...new Set(users.filter(u => u.vertical_name === verticalFilter).map(u => u.batch_name).filter(Boolean))].map(b => (
-                        <option key={b} value={b}>{b}</option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={groupFilter}
-                      disabled={batchFilter === 'All'}
-                      onChange={(e) => setGroupFilter(e.target.value)}
-                      className="bg-surface-dim border border-surface-bright rounded-xl px-4 py-3 text-[10px] text-white font-bold outline-none cursor-pointer disabled:opacity-30"
-                    >
-                      <option value="All">All Groups</option>
-                      {[...new Set(users.filter(u => u.batch_name === batchFilter).map(u => u.group_name).filter(Boolean))].map(g => (
-                        <option key={g} value={g}>{g}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <button
-                    onClick={() => {
-                      const csvContent = "data:text/csv;charset=utf-8,"
-                        + "Name,Email,Role,Group,Batch\n"
-                        + filteredUsers.map(u => `${u.full_name},${u.email},${u.role},${u.group_name},${u.batch_name}`).join("\n");
-                      const encodedUri = encodeURI(csvContent);
-                      const link = document.createElement("a");
-                      link.setAttribute("href", encodedUri);
-                      link.setAttribute("download", "user_registry.csv");
-                      document.body.appendChild(link);
-                      link.click();
-                    }}
-                    className="flex items-center gap-2 px-5 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/5 transition-all"
-                  >
-                    <Download size={14} /> Export Registry
-                  </button>
-                </div>
-
-                <div className="bg-surface-dim/40 border border-surface-bright rounded-[2.5rem] overflow-hidden">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="border-b border-surface-bright bg-surface-bright/5">
-                        <th className="px-8 py-5">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 rounded-md border-white/10 bg-white/5 text-brand-primary focus:ring-brand-primary cursor-pointer"
-                            checked={filteredUsers.length > 0 && selectedUserIds.size === filteredUsers.length}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedUserIds(new Set(filteredUsers.map(u => u.id)));
-                              } else {
-                                setSelectedUserIds(new Set());
-                              }
-                            }}
-                          />
-                        </th>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">UID / MemberID</th>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Identity Information</th>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Auth Level</th>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Node Hierarchy</th>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Registry Epoch</th>
-                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-on-surface-variant text-right">Strategic Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-surface-bright/30">
-                      {filteredUsers.map(u => (
-                        <tr key={u.id} className={`hover:bg-white/5 transition-colors group ${selectedUserIds.has(u.id) ? 'bg-brand-primary/5' : ''}`}>
-                          <td className="px-8 py-6">
-                            <input
-                              type="checkbox"
-                              className="w-4 h-4 rounded-md border-white/10 bg-white/5 text-brand-primary focus:ring-brand-primary cursor-pointer"
-                              checked={selectedUserIds.has(u.id)}
-                              onChange={(e) => {
-                                const next = new Set(selectedUserIds);
-                                if (e.target.checked) next.add(u.id);
-                                else next.delete(u.id);
-                                setSelectedUserIds(next);
-                              }}
-                            />
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-mono font-black text-brand-primary/60">#{u.id}</span>
-                              {u.member_id && <span className="text-[8px] font-sans font-black text-indigo-400 uppercase tracking-tighter">{u.member_id}</span>}
-                            </div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-2xl bg-brand-primary/10 flex items-center justify-center text-brand-primary font-black">
-                                {u.full_name?.[0] || 'U'}
-                              </div>
-                              <div>
-                                <p className="text-sm font-black text-white">{u.full_name}</p>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">{u.email}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${u.role === 'LDAdmin' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' :
-                              u.role === 'Mentor' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
-                                'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
-                              }`}>
-                              {u.role}
-                            </span>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="flex flex-col gap-1">
-                              <p className="text-[10px] text-white font-black uppercase tracking-widest">
-                                {u.group_name || 'Global'}
-                              </p>
-                              <p className="text-[8px] text-slate-600 font-bold uppercase tracking-tight italic">
-                                {u.batch_name ? `${u.batch_name} Sector` : 'Autonomous Operator'}
-                              </p>
-                            </div>
-                          </td>
-                          <td className="px-8 py-6">
-                            <div className="flex flex-col gap-1 text-on-surface-variant">
-                              <p className="text-[10px] font-black uppercase tracking-widest">{new Date(u.created_at).toLocaleDateString()}</p>
-                              <p className="text-[8px] font-bold opacity-60 uppercase">{new Date(u.created_at).toLocaleTimeString()}</p>
-                            </div>
-                          </td>
-                          <td className="px-8 py-6 text-right">
-                            <div className="flex justify-end gap-2">
-                              <button
-                                onClick={() => {
-                                  setPromoteId(u.id.toString());
-                                  toast('success', `UID #${u.id} loaded into Role Override tool`);
-                                  // Scroll to the tool if on mobile/small screen, though sidebar is usually visible
-                                  document.getElementById('role-override-tool')?.scrollIntoView({ behavior: 'smooth' });
-                                }}
-                                className="px-4 py-2 rounded-lg bg-indigo-500/10 text-indigo-400 text-[9px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all hover:bg-indigo-500 hover:text-white border border-indigo-500/20"
-                              >
-                                Promote
-                              </button>
-                              {user?.role === 'LDAdmin' && (
-                                <button
-                                  onClick={() => handleEmergencyReset(u)}
-                                  className="px-4 py-2 rounded-lg bg-rose-500/10 text-rose-400 text-[9px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-500 hover:text-white border border-rose-500/20"
-                                >
-                                  Reset Pass
-                                </button>
-                              )}
-                              <button
-                                onClick={() => setSelectedUserDetails(u)}
-                                className="px-4 py-2 rounded-lg bg-surface-bright/10 text-brand-primary text-[9px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all hover:bg-brand-primary hover:text-slate-950"
-                              >
-                                Sync Intel
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {filteredUsers.length === 0 && (
-                    <div className="p-20 text-center">
-                      <p className="text-xs text-on-surface-variant font-black uppercase tracking-widest italic">No entities detected in this sector.</p>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
+              <UsersTab ctx={adminCtx} />
             )}
           </AnimatePresence>
         </div>
@@ -1810,4 +1164,5 @@ export default function LDAdminDashboard({
     </div>
   );
 }
+
 
