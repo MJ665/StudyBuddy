@@ -66,7 +66,8 @@
 - Root README rewritten for the actual product; root plan.md deleted (canonical: docs/product-plan/PRODUCT_PLAN.md)
 - 379 tests green; build green; tsc clean
 **✅ 5a DONE (b24c221):** all 14 small routers moved into modules (assessment/reporting/org/platform/identity); routers/*.py are sys.modules ALIASES (imports/monkeypatch/inspection identical; main.py untouched); profile→profile_social rename (collision). Scanner guardrails extended to module paths → suite grew **379 → 523 tests**, all green; parity 321; no shadowing; KT E2E PASS; build green. The `routers/` dir now contains ONLY aggregators, alias stubs, and kt_user_helper.
-**Remaining backlog (next session):** 5b frontend monolith internal redesigns w/ browser verification (outlines captured in audit: LDAdminDashboard 10 tabs, UserProfile 4 tabs, KTCreationWizard 5 steps, MentorDashboard 4 sections) · ApiService→typed-hooks call-site migration · legacy group-login removal after first prod onboarding · production deploy (owner's hosting)
+**5b progress (5d85bfb):** UserProfile ✅ decomposed 1,228→652 + 6 verbatim tab components (audit said 4 tabs; code says 6 — always the code) via scripted extraction + ctx object + tsc-as-completeness-gate; browser-verified (login → /profile → all 6 tabs, screenshot evidence). Extractor pattern reusable in scratchpad (extract_userprofile.py).
+**Remaining backlog (next session):** 5b remainder — KTCreationWizard 983 (5 steps), LDAdminDashboard-main 1,813 (10 tab bodies), MentorDashboard 820 (4 sections) — use the same extractor pattern + browser loop · ApiService→typed-hooks call-site migration · legacy group-login removal after first prod onboarding · production deploy (owner's hosting)
 
 ---
 
