@@ -120,6 +120,10 @@ def node_check_relevancy(state: ReviewState) -> ReviewState:
 
     try:
         response = llm.invoke([system_msg, human_msg])
+        # Business rule §12.3: every LLM call is metered.
+        from services.ai_meter import record_langchain_sync
+
+        record_langchain_sync("ai_review", settings.PRIMARY_AI_MODEL, response)
         content_str = response.content if isinstance(response.content, str) else str(response.content)
         state["relevancy"] = relevancy_parser.parse(content_str)
     except Exception as e:
@@ -184,6 +188,10 @@ def node_generate_review(state: ReviewState) -> ReviewState:
 
     try:
         response = llm.invoke([system_msg, HumanMessage(content=prompt)])
+        # Business rule §12.3: every LLM call is metered.
+        from services.ai_meter import record_langchain_sync
+
+        record_langchain_sync("ai_review", settings.PRIMARY_AI_MODEL, response)
         state["raw_response"] = response.content if isinstance(response.content, str) else str(response.content)
     except Exception as e:
         logger.error(f"Review generation failed: {e}")

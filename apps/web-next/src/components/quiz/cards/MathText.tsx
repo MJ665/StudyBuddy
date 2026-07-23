@@ -37,7 +37,9 @@ function renderMixedLatex(content: string): string {
     .join('');
 }
 
-export default function RichText({ content, format = 'text' }: { content: string; format?: string }) {
+// Renamed from RichText → MathText: this is the KaTeX/math renderer for
+// typed question cards; the code-block renderer lives in common/RichText.
+export default function MathText({ content, format = 'text' }: { content: string; format?: string }) {
   if (!content) return null;
   if (format === 'latex') {
     return <span dangerouslySetInnerHTML={{ __html: renderMixedLatex(content) }} />;

@@ -339,6 +339,10 @@ def _node_call_ai_eval(state: CodeEvalState) -> CodeEvalState:
 
     try:
         response = llm.invoke(messages)
+        # Business rule §12.3: every LLM call is metered.
+        from services.ai_meter import record_langchain_sync
+
+        record_langchain_sync("code_eval", settings.PRIMARY_AI_MODEL, response)
         raw_text = response.content
         if not isinstance(raw_text, str):
             raw_text = str(raw_text)
@@ -554,6 +558,10 @@ def _node_call_ai_hint(state: HintState) -> HintState:
 
     try:
         response = llm.invoke(messages)
+        # Business rule §12.3: every LLM call is metered.
+        from services.ai_meter import record_langchain_sync
+
+        record_langchain_sync("code_hint", settings.PRIMARY_AI_MODEL, response)
         raw_text = response.content or ""
         if not isinstance(raw_text, str):
             raw_text = str(raw_text)

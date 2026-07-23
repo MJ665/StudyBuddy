@@ -91,7 +91,11 @@ class User(Base):
     group = relationship("Group", back_populates="users")
     attempts = relationship("Attempt", back_populates="user")
     coding_attempts = relationship("CodingAttempt", back_populates="user")
-    mentor_assignments = relationship("MentorGroupAssignment", back_populates="mentor")
+    # delete-orphan: removing a mentor removes their group assignments in the
+    # same flush (previously SAWarning'd and left orphaned rows to FK-fail).
+    mentor_assignments = relationship(
+        "MentorGroupAssignment", back_populates="mentor", cascade="all, delete-orphan"
+    )
     reset_tokens = relationship("PasswordResetToken", back_populates="user")
     scoped_roles = relationship(
         "UserRole", back_populates="user", cascade="all, delete-orphan"

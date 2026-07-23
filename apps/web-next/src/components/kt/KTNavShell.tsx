@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   BookOpen, MessageSquare, Compass, Layers, UserMinus, Shield, 
   TrendingUp, Mail, ChevronDown, Bell, LogOut, LayoutGrid, Award, HelpCircle
@@ -19,8 +20,9 @@ interface KTNavShellProps {
 }
 
 export default function KTNavShell({ user, onBack, children }: KTNavShellProps) {
-  const { 
-    selectedCompany, 
+  const router = useRouter();
+  const {
+    selectedCompany,
     selectedProject, 
     currentView, 
     selectCompany, 
@@ -93,11 +95,13 @@ export default function KTNavShell({ user, onBack, children }: KTNavShellProps) 
       }
     }
     
-    // Only push if the path actually changed to avoid infinite loops with popstate
+    // Only push if the path actually changed to avoid infinite loops with popstate.
+    // Uses the App Router (not raw pushState) so Next's history stays in sync;
+    // the /kt/[[...path]] catch-all serves every variant without a remount.
     if (window.location.pathname !== path && window.location.pathname.startsWith('/kt')) {
-      window.history.pushState({}, '', path);
+      router.replace(path, { scroll: false });
     }
-  }, [selectedCompany, selectedProject]);
+  }, [selectedCompany, selectedProject, router]);
 
   const navItems = [
     { id: 'projects', label: 'Projects Registry', icon: <BookOpen size={18} />, roles: ['LDAdmin', 'Mentor', 'Member', 'GroupAdmin'] },

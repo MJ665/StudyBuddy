@@ -97,4 +97,6 @@ async def test_kt_full_loop(live_ready):
             await c.execute(text("DELETE FROM kt_documents WHERE id=:d"), {"d": doc_id})
             await c.execute(text("DELETE FROM kt_projects WHERE id=:p"), {"p": pid})
             await c.execute(text("DELETE FROM kt_companies WHERE id=:c"), {"c": cid})
-        await async_engine.dispose()
+        # NOTE: never dispose() the shared async_engine here — it is
+        # process-wide, and killing its pool poisons every test that runs
+        # after this one in the same session (the old flakiness).

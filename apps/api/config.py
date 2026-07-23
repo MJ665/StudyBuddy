@@ -175,6 +175,10 @@ class Settings(BaseSettings):
                 missing.append("GEMINI_API_KEY")
             if not self.ALLOWED_ORIGINS and not self.DEBUG:
                 missing.append("ALLOWED_ORIGINS")
+            # KT access keys are HMAC-signed; shipping with the well-known
+            # dev default would let anyone forge keys.
+            if self.HMAC_KEY_SECRET == "kt_hmac_access_key_secret_studyhub_2025":
+                missing.append("HMAC_KEY_SECRET (must not be the dev default)")
 
             if missing:
                 raise ValueError(

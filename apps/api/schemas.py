@@ -439,6 +439,10 @@ class AIEnvelope(BaseModel):
     Enables transparency when the system falls back to cached or pre-generated content.
     """
 
+    # `model_used` collides with Pydantic's protected `model_` namespace;
+    # the field name is part of the API contract, so silence the check.
+    model_config = ConfigDict(protected_namespaces=())
+
     content: Any
     is_fallback: bool = False
     model_used: str

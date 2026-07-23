@@ -91,3 +91,43 @@ async def record_response(feature: str, model: str, response) -> None:
     """Convenience: extract tokens from a genai response and record."""
     inp, out = extract_tokens(response)
     await record(feature, model, inp, out)
+
+
+def record_sync(
+    feature: str, model: str, input_tokens: int, output_tokens: int
+) -> None:
+    """Best-effort metering from SYNC code (LangGraph nodes run in a
+    threadpool with no event loop). Never raises. Contextvars (org/user) are
+    thread-local, so the request context set by the JWT middleware still
+    applies."""
+    import asyncio
+
+    try:
+        asyncio.run(record(feature, model, input_tokens, output_tokens))
+    except RuntimeError:
+        # Called from a running loop after all — fire and forget.
+        try:
+            asyncio.get_running_loop().create_task(
+                record(feature, model, input_tokens, output_tokens)
+            )
+        except Exception:  # noqa: BLE001
+            logger.warning("ai_meter.record_sync could not schedule (%s)", feature)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("ai_meter.record_sync failed (%s): %s", feature, e)
+
+
+def record_langchain_sync(feature: str, model: str, response) -> None:
+    """Meter a LangChain AIMessage (ChatGoogleGenerativeAI) from sync code.
+
+    LangChain normalizes usage into ``response.usage_metadata`` as a dict
+    {'input_tokens', 'output_tokens', ...}; fall back to a length estimate so
+    a provider change can never silently zero the meter."""
+    try:
+        um = getattr(response, "usage_metadata", None) or {}
+        inp = int(um.get("input_tokens") or 0)
+        out = int(um.get("output_tokens") or 0)
+        if not (inp or out):
+            out = len(str(getattr(response, "content", ""))) // 4
+        record_sync(feature, model, inp, out)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("ai_meter.record_langchain_sync failed (%s): %s", feature, e)

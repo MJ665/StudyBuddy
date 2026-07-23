@@ -1,6 +1,6 @@
 'use client';
 
-import RichText from './RichText';
+import MathText from './MathText';
 
 export interface QCard {
   id: number;
@@ -59,7 +59,7 @@ export default function QuestionCard({ q, index, value, onChange }: Props) {
       </div>
 
       <div className="text-slate-100 mb-4 leading-relaxed">
-        <RichText content={q.question} format={fmt} />
+        <MathText content={q.question} format={fmt} />
       </div>
 
       {q.media_urls?.map((u) => (
@@ -104,7 +104,7 @@ export default function QuestionCard({ q, index, value, onChange }: Props) {
                   className="accent-emerald-500"
                 />
                 <span className="text-sm text-slate-200">
-                  <RichText content={opt} format={fmt} />
+                  <MathText content={opt} format={fmt} />
                 </span>
               </label>
             );

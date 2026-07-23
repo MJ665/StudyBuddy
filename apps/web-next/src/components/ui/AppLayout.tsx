@@ -26,8 +26,8 @@ export function AppLayout({ children, currentView, onChangeView, onLogout, user,
     if (currentView === 'MENTOR' && !isMentor) onChangeView('DASHBOARD');
     if (currentView === 'LD_ADMIN' && !isLdAdmin) onChangeView('DASHBOARD');
     if (currentView === 'USER_INTEL' && !isLdAdmin && !isMentor && !isGroupAdmin) onChangeView('DASHBOARD');
-    if (currentView === 'EXECUTIVE_REPORT' && !isLdAdmin && !isGroupAdmin) onChangeView('DASHBOARD');
-    if (currentView === 'ORG_SETTINGS' && !isLdAdmin && !isGroupAdmin) onChangeView('DASHBOARD');
+    // (EXECUTIVE_REPORT / ORG_SETTINGS guards removed — those state-machine
+    // views no longer exist; their routes carry their own role gates.)
   }, [currentView, user, isGroupAdmin, isMentor, isLdAdmin, onChangeView]);
 
   return (

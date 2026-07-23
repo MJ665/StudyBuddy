@@ -42,9 +42,35 @@ export interface UserMe {
   success?: boolean;
 }
 
+
+export interface ConsistencyResult {
+  user_id?: number;
+  attempt_count?: number;
+  mean_accuracy?: number;
+  std_dev?: number;
+  cv: number | null;
+  interpretation: string;
+}
+
+export interface EngagementDecayResult {
+  decay_curve?: Array<{ period: string; engagement: number }>;
+  [key: string]: unknown;
+}
+
+export interface CompositeHealthResult {
+  composite_index?: number;
+  components?: Record<string, number>;
+  [key: string]: unknown;
+}
+
 export interface BatchInsights {
   insights: any[];
   fullMetrics?: any;
+}
+
+export interface AiInsightsResult {
+  insights?: any[];
+  summary?: string | null;
 }
 
 export interface ExecutiveSummary {
@@ -178,19 +204,26 @@ class ApiService {
     });
   }
 
-  /** Email-first login (Phase 4 rebuild) — individual credentials. */
+  /** Email-first login (Phase 4 rebuild) — individual credentials.
+   * Auth transport: short-lived access token in localStorage → Authorization
+   * header (bootstrapped/renewed via the HttpOnly refresh cookie). Persisting
+   * it here avoids the 401→refresh bounce on the first authed request. */
   static async loginWithEmail(email: string, password: string) {
-    return this.request('/auth/login', {
+    const res = await this.request('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password })
     });
+    if (res?.access_token) {
+      localStorage.setItem('study_token', res.access_token);
+    }
+    return res;
   }
 
   static async getMe(): Promise<UserMe> {
     return this.request('/auth/me');
   }
 
-  static async getOwnProfile(): Promise<any> {
+  static async getOwnProfile(): Promise<UserMe & Record<string, unknown>> {
     return this.request('/auth/profile');
   }
 
@@ -679,16 +712,16 @@ class ApiService {
     return this.request(`/reports/analytics/learning-velocity/${userId}`);
   }
 
-  static async getUserConsistency(userId: number): Promise<any> {
+  static async getUserConsistency(userId: number): Promise<ConsistencyResult> {
     return this.request(`/reports/analytics/consistency/${userId}`);
   }
 
-  static async getEngagementDecay(batchId?: number): Promise<any> {
+  static async getEngagementDecay(batchId?: number): Promise<EngagementDecayResult> {
     const q = batchId ? `?batch_id=${batchId}` : '';
     return this.request(`/reports/analytics/engagement-decay${q}`);
   }
 
-  static async getCompositeHealthIndex(batchId?: number): Promise<any> {
+  static async getCompositeHealthIndex(batchId?: number): Promise<CompositeHealthResult> {
     const q = batchId ? `?batch_id=${batchId}` : '';
     return this.request(`/reports/analytics/composite-health-index${q}`);
   }
@@ -756,11 +789,11 @@ class ApiService {
     return this.request(`/intel/profile/${slug}/registry`);
   }
 
-  static async getBatchIntel(batchId: number, refresh: boolean = false): Promise<any> {
+  static async getBatchIntel(batchId: number, refresh: boolean = false): Promise<BatchInsights> {
     return this.request(`/admin/batch/${batchId}/insights${refresh ? '?refresh=true' : ''}`);
   }
 
-  static async getBatchAiInsights(batchId: number, refresh: boolean = false): Promise<any> {
+  static async getBatchAiInsights(batchId: number, refresh: boolean = false): Promise<AiInsightsResult> {
     return this.request(`/admin/batch/${batchId}/ai-insights${refresh ? '?refresh=true' : ''}`);
   }
 
@@ -768,11 +801,11 @@ class ApiService {
     return this.request(`/admin/batch/${batchId}/executive-summary${refresh ? '?refresh=true' : ''}`);
   }
 
-  static async getGlobalIntel(refresh: boolean = false): Promise<any> {
+  static async getGlobalIntel(refresh: boolean = false): Promise<BatchInsights> {
     return this.request(`/admin/analytics/insights${refresh ? '?refresh=true' : ''}`);
   }
 
-  static async getAnalyticsAiInsights(refresh: boolean = false): Promise<any> {
+  static async getAnalyticsAiInsights(refresh: boolean = false): Promise<AiInsightsResult> {
     return this.request(`/admin/analytics/ai-insights${refresh ? '?refresh=true' : ''}`);
   }
 

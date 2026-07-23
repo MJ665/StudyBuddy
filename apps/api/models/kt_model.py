@@ -254,7 +254,8 @@ class KTDocument(Base):
     ingestion_status: Mapped[str | None] = mapped_column(SAEnum(IngestionStatusEnum), nullable=True)
     ingestion_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     chunk_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    neo4j_episode_ids: Mapped[list[str] | None] = mapped_column(PG_ARRAY(String), default=[])
+    # (Phase 7) neo4j_episode_ids removed — chunks live in kt_document_chunks
+    # (pgvector); the physical column is dropped by scripts/phase1_provision.
 
     created_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), onupdate=func.now())
