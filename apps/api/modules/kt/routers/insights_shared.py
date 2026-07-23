@@ -32,3 +32,10 @@ DEFAULT_CHECKLIST = [
 ]
 
 from services.redis_service import redis_client  # noqa: E402
+
+
+# Export EVERY module-level name — including the single-underscore
+# helpers (_audit, _require_mentor_plus, ...) that `import *` skips by
+# default. Without this, every leaf router that star-imports this module
+# raised NameError at call time on those helpers.
+__all__ = [name for name in dir() if not name.startswith("__")]

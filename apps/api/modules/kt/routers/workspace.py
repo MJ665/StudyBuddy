@@ -2,6 +2,9 @@
 from fastapi import APIRouter
 
 from modules.kt.routers.insights_shared import *  # noqa: F401,F403
+# Cross-router delegations (defined in sibling routers, not the shared module):
+from modules.kt.routers.analytics import knowledge_gaps  # noqa: E402
+from modules.kt.routers.chat import send_message  # noqa: E402
 
 router = APIRouter()
 

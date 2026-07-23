@@ -481,3 +481,10 @@ async def _resolve_key(raw_key: str, db: AsyncSession) -> KTAccessKey:
     key.last_used_at = datetime.now(timezone.utc)
     await db.commit()
     return key
+
+
+# Export EVERY module-level name — including the single-underscore
+# helpers (_audit, _require_mentor_plus, ...) that `import *` skips by
+# default. Without this, every leaf router that star-imports this module
+# raised NameError at call time on those helpers.
+__all__ = [name for name in dir() if not name.startswith("__")]

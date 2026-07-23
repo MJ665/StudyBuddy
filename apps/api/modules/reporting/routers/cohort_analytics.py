@@ -3,6 +3,8 @@ from fastapi import APIRouter
 
 from modules.reporting.routers.cohort_shared import *  # noqa: F401,F403
 
+from modules.reporting.routers.cohort_comparative import get_comparative_analytics  # noqa: E402
+
 router = APIRouter()
 
 @router.get("/group/{group_id}/cohort-health")
