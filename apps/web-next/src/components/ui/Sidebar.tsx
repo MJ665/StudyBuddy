@@ -11,9 +11,10 @@ interface SidebarProps {
   user: any;
   onOpenAIPath?: () => void;
   onOpenAIQuiz?: () => void;
+  onNavigate?: () => void; // closes the mobile drawer after a selection
 }
 
-export function Sidebar({ currentView, onChangeView, onLogout, user, onOpenAIPath, onOpenAIQuiz }: SidebarProps) {
+export function Sidebar({ currentView, onChangeView, onLogout, user, onOpenAIPath, onOpenAIQuiz, onNavigate }: SidebarProps) {
   const isLdAdmin = isLDAdminPlus(user?.role || 'Member');
   const isMentor = isMentorPlus(user?.role || 'Member');
   const isGroupAdmin = isGroupAdminPlus(user?.role || 'Member');
@@ -88,9 +89,10 @@ export function Sidebar({ currentView, onChangeView, onLogout, user, onOpenAIPat
             icon={item.icon}
             label={item.label}
             active={item.view ? currentView === item.view : false}
-            onClick={() =>
-              item.href ? (window.location.href = item.href) : item.view && onChangeView(item.view)
-            }
+            onClick={() => {
+              onNavigate?.();
+              item.href ? (window.location.href = item.href) : item.view && onChangeView(item.view);
+            }}
           />
         ))}
       </nav>

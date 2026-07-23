@@ -21,8 +21,13 @@ async function downloadCSV(url: string, filename: string) {
   URL.revokeObjectURL(objectUrl);
 }
 
-export default function Leaderboard({ bank, user, onBack, onViewProfile }: any) {
+export default function Leaderboard({ bank: initialBank, user, onBack, onViewProfile }: any) {
   const { toast } = useToast();
+  // The leaderboard is viewable for ANY bank in the org, not only one carried
+  // in from a just-taken quiz. When arrived at without a bank (e.g. the sidebar
+  // link), we show a picker of the org's banks instead of crashing on bank.id.
+  const [bank, setBank] = useState<any>(initialBank);
+  const [pickerBanks, setPickerBanks] = useState<any[] | null>(null);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [questions, setQuestions] = useState<any[]>([]);
   const [stats, setStats] = useState({ avg: 0, total: 0 });
@@ -46,6 +51,7 @@ export default function Leaderboard({ bank, user, onBack, onViewProfile }: any) 
   const [reviewLoading, setReviewLoading] = useState<Record<number, boolean>>({});
 
   const fetchLeaderboard = useCallback((search?: string) => {
+    if (!bank?.id) return;
     setLoading(true);
     ApiService.getLeaderboard(bank.id, search)
       .then((res: any) => {
@@ -55,9 +61,28 @@ export default function Leaderboard({ bank, user, onBack, onViewProfile }: any) 
       })
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
-  }, [bank.id]);
+  }, [bank?.id]);
 
-  useEffect(() => { fetchLeaderboard(); }, [fetchLeaderboard]);
+  useEffect(() => { if (bank?.id) fetchLeaderboard(); else setLoading(false); }, [fetchLeaderboard, bank?.id]);
+
+  // No bank in context → load the org's banks (across the user's courses) for a picker.
+  useEffect(() => {
+    if (bank?.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const courses = await ApiService.getCourses(user?.group_id ?? 0);
+        const all: any[] = [];
+        for (const c of (Array.isArray(courses) ? courses : [])) {
+          const res: any = await ApiService.getBanks(c.id, 1, 50);
+          const items = Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : []);
+          items.forEach((b: any) => all.push({ ...b, course_name: c.name }));
+        }
+        if (!cancelled) setPickerBanks(all);
+      } catch (e) { if (!cancelled) setPickerBanks([]); }
+    })();
+    return () => { cancelled = true; };
+  }, [bank?.id, user?.group_id]);
 
   // VII: Debounced search
   useEffect(() => {
@@ -129,6 +154,37 @@ export default function Leaderboard({ bank, user, onBack, onViewProfile }: any) 
       setReviewLoading(prev => ({ ...prev, [attemptId]: false }));
     }
   };
+
+  // ── No bank selected → bank picker (leaderboard is org-wide, viewable by all) ──
+  if (!bank?.id) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-200 p-4 sm:p-6">
+        <div className="max-w-3xl mx-auto">
+          <button onClick={onBack} className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-6 hover:text-white">← Back</button>
+          <h1 className="text-2xl sm:text-3xl font-black text-white mb-1">Leaderboards</h1>
+          <p className="text-sm text-slate-500 mb-6">Pick a question bank to see how everyone in your organization is doing.</p>
+          {pickerBanks === null ? (
+            <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500" /></div>
+          ) : pickerBanks.length === 0 ? (
+            <div className="text-center py-16 text-slate-500 text-sm">No question banks are available yet.</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {pickerBanks.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => { setLoading(true); setBank(b); }}
+                  className="text-left p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-800/60 transition-all"
+                >
+                  <p className="font-bold text-white truncate">{b.name}</p>
+                  <p className="text-[11px] text-slate-500 mt-1 truncate">{b.course_name || 'Bank'} · {b.difficulty || 'Mixed'}</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (loading && leaderboard.length === 0) return (
     <div className="flex items-center justify-center min-h-screen bg-slate-950 text-white">
