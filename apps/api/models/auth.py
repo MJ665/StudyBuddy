@@ -22,7 +22,9 @@ class Group(Base):
     batch_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("batches.id"), nullable=True)
     # nullable for backward compat with V2 data; new groups always have batch_id
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    password_pattern: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Legacy group-pattern login (retired 2026-07-23): patterns are never
+    # written or checked anymore; column kept nullable for old rows.
+    password_pattern: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default="now()", nullable=False)
 
@@ -128,7 +130,9 @@ class PasswordResetToken(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     otp_code: Mapped[str] = mapped_column(String(10), nullable=False)
-    expires_at: Mapped[datetime.datetime] = mapped_column(DateTime, nullable=False)
+    # timezone=True: the async (asyncpg) path rejects tz-aware datetimes on a
+    # naive column, which 500'd the forgot-password flow.
+    expires_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     is_used: Mapped[bool | None] = mapped_column(Boolean, default=False)
 
     user = relationship("User", back_populates="reset_tokens")

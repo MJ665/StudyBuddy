@@ -112,8 +112,6 @@ export default function AdminOnboardingOverlay({ ctx }: { ctx: AdminTabCtx }) {
     setNodeDetails,
     onboardingData,
     setOnboardingData,
-    passwordPatternInline,
-    setPasswordPatternInline,
     processing,
     setProcessing,
     individualUser,
@@ -216,27 +214,8 @@ export default function AdminOnboardingOverlay({ ctx }: { ctx: AdminTabCtx }) {
                         ))}
                       </select>
                     </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="block text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Auth Pattern (e.g. &lt;name&gt;sig@123)</label>
-                        <div className="flex gap-2">
-                          {['<name>sigmoid@123', '<name>@2026', 'sigmoid@<year>'].map(tpl => (
-                            <button
-                              key={tpl}
-                              onClick={() => setPasswordPatternInline(tpl)}
-                              className="text-[8px] font-black uppercase px-2 py-1 bg-white/5 hover:bg-brand-primary hover:text-slate-950 rounded-lg transition-all border border-white/10"
-                            >
-                              {tpl}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <input
-                        value={passwordPatternInline}
-                        onChange={(e) => setPasswordPatternInline(e.target.value)}
-                        placeholder="&lt;name&gt;sigmoid@123"
-                        className="w-full bg-slate-900 border border-white/5 rounded-2xl p-5 text-white font-bold outline-none ring-1 ring-white/10 mb-4"
-                      />
+                    <div className="p-4 bg-brand-primary/5 rounded-2xl border border-brand-primary/10 mb-4">
+                      <p className="text-[10px] text-brand-primary leading-relaxed font-bold">Each entity receives individual credentials by email after integration.</p>
                     </div>
                     <div>
                       <label className="block text-[10px] font-black uppercase text-slate-500 mb-2 tracking-[0.2em]">Data Stream (Full Name, Email, MemberID*)</label>
@@ -258,7 +237,7 @@ export default function AdminOnboardingOverlay({ ctx }: { ctx: AdminTabCtx }) {
                             const [name, email, memberId] = line.split(',').map(s => s.trim());
                             return { full_name: name, email, role: 'Member', member_id: memberId || null };
                           });
-                          await ApiService.bulkAddUsers(nodeDetails.id, users, passwordPatternInline);
+                          await ApiService.bulkAddUsers(nodeDetails.id, users);
                           toast('success', `${users.length} entities integrated into protocol`);
                           setOnboardingData('');
                           setView('dashboard');

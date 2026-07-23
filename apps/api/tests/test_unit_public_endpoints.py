@@ -21,8 +21,8 @@ ALLOWED_ANONYMOUS = {
     # auth flows must work before a token exists
     "/login", "/refresh", "/logout", "/forgot-password", "/reset-password",
     "/superadmin/login", "/sso/login", "/sso/callback",
-    # the login form is a group dropdown, then a name dropdown
-    "/groups", "/groups/register", "/public/groups/{group_id}/users",
+    # (group-login dropdown endpoints retired 2026-07-23: /groups now requires
+    # auth; /groups/register and /public/groups/{group_id}/users are deleted)
     # public onboarding for prospective customers
     "/signup", "/verify", "/complete",
     # public profile pages

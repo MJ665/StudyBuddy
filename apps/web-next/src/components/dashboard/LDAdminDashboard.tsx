@@ -82,7 +82,7 @@ export default function LDAdminDashboard({
   const [loading, setLoading] = useState(true);
 
   // Section 6: Empty state for unassigned Mentors
-  if (user?.role === 'Mentor' && (!user?.assigned_groups || user.assigned_groups.length === 0) && !user?.group_id) {
+  if (user?.role === 'Mentor' && (!user?.assigned_groups || user.assigned_groups.length === 0) && user?.group_id == null) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-8">
         <div className="relative mb-8">
@@ -145,7 +145,6 @@ export default function LDAdminDashboard({
   const [view, setView] = useState<'dashboard' | 'onboarding' | 'addUser' | 'addMentor'>('dashboard');
   const [nodeDetails, setNodeDetails] = useState<any>(null);
   const [onboardingData, setOnboardingData] = useState('');
-  const [passwordPatternInline, setPasswordPatternInline] = useState('<name>sigmoid@123');
   const [processing, setProcessing] = useState(false);
   const [individualUser, setIndividualUser] = useState({ fullName: '', email: '', role: 'Member', password: '', memberId: '' });
   const [promoteId, setPromoteId] = useState('');
@@ -522,8 +521,6 @@ export default function LDAdminDashboard({
     setNodeDetails,
     onboardingData,
     setOnboardingData,
-    passwordPatternInline,
-    setPasswordPatternInline,
     processing,
     setProcessing,
     individualUser,

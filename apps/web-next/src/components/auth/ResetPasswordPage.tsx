@@ -4,16 +4,14 @@ import { Lock, ChevronLeft, Check, Loader2, ShieldAlert, Key } from 'lucide-reac
 import ApiService from '../../services/ApiService';
 import { useToast } from '../ui/Toast';
 
-export default function ResetPasswordPage({ 
-  email, 
-  groupId, 
-  onBack, 
-  onSuccess 
-}: { 
-  email?: string, 
-  groupId?: number, 
-  onBack: () => void, 
-  onSuccess: () => void 
+export default function ResetPasswordPage({
+  email,
+  onBack,
+  onSuccess
+}: {
+  email?: string,
+  onBack: () => void,
+  onSuccess: () => void
 }) {
   const { toast } = useToast();
   const [otp, setOtp] = useState('');
@@ -23,7 +21,7 @@ export default function ResetPasswordPage({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otp || !newPassword || !email || !groupId) return;
+    if (!otp || !newPassword || !email) return;
 
     if (newPassword !== confirmPassword) {
       toast('error', 'Credential mismatch. Verify password confirmation.');
@@ -32,7 +30,7 @@ export default function ResetPasswordPage({
 
     setLoading(true);
     try {
-      await ApiService.resetPassword(email, groupId, otp, newPassword);
+      await ApiService.resetPassword(email, otp, newPassword);
       toast('success', 'Security credentials updated successfully.');
       onSuccess();
     } catch (err: any) {

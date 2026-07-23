@@ -11,17 +11,8 @@ class AIResponseEnvelope(BaseModel):
     generated_at: Optional[str] = None
 
 
-class GroupCreate(BaseModel):
-    name: str
-    password_pattern: str
-
-
-class GroupRegisterAdmin(BaseModel):
-    name: str
-    password_pattern: str
-    admin_name: str
-    admin_email: str
-    batch_id: int
+# (GroupCreate / GroupRegisterAdmin retired with the group-pattern login —
+# groups are created by L&D Admins via the org module's own schema.)
 
 
 class UserCreate(BaseModel):
@@ -176,7 +167,6 @@ class RoleUpdate(BaseModel):
 
 class GroupUpdate(BaseModel):
     name: Optional[str] = None
-    password_pattern: Optional[str] = None
     batch_id: Optional[int] = None
     is_active: Optional[bool] = None
 
@@ -292,17 +282,14 @@ class BulkUserItem(BaseModel):
 
 class BulkUserCreate(BaseModel):
     users: List[BulkUserItem] = Field(..., max_length=50)
-    password_pattern: Optional[str] = None
 
 
 class ForgotPasswordRequest(BaseModel):
     email: str
-    group_id: int
 
 
 class ResetPasswordRequest(BaseModel):
     email: str
-    group_id: int
     otp_code: str
     new_password: str = Field(..., max_length=72)
 

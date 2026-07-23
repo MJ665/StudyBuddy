@@ -6,7 +6,12 @@ from modules.identity.routers.auth_shared import *  # noqa: F401,F403
 router = APIRouter()
 
 @router.get("/groups")
-def get_groups(db: Session = Depends(get_db)):
+def get_groups(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token),
+):
+    # Was anonymous (fed the retired group-login dropdown). The remaining
+    # consumers (assignment creation UI) are all authenticated.
     try:
         groups = db.query(models.Group).filter(models.Group.is_active.is_(True)).all()
         # Ensure name and batch_id are handled properly even if None
@@ -58,42 +63,9 @@ async def get_promotable_roles(current_user: dict = Depends(verify_token)):
 
     return res
 
-@router.post("/groups/register")
-def register_group_with_admin(
-    req: schemas.GroupRegisterAdmin, db: Session = Depends(get_db)
-):
-    db_group = db.query(models.Group).filter(models.Group.name == req.name).first()
-    if db_group:
-        raise HTTPException(status_code=400, detail="Group already exists")
-
-    new_group = models.Group(
-        name=req.name, password_pattern=req.password_pattern, batch_id=req.batch_id
-    )
-    db.add(new_group)
-    db.commit()
-    db.refresh(new_group)
-
-    # Create the group admin user
-    new_admin = models.User(
-        email=req.admin_email,
-        full_name=req.admin_name,
-        group_id=new_group.id,
-        role="GroupAdmin",
-    )
-    db.add(new_admin)
-    db.commit()
-
-    log_admin_action(
-        db=db,
-        actor_id=None,  # System action during group registration
-        actor_role="System",
-        action="CREATE_GROUP_ADMIN",
-        resource_type="USER",
-        resource_id=new_admin.id,
-        details={"email": req.admin_email, "group_name": req.name},
-    )
-
-    return {"message": "Group registered successfully", "group_id": new_group.id}
+# RETIRED with the group-pattern login: the anonymous `POST /groups/register`
+# self-registration endpoint (unauthenticated group + GroupAdmin creation) is
+# gone. Groups are created by L&D Admins through the org module.
 
 @router.get("/groups/{group_id}/users")
 async def get_group_users(
@@ -169,32 +141,9 @@ async def get_group_users(
 
     return res
 
-@router.get("/public/groups/{group_id}/users")
-async def get_public_group_users(group_id: int, db: AsyncSession = Depends(get_async_db)):
-    """
-    Publicly accessible list of users in a group (names and IDs only) for the login screen.
-    """
-    import json
-
-    from cache_manager import redis_client
-
-    redis_key = f"org:public_group_users:{group_id}"
-    try:
-        cached = await redis_client.get(redis_key)
-        if cached:
-            return json.loads(cached)
-    except Exception:
-        pass
-
-    users = await db.run_sync(lambda s: s.query(models.User).filter(models.User.group_id == group_id).all())
-    res = [{"id": u.id, "full_name": u.full_name, "role": u.role} for u in users]
-
-    try:
-        await redis_client.set(redis_key, json.dumps(res), ex=3600)
-    except Exception:
-        pass
-
-    return res
+# RETIRED with the group-pattern login: the anonymous
+# `GET /public/groups/{group_id}/users` roster endpoint fed the old login
+# screen's name dropdown and was an unauthenticated user-enumeration surface.
 
 @router.post("/users")
 def create_user(
@@ -487,10 +436,8 @@ def bulk_create_users(
             status_code=403, detail="Cannot onboard users for other groups"
         )
 
-    # Update group's password pattern if provided
-    if req.password_pattern:
-        db_group.password_pattern = req.password_pattern
-        db.commit()
+    # (group password patterns retired — every account gets individual
+    # credentials below; the request field is gone from the schema)
 
     new_users = []
     for item in req.users:

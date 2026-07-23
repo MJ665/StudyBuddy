@@ -47,7 +47,6 @@ class BatchCreate(BaseModel):
 
 class GroupCreate(BaseModel):
     name: str
-    password_pattern: str = ""
     batch_id: int
 
 
@@ -327,7 +326,6 @@ async def create_group(
 
     new_group = models.Group(
         name=data.name,
-        password_pattern=data.password_pattern,
         batch_id=data.batch_id,
         vertical_id=batch.vertical_id,
         department_id=vert.department_id if vert else None,

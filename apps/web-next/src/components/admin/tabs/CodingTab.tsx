@@ -112,8 +112,6 @@ export default function CodingTab({ ctx }: { ctx: AdminTabCtx }) {
     setNodeDetails,
     onboardingData,
     setOnboardingData,
-    passwordPatternInline,
-    setPasswordPatternInline,
     processing,
     setProcessing,
     individualUser,

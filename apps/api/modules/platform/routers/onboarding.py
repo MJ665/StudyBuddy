@@ -133,7 +133,6 @@ def complete_onboarding(body: OnboardingComplete, db: Session = Depends(get_db))
     group = models.Group(
         name=f"{org.slug}-admin",
         department_id=dept.id,
-        password_pattern="<name>@studybuddy",
         is_active=True,
     )
     db.add(group)

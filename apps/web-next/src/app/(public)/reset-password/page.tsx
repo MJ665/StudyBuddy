@@ -8,12 +8,10 @@ function ResetInner() {
   const router = useRouter();
   const params = useSearchParams();
   const email = params.get('email') ?? undefined;
-  const groupId = params.get('groupId');
 
   return (
     <ResetPasswordPage
       email={email}
-      groupId={groupId ? Number(groupId) : undefined}
       onBack={() => router.push('/login')}
       onSuccess={() => router.push('/login')}
     />

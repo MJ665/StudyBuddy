@@ -8,10 +8,8 @@ export default function ForgotPasswordRoute() {
   return (
     <ForgotPasswordPage
       onBack={() => router.push('/login')}
-      onSuccess={(email: string, groupId: number) =>
-        router.push(
-          `/reset-password?email=${encodeURIComponent(email)}&groupId=${groupId}`,
-        )
+      onSuccess={(email: string) =>
+        router.push(`/reset-password?email=${encodeURIComponent(email)}`)
       }
     />
   );

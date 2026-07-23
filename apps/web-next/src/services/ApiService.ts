@@ -27,7 +27,6 @@ export interface SystemConfig {
   resource_categories: string[];
   ai_languages: string[];
   learner_levels: string[];
-  password_patterns: string[];
   notification_types: Array<{ id: string; icon: string; color: string; bg: string }>;
 }
 
@@ -229,13 +228,6 @@ class ApiService {
     });
   }
 
-  static async superAdminLogin(password: string) {
-    return this.request('/auth/superadmin/login', {
-      method: 'POST',
-      body: JSON.stringify({ password })
-    });
-  }
-
   static async getUsers(params: { q?: string, role?: string, group_id?: number, page?: number, size?: number } = {}) {
     const q = new URLSearchParams();
     if (params.q) q.set('q', params.q);
@@ -289,24 +281,24 @@ class ApiService {
     return this.request(`/auth/groups/${groupId}/impersonate`, { method: 'POST' });
   }
 
-  static async bulkAddUsers(groupId: number, users: any[], passwordPattern?: string) {
+  static async bulkAddUsers(groupId: number, users: any[]) {
     return this.request(`/auth/groups/${groupId}/users/bulk`, {
       method: 'POST',
-      body: JSON.stringify({ users, password_pattern: passwordPattern })
+      body: JSON.stringify({ users })
     });
   }
 
-  static async forgotPassword(email: string, groupId: number) {
+  static async forgotPassword(email: string) {
     return this.request('/auth/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({ email, group_id: groupId })
+      body: JSON.stringify({ email })
     });
   }
 
-  static async resetPassword(email: string, groupId: number, otpCode: string, newPassword: string) {
+  static async resetPassword(email: string, otpCode: string, newPassword: string) {
     return this.request('/auth/reset-password', {
       method: 'POST',
-      body: JSON.stringify({ email, group_id: groupId, otp_code: otpCode, new_password: newPassword })
+      body: JSON.stringify({ email, otp_code: otpCode, new_password: newPassword })
     });
   }
 
@@ -622,7 +614,7 @@ class ApiService {
     });
   }
 
-  static async createGroupV3(data: { batch_id: number; name: string; password_pattern?: string }) {
+  static async createGroupV3(data: { batch_id: number; name: string }) {
     return this.request('/org/groups', {
       method: 'POST',
       body: JSON.stringify(data)

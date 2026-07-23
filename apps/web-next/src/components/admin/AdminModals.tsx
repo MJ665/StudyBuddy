@@ -102,7 +102,6 @@ export function BulkAddModal({ onClose, onSubmit, tree, currentUser }: any) {
   const assignedGroupId = currentUser?.assigned_groups?.[0] || currentUser?.group_id;
 
   const [groupId, setGroupId] = useState(isGroupAdmin && assignedGroupId ? String(assignedGroupId) : '');
-  const [passwordPattern, setPasswordPattern] = useState('<name>sigmoid@123');
   const [csvText, setCsvText] = useState('');
   const groups: any[] = [];
   tree?.forEach((o: any) => {
@@ -136,14 +135,8 @@ export function BulkAddModal({ onClose, onSubmit, tree, currentUser }: any) {
               </select>
             )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-[10px] font-black uppercase text-slate-500 mb-2">Password Pattern</label>
-              <input value={passwordPattern} onChange={(e) => setPasswordPattern(e.target.value)} className="w-full bg-slate-950 border border-white/5 rounded-2xl p-4 text-white font-bold outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all" placeholder="&lt;name&gt;sigmoid@123" />
-            </div>
-            <div className="flex items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-              <p className="text-[10px] text-indigo-400 leading-relaxed font-bold">System will auto-generate identities using the pattern. Use &lt;name&gt; as placeholder.</p>
-            </div>
+          <div className="flex items-center p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+            <p className="text-[10px] text-indigo-400 leading-relaxed font-bold">Each account receives individual credentials by email after onboarding.</p>
           </div>
           <div>
             <label className="block text-[10px] font-black uppercase text-slate-500 mb-2">Directory Registry (Format: Full Name, email@host.com)</label>
@@ -157,7 +150,7 @@ export function BulkAddModal({ onClose, onSubmit, tree, currentUser }: any) {
                 const [n, e] = l.split(',').map(s => s.trim());
                 return { full_name: n, email: e, role: 'Member' };
               });
-              onSubmit(parseInt(groupId), users, passwordPattern);
+              onSubmit(parseInt(groupId), users);
             }} disabled={!groupId || !csvText.trim()} className="flex-1 py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-xl shadow-indigo-600/30 hover:bg-indigo-500 transition-all">Begin Synchronization</button>
           </div>
         </div>

@@ -34,13 +34,8 @@ SYSTEM_CONFIG = {
         "Japanese",
         "Mandarin",
     ],
-    "password_patterns": [
-        "<name>sigmoid@123",
-        "<name>@2026",
-        "sigmoid@<year>",
-        "<name>@learn2026",
-        "train@<name>123",
-    ],
+    # (password_patterns removed — group-pattern login is retired; accounts
+    # use individual email credentials)
     "promotable_roles": {
         "LDAdmin": ["Mentor", "GroupAdmin", "LDAdmin"],
         "GroupAdmin": ["Mentor"],

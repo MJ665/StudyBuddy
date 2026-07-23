@@ -44,6 +44,29 @@ NEW_TABLES = ["org_units", "user_org_roles", "kt_document_chunks"]
 def provision_schema() -> None:
     with engine.begin() as conn:
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        # Group-pattern login retired (2026-07-23): patterns are no longer
+        # written, so the legacy NOT NULL constraint must go. Idempotent.
+        conn.execute(
+            text("ALTER TABLE groups ALTER COLUMN password_pattern DROP NOT NULL")
+        )
+        # password_reset_tokens.expires_at must be timestamptz — the asyncpg
+        # forgot-password path writes tz-aware datetimes. Conditional (only
+        # converts when the column is still naive), so reruns are no-ops.
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'password_reset_tokens'
+                      AND column_name = 'expires_at'
+                      AND data_type = 'timestamp without time zone'
+                ) THEN
+                    ALTER TABLE password_reset_tokens
+                        ALTER COLUMN expires_at TYPE TIMESTAMPTZ
+                        USING expires_at AT TIME ZONE 'UTC';
+                END IF;
+            END $$;
+        """))
     Base.metadata.create_all(
         bind=engine,
         tables=[Base.metadata.tables[t] for t in NEW_TABLES],

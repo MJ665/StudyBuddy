@@ -447,11 +447,11 @@ async def forgot_password(
         pass
 
     try:
+        # Email-first identity: email alone identifies the account (the legacy
+        # group_id qualifier is retired with the group-pattern login).
         user = (
             await db.run_sync(lambda s: s.query(models.User)
-            .filter(
-                models.User.email == req.email, models.User.group_id == req.group_id
-            )
+            .filter(models.User.email == req.email)
             .first())
         )
 
@@ -502,11 +502,7 @@ async def forgot_password(
 @router.post("/reset-password")
 def reset_password(req: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
     """Stage 2: Verify OTP and finalize new synchronization credentials."""
-    user = (
-        db.query(models.User)
-        .filter(models.User.email == req.email, models.User.group_id == req.group_id)
-        .first()
-    )
+    user = db.query(models.User).filter(models.User.email == req.email).first()
 
     if not user:
         raise HTTPException(status_code=404, detail="Entity not found")
@@ -562,21 +558,15 @@ def change_password(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # Group-pattern fallback retired: every account is issued individual
+    # credentials at creation, so a missing hash means recovery is required.
+    if user.password_hash is None:
+        raise HTTPException(
+            status_code=400,
+            detail="No password is set for this account. Use the password recovery flow.",
+        )
     if not verify_password(req.current_password, user.password_hash):
-        # Fallback to pattern check if hashed_password is null?
-        # Actually most users use hashed_password if they ever set one.
-        # If password_hash is null, it means they are using the group pattern.
-        if user.password_hash is None:
-            # FIX #7: null-guard — user.group may be None if group was deleted
-            if user.group is None:
-                raise HTTPException(
-                    status_code=400,
-                    detail="User has no group assignment; cannot verify pattern password",
-                )
-            if req.current_password != user.group.password_pattern:
-                raise HTTPException(status_code=400, detail="Invalid current password")
-        else:
-            raise HTTPException(status_code=400, detail="Invalid current password")
+        raise HTTPException(status_code=400, detail="Invalid current password")
 
     user.password_hash = get_password_hash(req.new_password)
     db.commit()

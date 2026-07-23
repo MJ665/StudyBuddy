@@ -8,7 +8,6 @@
  */
 
 export const VIEW_TO_ROUTE: Record<string, string> = {
-  LOGIN: '/login',
   DASHBOARD: '/dashboard',
   LD_ADMIN: '/admin',
   MENTOR: '/mentor',

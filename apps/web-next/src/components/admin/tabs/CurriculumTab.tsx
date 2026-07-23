@@ -112,8 +112,6 @@ export default function CurriculumTab({ ctx }: { ctx: AdminTabCtx }) {
     setNodeDetails,
     onboardingData,
     setOnboardingData,
-    passwordPatternInline,
-    setPasswordPatternInline,
     processing,
     setProcessing,
     individualUser,
