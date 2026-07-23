@@ -69,16 +69,25 @@ def ensure_system(db=None):
                 print("✅ System Admin profile backfilled.")
 
         # 2b. Ensure Platform Super Admin (top of hierarchy, owns /platform).
+        # ONE credential source: settings.APP_ADMIN_PASSWORD — the same value
+        # /auth/superadmin/login verifies. (Previously this hardcoded a
+        # literal password that drifted from the env value, so the operator
+        # had two different credentials for the same identity.)
+        from config import settings as _settings
+
         PLATFORM_EMAIL = "meet.jain563@gmail.com"
+        _admin_pw = (_settings.APP_ADMIN_PASSWORD or "").encode()
         padmin = (
             db.query(models.User)
             .filter(models.User.email == PLATFORM_EMAIL)
             .first()
         )
-        if not padmin:
+        if not _admin_pw:
+            print("⚠️ APP_ADMIN_PASSWORD unset — skipping Platform Admin seeding.")
+        elif not padmin:
             import bcrypt as _bcrypt
 
-            pw_hash = _bcrypt.hashpw(b"MJ@2026", _bcrypt.gensalt()).decode()
+            pw_hash = _bcrypt.hashpw(_admin_pw, _bcrypt.gensalt()).decode()
             padmin = models.User(
                 email=PLATFORM_EMAIL,
                 full_name="Platform Admin",
@@ -91,8 +100,8 @@ def ensure_system(db=None):
             db.commit()
             print("✅ Platform Super Admin seeded.")
         else:
-            # Enforce the designated role AND credentials (this email may already
-            # exist as an L&D Admin; the Platform Admin login must be MJ@2026).
+            # Enforce the designated role AND env-sourced credentials (this
+            # email may already exist as an L&D Admin).
             import bcrypt as _bcrypt
 
             changed = False
@@ -100,10 +109,10 @@ def ensure_system(db=None):
                 padmin.role = "PlatformAdmin"
                 changed = True
             if not padmin.password_hash or not _bcrypt.checkpw(
-                b"MJ@2026", padmin.password_hash.encode()
+                _admin_pw, padmin.password_hash.encode()
             ):
                 padmin.password_hash = _bcrypt.hashpw(
-                    b"MJ@2026", _bcrypt.gensalt()
+                    _admin_pw, _bcrypt.gensalt()
                 ).decode()
                 changed = True
             if changed:

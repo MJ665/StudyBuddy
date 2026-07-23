@@ -143,6 +143,19 @@ def get_user_jwt_payload(user: User, db: Session) -> Dict:
     org_id = resolve_user_organization_id(user, db)
 
     if org_id is None:
+        # Platform-level identities (the vendor operator + the ID-0 system
+        # identity) are cross-org BY DESIGN — they administer /platform, not
+        # any single organization. Their tokens carry organization_id=None;
+        # every org-scoping helper already treats None as "deny", so this
+        # cannot widen data access — platform endpoints gate on the role.
+        if user.role == "PlatformAdmin" or user.id == 0:
+            return {
+                "sub": str(user.id),
+                "name": user.full_name,
+                "role": user.role,
+                "group_id": user.group_id,
+                "organization_id": None,
+            }
         # Fail closed. A token without a resolvable tenant cannot be scoped, so
         # issuing one would hand the bearer an ambiguous identity.
         logger.error(
@@ -221,15 +234,22 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> Dict:
             # a self-asserted tenant id would defeat every downstream org filter.
             org_id = resolve_user_organization_id(user, db)
             if org_id is None:
-                logger.error(
-                    "🔐 Cannot resolve organization for user %s; denying request.",
-                    user.id,
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Your account is not linked to an organization.",
-                )
-            payload["organization_id"] = org_id
+                # Platform-level identities (vendor operator + ID-0 system) are
+                # cross-org by design; org-scoping helpers treat None as
+                # "deny", so this cannot widen tenant data access.
+                if user.role == "PlatformAdmin" or user.id == 0:
+                    payload["organization_id"] = None
+                else:
+                    logger.error(
+                        "🔐 Cannot resolve organization for user %s; denying request.",
+                        user.id,
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Your account is not linked to an organization.",
+                    )
+            else:
+                payload["organization_id"] = org_id
             assert_tenant_active(org_id, db, user.role)
 
         except HTTPException:
