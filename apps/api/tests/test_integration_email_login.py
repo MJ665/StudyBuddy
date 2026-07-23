@@ -102,28 +102,20 @@ class TestEmailLogin:
         assert r.status_code == 401
         assert r.json()["detail"] == "Invalid email or password"
 
-    def test_legacy_group_pattern_login_still_works(self, client, seeded_user):
-        """A pattern-era user (no password_hash) logs in with the group
-        pattern until Phase 4 flips the frontend."""
+    def test_legacy_group_pattern_login_is_retired(self, client, seeded_user):
+        """The group-pattern shape must be REJECTED with guidance (Phase 6):
+        every account now receives individual credentials at creation."""
         user, group = seeded_user
-        db = SessionLocal()
-        try:
-            db.query(models.User).filter(models.User.id == user.id).update(
-                {"password_hash": None}
-            )
-            db.commit()
-            r = client.post(
-                "/api/auth/login",
-                json={
-                    "group_id": group.id,
-                    "full_name": user.full_name,
-                    # pattern "<name>@Test123" with first name "email" (sanitized)
-                    "password": "email@Test123",
-                },
-            )
-            assert r.status_code == 200, r.text
-        finally:
-            db.close()
+        r = client.post(
+            "/api/auth/login",
+            json={
+                "group_id": group.id,
+                "full_name": user.full_name,
+                "password": "email@Test123",
+            },
+        )
+        assert r.status_code == 422
+        assert "retired" in r.json()["detail"]
 
     def test_missing_both_shapes_is_422(self, client):
         r = client.post("/api/auth/login", json={"password": "x"})

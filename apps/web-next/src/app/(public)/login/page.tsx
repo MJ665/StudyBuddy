@@ -1,18 +1,16 @@
 'use client';
 
 /**
- * Email-first login (Phase 4 rebuild — owner decision #6).
+ * Email-first login (owner decision #6) — the ONLY sign-in path.
  *
- * Individual email + password credentials against the rebuilt backend.
- * The legacy group-based login remains reachable behind a toggle until every
- * account has an individual password; it disappears in Phase 6.
+ * Individual email + password credentials; new accounts receive theirs by
+ * email at creation. The legacy group-pattern login is fully retired.
  */
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { KeyRound, Loader2, Mail } from 'lucide-react';
 
-import LoginView from '@/components/auth/LoginView';
 import ApiService from '@/services/ApiService';
 import { landingRouteFor, useSessionStore } from '@/stores/sessionStore';
 
@@ -23,7 +21,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [legacyMode, setLegacyMode] = useState(false);
 
   useEffect(() => {
     if (!hydrated) void hydrate();
@@ -55,23 +52,6 @@ export default function LoginPage() {
       setBusy(false);
     }
   };
-
-  if (legacyMode) {
-    return (
-      <div className="min-h-screen bg-slate-950">
-        <LoginView
-          onLoginSuccess={() => void finishLogin()}
-          onForgotPassword={() => router.push('/forgot-password')}
-        />
-        <button
-          onClick={() => setLegacyMode(false)}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 text-xs text-slate-500 hover:text-slate-300 underline"
-        >
-          ← Back to email sign-in
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
@@ -141,13 +121,6 @@ export default function LoginPage() {
               className="text-slate-400 hover:text-white"
             >
               Forgot password?
-            </button>
-            <button
-              type="button"
-              onClick={() => setLegacyMode(true)}
-              className="text-slate-500 hover:text-slate-300"
-            >
-              Group sign-in (legacy)
             </button>
           </div>
         </form>

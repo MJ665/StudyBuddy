@@ -197,12 +197,7 @@ class ApiService {
     return this.request('/auth/groups');
   }
 
-  static async login(groupId: number, fullName: string, password: string) {
-    return this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ group_id: groupId, full_name: fullName, password })
-    });
-  }
+  // (legacy group-pattern login removed — Phase 6; use loginWithEmail)
 
   /** Email-first login (Phase 4 rebuild) — individual credentials.
    * Auth transport: short-lived access token in localStorage → Authorization

@@ -34,12 +34,11 @@ class UserCreate(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    """Email-first login (Phase 3 rebuild).
+    """Email-first login — individual credentials only.
 
-    Preferred shape: {email, password} — individual credentials.
-    Legacy shape: {group_id, full_name, password} — group password-pattern
-    login, kept only until the frontend flips to email login (Phase 4);
-    removed in Phase 6.
+    The legacy {group_id, full_name} shape is retired (Phase 6); the fields
+    remain optional-and-ignored so old clients receive the 422 guidance from
+    the handler instead of a schema-level validation wall.
     """
 
     password: str
