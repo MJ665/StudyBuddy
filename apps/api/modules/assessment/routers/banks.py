@@ -161,7 +161,10 @@ def create_bank(
         sprint_name=bank_data.sprint_name,
         chapter=bank_data.chapter,
         difficulty=bank_data.difficulty,
-        created_by=bank_data.created_by,
+        # created_by is NOT NULL and must be the authenticated author, not a
+        # client-supplied value (which defaulted to None → 500, and let a caller
+        # spoof authorship). Take it from the token.
+        created_by=int(current_user["sub"]),
         description=bank_data.description,
         time_per_question=bank_data.time_per_question,
         max_questions=bank_data.max_questions,
