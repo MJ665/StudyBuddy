@@ -16,7 +16,11 @@ import re
 import pytest
 
 API_ROOT = pathlib.Path(__file__).resolve().parent.parent
-API_SERVICE = API_ROOT.parent / "web-next" / "src" / "services" / "ApiService.ts"
+SERVICES_DIR = API_ROOT.parent / "web-next" / "src" / "services"
+API_SERVICE = SERVICES_DIR / "ApiService.ts"
+# ApiService was split into an inheritance chain (apiShared + apiClient0..3) to
+# stay under the 800-line cap; the endpoint strings now live across those files.
+API_SERVICE_FILES = [API_SERVICE, *sorted(SERVICES_DIR.glob("apiClient*.ts"))]
 
 
 def _backend_routes() -> set[str]:
@@ -30,13 +34,16 @@ def _backend_routes() -> set[str]:
 
 
 def _frontend_paths() -> set[str]:
-    src = API_SERVICE.read_text()
     found: set[str] = set()
-    # backtick template literals may contain quotes inside ${...}
-    for m in re.finditer(r"(?:this\.request|this\.getEventSource)\(\s*`(/[^`]*)`", src):
-        found.add(m.group(1))
-    for m in re.finditer(r"(?:this\.request|this\.getEventSource)\(\s*'(/[^']*)'", src):
-        found.add(m.group(1))
+    for path in API_SERVICE_FILES:
+        if not path.exists():
+            continue
+        src = path.read_text()
+        # backtick template literals may contain quotes inside ${...}
+        for m in re.finditer(r"(?:this\.request|this\.getEventSource)\(\s*`(/[^`]*)`", src):
+            found.add(m.group(1))
+        for m in re.finditer(r"(?:this\.request|this\.getEventSource)\(\s*'(/[^']*)'", src):
+            found.add(m.group(1))
     return found
 
 
