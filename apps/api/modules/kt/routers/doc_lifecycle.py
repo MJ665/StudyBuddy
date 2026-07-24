@@ -278,7 +278,10 @@ async def list_documents(
 
     await db.scalar(select(func.count()).select_from(q.subquery()))
     result = await db.execute(
-        q.order_by(KTDocument.updated_at.desc().nullslast())
+        # Eager-load endorsements: KTDocumentOut reads them during model_validate,
+        # and a lazy-load on an async-detached row raises MissingGreenlet.
+        q.options(selectinload(KTDocument.endorsements))
+        .order_by(KTDocument.updated_at.desc().nullslast())
         .offset((page - 1) * size)
         .limit(size)
     )

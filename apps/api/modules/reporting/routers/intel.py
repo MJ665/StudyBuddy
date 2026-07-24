@@ -164,8 +164,8 @@ Learning Trajectory: {m["m17b_velocity_label"]["value"]} ({m["m17_velocity"]["va
 Consistency Profile: {m["m18b_consistency_label"]["value"]} (Score: {m["m18_consistency"]["value"]})
 Coding Lab: {m["m12_coding_attempts"]["value"]} attempts, Avg Score: {m["m13_avg_ai_score"]["value"]}
 Assignment Completion: {m["m16_assignment_rate"]["value"]}
-Best Topic: {c["best_topic"]["topic"] if c.get("best_topic") else "N/A"} ({c["best_topic"]["avg_accuracy"]}% accuracy if c.get('best_topic') else '')
-Weakest Topic: {c["worst_topic"]["topic"] if c.get("worst_topic") else "N/A"} ({c["worst_topic"]["avg_accuracy"]}% accuracy if c.get('worst_topic') else '')
+Best Topic: {(c["best_topic"]["topic"] + " (" + str(c["best_topic"]["avg_accuracy"]) + "% accuracy)") if c.get("best_topic") else "N/A"}
+Weakest Topic: {(c["worst_topic"]["topic"] + " (" + str(c["worst_topic"]["avg_accuracy"]) + "% accuracy)") if c.get("worst_topic") else "N/A"}
 Engagement Profile: {m["m28_engagement"]["value"]}
 Risk Assessment: {m["m29_risk"]["value"]}
 Group Percentile: {m["m26_percentile"]["value"]}

@@ -410,7 +410,7 @@ def get_group_stats(
 
     curriculum_insights = []
     for ch, stats in chapters.items():
-        acc = (stats["correct"] / stats.total * 100) if stats.total > 0 else 0
+        acc = (stats["correct"] / stats["total"] * 100) if stats["total"] > 0 else 0
         curriculum_insights.append(
             {
                 "topic": ch,

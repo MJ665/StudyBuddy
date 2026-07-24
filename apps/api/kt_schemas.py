@@ -296,6 +296,16 @@ class KTDocumentOut(BaseModel):
     can_edit: bool = False  # set by router based on current user
     model_config = ConfigDict(from_attributes=True)
 
+    @field_validator("date_range_start", "date_range_end", mode="before")
+    @classmethod
+    def _coerce_datetime_to_date(cls, v):
+        # The DB stores these as DateTime(timezone=True); this schema field is a
+        # `date`. Pydantic v2 rejects a datetime with a non-zero time for a date
+        # field (date_from_datetime_inexact), which 500'd document serialization.
+        if isinstance(v, datetime):
+            return v.date()
+        return v
+
 
 class SubmitDocumentRequest(BaseModel):
     mentor_id: Optional[int] = None
