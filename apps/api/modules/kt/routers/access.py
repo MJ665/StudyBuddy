@@ -3,11 +3,149 @@ Access keys and verification
 """
 
 from fastapi import APIRouter
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.kt.routers._shared import *  # noqa: F401, F403
 
 router = APIRouter()
+
+
+class RedeemKeyRequest(BaseModel):
+    raw_key: str
+
+
+@router.post("/keys/redeem")
+async def redeem_key(
+    body: RedeemKeyRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user_with_db_role),
+):
+    """Redeem an access key to gain PERSISTENT access to a company's project
+    knowledge. Adds the caller as a KTProjectMember (DocumentContributor) for the
+    key's projects, so they can then upload knowledge AND chat over it — even
+    after this request (unlike the per-request X-KT-Key header path)."""
+    uid = int(current_user["sub"])
+    org_id = int(current_user["organization_id"])
+
+    raw = (body.raw_key or "").strip()
+    if not raw or not verify_access_key_signature(raw):
+        raise HTTPException(401, "Invalid access key")
+    key_hash = hashlib.sha256(raw.encode()).hexdigest()
+    res = await db.execute(select(KTAccessKey).where(KTAccessKey.key_hash == key_hash))
+    key = res.scalar_one_or_none()
+    if not key or not key.is_active or key.revoked_at is not None:
+        raise HTTPException(401, "Access key revoked or invalid")
+    if key.expires_at and key.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(401, "Access key expired")
+    if key.organization_id != org_id:
+        raise HTTPException(403, "This access key belongs to another organization.")
+    if key.max_uses and key.use_count >= key.max_uses:
+        raise HTTPException(401, "Access key exhausted (max uses reached).")
+
+    project_ids = _normalize_grant_list(key.project_ids)
+    if not project_ids:
+        raise HTTPException(400, "This access key grants no project knowledge.")
+
+    newly_added = []
+    for pid in project_ids:
+        exists = await db.execute(
+            select(KTProjectMember).where(
+                KTProjectMember.project_id == pid, KTProjectMember.user_id == uid
+            )
+        )
+        if exists.scalar_one_or_none():
+            continue
+        db.add(
+            KTProjectMember(
+                project_id=pid, user_id=uid, role_in_project="DocumentContributor"
+            )
+        )
+        newly_added.append(pid)
+
+    key.use_count += 1
+    key.last_used_at = datetime.now(timezone.utc)
+    await _audit(
+        db,
+        org_id,
+        AuditActionEnum.KEY_USED,
+        company_id=key.company_id,
+        user_id=uid,
+        resource_type="access_key",
+        resource_id=key.id,
+        meta={"redeemed_projects": project_ids, "newly_added": newly_added},
+    )
+    await db.commit()
+    return {
+        "company_id": key.company_id,
+        "granted_project_ids": project_ids,
+        "newly_added": newly_added,
+        "message": "Access granted. You can now contribute to and chat over this project's knowledge.",
+    }
+
+
+@router.get("/me/access")
+async def my_access(
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user_with_db_role),
+):
+    """Companies + projects the caller can retrieve/contribute to (their grants)."""
+    uid = int(current_user["sub"])
+    rows = await db.execute(
+        select(KTProjectMember.project_id).where(KTProjectMember.user_id == uid)
+    )
+    pids = [r[0] for r in rows.all()]
+    if not pids:
+        return {"companies": []}
+    proj_rows = await db.execute(
+        select(KTProject.id, KTProject.name, KTProject.company_id).where(
+            KTProject.id.in_(pids)
+        )
+    )
+    by_company: dict = {}
+    company_ids = set()
+    for pid, pname, cid in proj_rows.all():
+        by_company.setdefault(cid, []).append({"id": pid, "name": pname})
+        company_ids.add(cid)
+    comp_rows = await db.execute(
+        select(KTCompany.id, KTCompany.name).where(KTCompany.id.in_(company_ids))
+    )
+    names = {cid: cname for cid, cname in comp_rows.all()}
+    return {
+        "companies": [
+            {"company_id": cid, "company_name": names.get(cid, "Company"), "projects": projs}
+            for cid, projs in by_company.items()
+        ]
+    }
+
+
+@router.get("/me/keys")
+async def my_keys(
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user_with_db_role),
+):
+    """Access keys issued to the caller's email (metadata only — never the raw key)."""
+    user = await db.get(User, int(current_user["sub"]))
+    if not user or not user.email:
+        return []
+    res = await db.execute(
+        select(KTAccessKey).where(
+            func.lower(KTAccessKey.recipient_email) == user.email.strip().lower()
+        )
+    )
+    keys = res.scalars().all()
+    return [
+        {
+            "id": k.id,
+            "key_prefix": k.key_prefix,
+            "scope_label": k.scope_label,
+            "company_id": k.company_id,
+            "project_ids": _normalize_grant_list(k.project_ids),
+            "expires_at": k.expires_at,
+            "revoked": k.revoked_at is not None or not k.is_active,
+        }
+        for k in keys
+    ]
 
 @router.post("/keys/generate")
 async def generate_key(
@@ -109,6 +247,38 @@ async def generate_key(
         "message": "Save the raw_key — it will not be shown again.",
     }
 
+
+
+@router.get("/me/documents")
+async def my_documents(
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user_with_db_role),
+):
+    """Knowledge documents the caller authored or co-authored (their own uploads)."""
+    uid = int(current_user["sub"])
+    res = await db.execute(
+        select(KTDocument)
+        .where(
+            or_(
+                KTDocument.author_id == uid,
+                KTDocument.co_author_ids.contains([uid]),
+            )
+        )
+        .order_by(KTDocument.updated_at.desc().nullslast())
+        .limit(200)
+    )
+    docs = res.scalars().all()
+    return [
+        {
+            "id": d.id,
+            "title": d.title,
+            "status": d.status.value if hasattr(d.status, "value") else d.status,
+            "project_id": d.project_id,
+            "company_id": d.company_id,
+            "updated_at": d.updated_at,
+        }
+        for d in docs
+    ]
 
 
 @router.get("/keys/scope")
