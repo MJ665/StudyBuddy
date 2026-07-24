@@ -505,6 +505,21 @@ async def submit_document(
                 "document",
                 doc_id,
             )
+            # Mobile push to the reviewer (best-effort; the app deep-links to /kt).
+            try:
+                from services.push_service import send_push_to_user
+
+                await db.run_sync(
+                    lambda s: send_push_to_user(
+                        s,
+                        doc.mentor_id,
+                        "KT review needed",
+                        f'"{doc.title}" is awaiting your approval',
+                        url="/kt",
+                    )
+                )
+            except Exception:
+                pass
             await db.commit()
         else:
             logger.warning(
@@ -587,7 +602,7 @@ async def ingestion_status(
     current_user: dict = Depends(get_current_user_with_db_role),
 ):
     org_id = int(current_user["organization_id"])
-    await _get_doc_or_404(doc_id, org_id, db)
+    doc = await _get_doc_or_404(doc_id, org_id, db)
 
     import json
 
@@ -611,12 +626,14 @@ async def ingestion_status(
     if not job:
         return {"status": None}
 
+    # The pipeline updates the DOCUMENT (ingestion_status / chunk_count), not the
+    # job row — so the document is the authoritative source of truth.
+    doc_ing = getattr(doc.ingestion_status, "value", doc.ingestion_status)
     res = {
         "job_id": job.id,
-        "status": job.status,
-        "chunks_created": job.chunks_created,
+        "status": doc_ing or job.status,
+        "chunks_created": doc.chunk_count or job.chunks_created,
         "nodes_created": job.nodes_created,
-        "edges_created": job.edges_created,
         "error_message": job.error_message,
         "started_at": job.started_at.isoformat() if job.started_at else None,
         "completed_at": job.completed_at.isoformat() if job.completed_at else None,
@@ -671,7 +688,6 @@ async def ingestion_status_stream(
                     "status": job.status,
                     "chunks_created": job.chunks_created,
                     "nodes_created": job.nodes_created,
-                    "edges_created": job.edges_created,
                     "error_message": job.error_message,
                 }
                 yield f"data: {json.dumps(data)}\n\n"

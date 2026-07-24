@@ -217,7 +217,10 @@ async def _resolve_retrieval_scope(
             granted &= set(_normalize_grant_list(requested_project_ids))
         if not granted:
             raise HTTPException(403, "This access key grants no project knowledge.")
-        return key_record.company_id, sorted(granted), key_record.id
+        # 4-tuple: (company_id, project_ids, access_key_id, org_id). org_id comes
+        # from the key for anonymous (X-KT-Key) callers who have no JWT. Callers
+        # (chat.py, explorer.py) unpack all four.
+        return key_record.company_id, sorted(granted), key_record.id, key_record.organization_id
 
     if not current_user:
         raise HTTPException(401, "Authentication required (JWT or X-KT-Key)")
@@ -257,7 +260,7 @@ async def _resolve_retrieval_scope(
     if not company or company.organization_id != org_id:
         raise HTTPException(404, "Company not found")
 
-    return company_id, granted, None
+    return company_id, granted, None, org_id
 
 
 async def _sensitivities_for_session(session, db: AsyncSession) -> list[str]:

@@ -521,6 +521,10 @@ class KTIngestionJob(Base):
     started_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True))
     duration_seconds: Mapped[float | None] = mapped_column(Float)
+    # Ordering column the ingestion-status endpoint reads to find the latest job.
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     document = relationship("KTDocument", back_populates="ingestion_jobs")
 
 class KTProjectMember(Base):

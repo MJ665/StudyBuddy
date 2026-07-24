@@ -51,6 +51,18 @@ async def review_document(
             resource_type="document",
             resource_id=doc_id,
         )
+        # Approval-gated ingestion: approving AUTO-ENQUEUES ingestion, so the
+        # document becomes queryable knowledge without a separate manual "feed".
+        # (Only APPROVED docs reach INGESTED; retrieval filters on INGESTED.)
+        job = KTIngestionJob(
+            document_id=doc_id,
+            triggered_by_id=uid,
+            is_re_ingestion=False,
+            status=IngestionStatusEnum.PENDING,
+        )
+        db.add(job)
+        await enqueue_job(db, JOB_KT_INGEST, {"document_id": str(doc.id)})
+
         if author:
             await enqueue_job(
                 db,
@@ -64,7 +76,7 @@ async def review_document(
                 doc.company_id,
                 "doc_approved",
                 "Document approved! 🎉",
-                f'"{doc.title}" was approved and will be ingested.',
+                f'"{doc.title}" was approved and is being ingested into the knowledge base.',
                 "document",
                 doc_id,
             )

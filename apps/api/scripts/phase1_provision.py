@@ -79,6 +79,12 @@ def provision_schema() -> None:
                 WHERE lower(k.email) = lower(u.email) AND k.id < u.id
             );
         """))
+        # kt_ingestion_jobs.created_at — the ingestion-status endpoint orders by
+        # it; the column was missing from the table. Idempotent.
+        conn.execute(text(
+            "ALTER TABLE kt_ingestion_jobs ADD COLUMN IF NOT EXISTS "
+            "created_at TIMESTAMPTZ NOT NULL DEFAULT now()"
+        ))
         conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS uq_user_email_group"))
         conn.execute(text("""
             DO $$
