@@ -239,6 +239,10 @@ app.include_router(onboarding_router, prefix="/api")
 app.include_router(exam_router, prefix="/api")
 app.include_router(gradebook_router, prefix="/api")
 
+# Mobile push-token registration (apps/mobile wrapper) → /api/notifications/register-device
+from modules.identity.routers import devices as _devices  # noqa: E402
+app.include_router(_devices.router, prefix="/api/notifications")
+
 import tasks  # noqa: E402
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # noqa: E402
 

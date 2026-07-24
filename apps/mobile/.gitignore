@@ -1,0 +1,17 @@
+# Expo / RN
+.expo/
+dist/
+web-build/
+node_modules/
+*.log
+
+# Native builds
+/android
+/ios
+*.apk
+*.aab
+
+# Secrets — NEVER commit
+.env
+google-services.json
+play-service-account.json

@@ -22,6 +22,7 @@ from .kt_model import *  # noqa: F403
 from .learning_path import UserLearningPath  # noqa: F401
 from .mentor import MentorComment  # noqa: F401
 from .notification import Notification  # noqa: F401
+from .device_token import DeviceToken  # noqa: F401
 from .org import (  # noqa: F401
     Batch,
     Department,

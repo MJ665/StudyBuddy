@@ -155,6 +155,8 @@ def create_assignment(
             link_type = "coding"
             link_id = data.coding_question_id
 
+        from services.push_service import send_push_to_user
+
         for u in users_to_notify:
             notif = models.Notification(
                 user_id=u.id,
@@ -165,6 +167,18 @@ def create_assignment(
                 link_id=link_id,
             )
             db.add(notif)
+
+            # Mobile push (best-effort; never blocks the assignment).
+            try:
+                send_push_to_user(
+                    db,
+                    u.id,
+                    f"New Assignment: {item_name}",
+                    data.instructions or "Please complete the new assignment.",
+                    url="/assignments",
+                )
+            except Exception:
+                pass
 
             # TRIGGER-003: Email Mandate Notification
             if u.email:
