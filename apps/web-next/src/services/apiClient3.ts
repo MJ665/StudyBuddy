@@ -249,6 +249,41 @@ export class ApiClient3 extends ApiClient2 {
     return this.request(`/kt/chat/sessions/${sessionId}/messages?page=${page}&size=50`);
   }
 
+  /** ChatGPT-style multi-session history for the current user (optionally per company). */
+  static async getKTSessions(companyId?: string) {
+    const q = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
+    return this.request(`/kt/chat/sessions${q}`);
+  }
+
+  static async renameKTSession(sessionId: string, title: string) {
+    return this.request(`/kt/chat/sessions/${sessionId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ title }),
+    });
+  }
+
+  static async deleteKTSession(sessionId: string) {
+    return this.request(`/kt/chat/sessions/${sessionId}`, { method: 'DELETE' });
+  }
+
+  /** Redeem an access key → persistent access to a company's project knowledge. */
+  static async redeemKTKey(rawKey: string) {
+    return this.request('/kt/keys/redeem', {
+      method: 'POST',
+      body: JSON.stringify({ raw_key: rawKey }),
+    });
+  }
+
+  /** Companies/projects the current user can access (via grants). */
+  static async getMyKTAccess() {
+    return this.request('/kt/me/access');
+  }
+
+  /** Knowledge documents the current user has authored. */
+  static async getMyKTDocuments() {
+    return this.request('/kt/me/documents');
+  }
+
   static async submitChatFeedback(messageId: string, feedback: 1 | -1, note?: string) {
     return this.request('/kt/chat/feedback', {
       method: 'POST',
