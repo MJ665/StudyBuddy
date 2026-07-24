@@ -136,6 +136,10 @@ export class ApiClient1 extends ApiClient0 {
     return this.request('/auth/logout-all', { method: 'POST' });
   }
 
+  static async deleteAccount() {
+    return this.request('/auth/me/delete-account', { method: 'POST' });
+  }
+
   static async getSessions() {
     return this.request('/auth/me/sessions');
   }

@@ -573,6 +573,56 @@ def change_password(
 
     return {"success": True, "message": "Password updated successfully."}
 
+@router.post("/me/delete-account")
+def delete_account(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token),
+):
+    """Self-service account deletion (Google Play requirement).
+
+    Soft-deletes: deactivates the account, anonymizes personal identifiers,
+    erases credentials, and revokes all sessions + push tokens. Assessment rows
+    remain (owned by the org) but are no longer linked to identifiable PII.
+    """
+    user = (
+        db.query(models.User).filter(models.User.id == int(current_user["sub"])).first()
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.id == 0 or user.role == "PlatformAdmin":
+        raise HTTPException(
+            status_code=403, detail="System/operator accounts cannot self-delete."
+        )
+
+    # Revoke sessions + push tokens.
+    db.query(models.RefreshToken).filter(
+        models.RefreshToken.user_id == user.id
+    ).delete()
+    db.query(models.DeviceToken).filter(
+        models.DeviceToken.user_id == user.id
+    ).delete()
+
+    # Deactivate + anonymize PII.
+    user.is_active = False
+    user.full_name = "Deleted User"
+    user.email = f"deleted-{user.id}@deleted.invalid"
+    user.password_hash = None
+    user.custom_slug = None
+    user.bio = None
+    user.profile_photo_url = None
+
+    log_admin_action(
+        db=db,
+        actor_id=user.id,
+        actor_role=user.role,
+        action="DELETE_ACCOUNT_SELF",
+        resource_type="USER",
+        resource_id=user.id,
+        details={"method": "self-service"},
+    )
+    db.commit()
+    return {"status": "deleted"}
+
 @router.get("/me/sessions")
 def get_active_sessions(
     db: Session = Depends(get_db), current_user: dict = Depends(verify_token)

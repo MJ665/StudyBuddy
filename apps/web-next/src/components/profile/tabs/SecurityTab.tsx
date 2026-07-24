@@ -145,6 +145,29 @@ export default function SecurityTab({ ctx }: { ctx: ProfileTabCtx }) {
                       Invoke Global Logout
                     </button>
                   </div>
+
+                  <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-6">
+                    <p className="text-xs font-black uppercase tracking-widest text-rose-400 mb-2">Delete account</p>
+                    <p className="text-xs text-slate-400 leading-relaxed mb-6">
+                      Permanently deactivate your account and erase your personal identifiers (name, email, credentials). This cannot be undone.
+                    </p>
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm('This permanently deletes your account and personal data. This cannot be undone. Continue?')) return;
+                        if (!window.confirm('Are you absolutely sure? Type of last confirmation — your account will be erased.')) return;
+                        try {
+                          await ApiService.deleteAccount();
+                          toast('success', 'Your account has been deleted.');
+                          setTimeout(() => ApiService.logout(), 1500);
+                        } catch (err: any) {
+                          toast('error', err.message || 'Failed to delete account');
+                        }
+                      }}
+                      className="w-full py-4 bg-rose-600/10 hover:bg-rose-600 text-rose-400 hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-[0.98]"
+                    >
+                      Delete My Account
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>
