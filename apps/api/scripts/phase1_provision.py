@@ -67,6 +67,29 @@ def provision_schema() -> None:
                 END IF;
             END $$;
         """))
+        # Email is now a GLOBAL unique identity (was unique per (email, group_id)).
+        # 1) Anonymize any duplicate emails (keep the lowest id — the canonical
+        #    account, e.g. the Platform Admin), so the unique index can be added.
+        # 2) Swap uq_user_email_group → uq_user_email. All idempotent.
+        conn.execute(text("""
+            UPDATE users u
+            SET email = 'dup-' || u.id || '-' || u.email, is_active = false
+            WHERE EXISTS (
+                SELECT 1 FROM users k
+                WHERE lower(k.email) = lower(u.email) AND k.id < u.id
+            );
+        """))
+        conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS uq_user_email_group"))
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint WHERE conname = 'uq_user_email'
+                ) THEN
+                    ALTER TABLE users ADD CONSTRAINT uq_user_email UNIQUE (email);
+                END IF;
+            END $$;
+        """))
     Base.metadata.create_all(
         bind=engine,
         tables=[Base.metadata.tables[t] for t in NEW_TABLES],

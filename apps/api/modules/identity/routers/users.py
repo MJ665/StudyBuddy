@@ -154,14 +154,21 @@ def create_user(
     if user.group_id != current_user["group_id"]:
         raise HTTPException(status_code=403, detail="Forbidden")
 
-    db_user = (
+    # Email is a GLOBAL identity (one email = one account platform-wide). Block
+    # any existing use of this email anywhere — including the Platform Admin /
+    # another group — so email-based login never has an ambiguous account.
+    existing = (
         db.query(models.User)
-        .filter(models.User.email == user.email, models.User.group_id == user.group_id)
+        .filter(func.lower(models.User.email) == user.email.strip().lower())
         .first()
     )
-    if db_user:
-        raise HTTPException(status_code=400, detail="User already exists in this group")
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"An account with the email {user.email} already exists.",
+        )
     user_data = user.model_dump()
+    user_data["email"] = user.email.strip().lower()
     password = user_data.pop("password", None)
     temp_password = None
     if password:
@@ -440,13 +447,18 @@ def bulk_create_users(
     # credentials below; the request field is gone from the schema)
 
     new_users = []
+    skipped_duplicates = []
     for item in req.users:
-        # Check if user already exists in this group
+        # Email is a GLOBAL identity — skip any email already registered anywhere
+        # (not just this group), so bulk import can never create a duplicate.
+        item_email = (item.email or "").strip().lower()
         db_user = (
             db.query(models.User)
-            .filter(models.User.email == item.email, models.User.group_id == group_id)
+            .filter(func.lower(models.User.email) == item_email)
             .first()
         )
+        if db_user:
+            skipped_duplicates.append(item_email)
 
         if not db_user:
             # Auto-generate custom slug (PHASE-3)
@@ -459,7 +471,7 @@ def bulk_create_users(
 
             user_data = {
                 "full_name": item.full_name,
-                "email": item.email,
+                "email": item_email,
                 "group_id": group_id,
                 "role": item.role,
                 "member_id": item.member_id,
@@ -509,9 +521,10 @@ def bulk_create_users(
         details={"count": len(new_users), "group_id": group_id},
     )
 
-    return {
-        "message": f"Successfully onboarded {len(new_users)} users to group {db_group.name}"
-    }
+    msg = f"Successfully onboarded {len(new_users)} users to group {db_group.name}"
+    if skipped_duplicates:
+        msg += f". Skipped {len(skipped_duplicates)} already-registered email(s)."
+    return {"message": msg, "skipped_duplicates": skipped_duplicates}
 
 @router.patch("/users/{user_id}/deactivate")
 def deactivate_user(
@@ -547,6 +560,59 @@ def deactivate_user(
 
     db.commit()
     return {"success": True, "is_active": user.is_active == True, "user_id": user_id}
+
+@router.delete("/users/{user_id}")
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token),
+):
+    """Admin soft-delete: deactivate + anonymize a user's PII and revoke access.
+
+    Mirrors the self-service delete (session.py::delete_account): keeps the row
+    (assessment/KT records stay referentially intact) but frees the email for
+    reuse and erases identifiers. LDAdmin (global) or GroupAdmin (own group).
+    """
+    if current_user["role"] not in ["LDAdmin", "GroupAdmin"]:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    actor_id = int(current_user["sub"])
+    if user_id == actor_id:
+        raise HTTPException(status_code=400, detail="You cannot delete your own account here.")
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.id == 0 or user.role == "PlatformAdmin":
+        raise HTTPException(status_code=403, detail="System/operator accounts cannot be deleted.")
+    if current_user["role"] == "GroupAdmin" and user.group_id != current_user.get("group_id"):
+        raise HTTPException(status_code=403, detail="Boundary violation")
+
+    # Revoke sessions + push tokens.
+    db.query(models.RefreshToken).filter(models.RefreshToken.user_id == user.id).delete()
+    db.query(models.DeviceToken).filter(models.DeviceToken.user_id == user.id).delete()
+
+    # Deactivate + anonymize PII (frees the email for reuse).
+    original_email = user.email
+    user.is_active = False
+    user.full_name = "Deleted User"
+    user.email = f"deleted-{user.id}@deleted.invalid"
+    user.password_hash = None
+    user.custom_slug = None
+    user.bio = None
+    user.profile_photo_url = None
+
+    log_admin_action(
+        db=db,
+        actor_id=actor_id,
+        actor_role=current_user["role"],
+        action="DELETE_USER",
+        resource_type="USER",
+        resource_id=user_id,
+        details={"deleted_email": original_email},
+    )
+    db.commit()
+    return {"success": True, "user_id": user_id, "status": "deleted"}
 
 @router.get("/groups/{group_id}/members")
 async def get_group_members(

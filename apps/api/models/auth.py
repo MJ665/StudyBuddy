@@ -44,8 +44,11 @@ class Group(Base):
 
 class User(Base):
     __tablename__ = "users"
+    # Email is a GLOBAL identity: one email = exactly one account platform-wide
+    # (email-based login). Was (email, group_id) — which let the same email exist
+    # in two groups and created ambiguous login identities.
     __table_args__ = (
-        UniqueConstraint("email", "group_id", name="uq_user_email_group"),
+        UniqueConstraint("email", name="uq_user_email"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

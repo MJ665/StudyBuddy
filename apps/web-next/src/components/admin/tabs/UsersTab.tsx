@@ -409,6 +409,23 @@ export default function UsersTab({ ctx }: { ctx: AdminTabCtx }) {
                               >
                                 Sync Intel
                               </button>
+                              {(user?.role === 'LDAdmin' || user?.role === 'GroupAdmin') && u.role !== 'PlatformAdmin' && u.id !== user?.id && (
+                                <button
+                                  onClick={async () => {
+                                    if (!window.confirm(`Delete ${u.full_name} (${u.email})? This deactivates the account and anonymizes their personal data. This frees the email for reuse.`)) return;
+                                    try {
+                                      await ApiService.deleteUser(u.id);
+                                      toast('success', `${u.full_name} deleted.`);
+                                      fetchData();
+                                    } catch (err: any) {
+                                      toast('error', err.message || 'Failed to delete user');
+                                    }
+                                  }}
+                                  className="px-4 py-2 rounded-lg bg-rose-600/10 text-rose-400 text-[9px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-600 hover:text-white border border-rose-600/20"
+                                >
+                                  Delete
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
