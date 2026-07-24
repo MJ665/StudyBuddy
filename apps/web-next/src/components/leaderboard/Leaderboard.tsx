@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import ApiService from '../../services/ApiService';
 import { renderQuestionText } from '../../utils/renderQuestionText';
 import { useToast } from '../ui/Toast';
+import { Skeleton, SkeletonStatGrid, SkeletonTable, SkeletonCard } from '../ui/Skeleton';
 
 // Helper: download a CSV using the JWT token (avoids 401 from plain anchor tags)
 async function downloadCSV(url: string, filename: string) {
@@ -164,7 +165,9 @@ export default function Leaderboard({ bank: initialBank, user, onBack, onViewPro
           <h1 className="text-2xl sm:text-3xl font-black text-white mb-1">Leaderboards</h1>
           <p className="text-sm text-slate-500 mb-6">Pick a question bank to see how everyone in your organization is doing.</p>
           {pickerBanks === null ? (
-            <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500" /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} lines={1} />)}
+            </div>
           ) : pickerBanks.length === 0 ? (
             <div className="text-center py-16 text-slate-500 text-sm">No question banks are available yet.</div>
           ) : (
@@ -187,8 +190,13 @@ export default function Leaderboard({ bank: initialBank, user, onBack, onViewPro
   }
 
   if (loading && leaderboard.length === 0) return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-950 text-white">
-      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500" />
+    <div className="min-h-screen bg-slate-950 text-slate-200 p-4 sm:p-6">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-9 w-64" />
+        <SkeletonStatGrid count={3} />
+        <SkeletonTable rows={8} cols={4} />
+      </div>
     </div>
   );
 

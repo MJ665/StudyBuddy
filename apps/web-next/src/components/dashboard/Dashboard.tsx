@@ -12,6 +12,7 @@ import { useToast } from '../ui/Toast';
 import ExecutiveGrowthAtlas from './ExecutiveGrowthAtlas';
 import AILearningPath from './AILearningPath';
 import { RichText } from '../common/RichText';
+import { SkeletonCard } from '../ui/Skeleton';
 
 export default function Dashboard({ 
   user, 
@@ -597,6 +598,9 @@ export default function Dashboard({
               </motion.div>
             );
             })}
+            {loading && banks.length === 0 && (
+              <>{Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} className="h-40" lines={2} />)}</>
+            )}
             {banks.length === 0 && !loading && (
                <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-800 rounded-3xl">
                   <p className="text-slate-500">No question banks found for this course.</p>

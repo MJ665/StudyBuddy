@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import ApiService from '@/services/ApiService';
+import { SkeletonList } from '@/components/ui/Skeleton';
 
 interface Exam {
   id: number;
@@ -102,7 +103,7 @@ export default function ExamsPage() {
         )}
 
         <div className="rounded-xl bg-slate-900 border border-slate-800 overflow-hidden">
-          {loading ? <div className="p-5 text-slate-500">Loading…</div> : exams.length === 0 ? (
+          {loading ? <div className="p-4"><SkeletonList rows={4} avatar={false} /></div> : exams.length === 0 ? (
             <div className="p-5 text-slate-500 text-sm">No exams yet. Create one above.</div>
           ) : exams.map((ex) => (
             <div key={ex.id} className="flex items-center justify-between gap-4 p-4 border-b border-slate-800/50">

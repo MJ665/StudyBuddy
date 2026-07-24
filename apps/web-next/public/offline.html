@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0c1324" />
+  <title>Offline — StudyBuddy</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: #0c1324; color: #dce1fb;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, sans-serif;
+      text-align: center; padding: 24px;
+    }
+    .card { max-width: 340px; }
+    .logo { width: 64px; height: 64px; border-radius: 16px; margin: 0 auto 20px; display: block; }
+    h1 { font-size: 22px; font-weight: 800; margin: 0 0 8px; }
+    p { color: #c7c4d7; font-size: 14px; line-height: 1.6; margin: 0 0 24px; }
+    button {
+      background: #8083ff; color: #0c1324; border: 0; font-weight: 800;
+      padding: 12px 24px; border-radius: 14px; font-size: 14px; cursor: pointer;
+    }
+    button:active { transform: scale(0.97); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img class="logo" src="/icons/icon-192.png" alt="StudyBuddy" />
+    <h1>You're offline</h1>
+    <p>StudyBuddy needs a connection to load. Check your network and try again.</p>
+    <button onclick="location.reload()">Retry</button>
+  </div>
+</body>
+</html>

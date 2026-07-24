@@ -1,15 +1,26 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { ReactQueryProvider } from '@/lib/ReactQueryProvider';
 import { BrandingProvider } from '@/components/common/Branding';
+import { ServiceWorkerRegistrar } from '@/components/common/ServiceWorkerRegistrar';
 import './globals.css';
 import 'katex/dist/katex.min.css';
 
 export const metadata: Metadata = {
   title: 'StudyBuddy — AI Assessment Platform',
   description: 'StudyBuddy — multi-tenant AI assessment platform for quizzes, coding, exams and knowledge transfer.',
+  applicationName: 'StudyBuddy',
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'StudyBuddy' },
   icons: {
     icon: '/images/logo.png',
+    apple: '/icons/apple-touch-icon.png',
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#0c1324',
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
@@ -34,6 +45,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <ServiceWorkerRegistrar />
         <ReactQueryProvider>
           <BrandingProvider>
             {children}
