@@ -40,6 +40,32 @@ def _is_refusal(answer: str | None) -> bool:
     return any(marker in low for marker in _REFUSAL_MARKERS)
 
 
+async def llm_groundedness(chunks: list, answer: str) -> float:
+    """LLM-judged groundedness in [0,1]: how fully `answer` is supported by the
+    retrieved `chunks`. This is the second signal in the owner's "Both"
+    confidence (retrieval composite + LLM check). One cheap Gemini call; metered."""
+    if not chunks or not answer or _is_refusal(answer):
+        return 0.0
+    ctx = "\n\n".join(
+        f"[{i + 1}] {(c.get('content') or '')[:600]}" for i, c in enumerate(chunks[:6])
+    )
+    prompt = (
+        f"SOURCES:\n{ctx}\n\nANSWER:\n{answer}\n\n"
+        "Rate from 0.0 to 1.0 how fully the ANSWER is supported by the SOURCES "
+        "(1.0 = every claim is directly supported; 0.0 = unsupported/contradicted). "
+        "Reply with ONLY the number."
+    )
+    try:
+        raw = await gemini.generate(
+            prompt,
+            system="You are a strict grounding evaluator. Output only a number between 0.0 and 1.0.",
+        )
+        m = re.search(r"[01](?:\.\d+)?", raw or "")
+        return max(0.0, min(1.0, float(m.group(0)))) if m else 0.5
+    except Exception:
+        return 0.5
+
+
 class KTIngestionService:
     # NOTE (Phase 6): the Neo4j ingestion pipeline (run_pipeline /
     # _execute_pipeline / chunk_by_temporal_headers) was removed — ingestion
@@ -161,9 +187,11 @@ async def run_rag_query(
 
     answer = await gemini.generate(prompt, system=RAG_SYSTEM_PROMPT)
 
-    # Calibrated from passage strength + independent-document corroboration +
-    # whether the answer actually cited its sources (see compute_confidence).
-    confidence = compute_confidence(chunks, answer=answer, citations=sources)
+    # "Both" confidence: blend the retrieval composite (passage strength +
+    # corroboration + citation grounding) with an LLM groundedness judgement.
+    retrieval_conf = compute_confidence(chunks, answer=answer, citations=sources)
+    grounded = await llm_groundedness(chunks, answer)
+    confidence = 0.6 * retrieval_conf + 0.4 * (grounded * 100.0)
 
     # `was_answered` drives knowledge-gap tracking in routers/kt.py. It was never
     # returned here, so `rag.get("was_answered")` was always None and no gap was

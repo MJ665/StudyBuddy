@@ -330,6 +330,26 @@ async def stream_kt_chatbot_response(
         yield json.dumps({"token": token, "done": False}) + "\n"
 
     sources = _extract_citations(full_response, chunks)
+
+    # "Both" confidence: retrieval composite blended with an LLM groundedness
+    # check (one cheap call after the answer streams — a ~2s tail, not blocking
+    # the token stream the user already saw).
+    try:
+        from services.kt_engine import compute_confidence
+        from services.kt_workflows import llm_groundedness
+
+        retrieval_conf = compute_confidence(chunks, answer=full_response, citations=sources)
+        grounded = await llm_groundedness(chunks, full_response)
+        confidence = round(0.6 * retrieval_conf + 0.4 * (grounded * 100.0), 1)
+    except Exception:
+        confidence = None
+
     yield json.dumps(
-        {"token": "", "done": True, "sources": sources, "full_response": full_response}
+        {
+            "token": "",
+            "done": True,
+            "sources": sources,
+            "full_response": full_response,
+            "confidence_score": confidence,
+        }
     ) + "\n"

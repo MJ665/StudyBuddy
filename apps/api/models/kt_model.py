@@ -326,6 +326,8 @@ class KTChatSession(Base):
     # so they are the enforcement point for knowledge access.
     resolved_company_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     resolved_project_ids: Mapped[list[str] | None] = mapped_column(PG_ARRAY(String), default=[])
+    # User-facing thread title (ChatGPT-style). Auto-set from the first message.
+    title: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
     messages: Mapped[list[dict] | None] = mapped_column(JSONB, default=[])
     graph_hops: Mapped[dict | list | Any | None] = mapped_column(JSONB, default=[])

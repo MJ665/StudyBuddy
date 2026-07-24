@@ -85,6 +85,10 @@ def provision_schema() -> None:
             "ALTER TABLE kt_ingestion_jobs ADD COLUMN IF NOT EXISTS "
             "created_at TIMESTAMPTZ NOT NULL DEFAULT now()"
         ))
+        # Multi-session chat threads carry a user-facing title (ChatGPT-style).
+        conn.execute(text(
+            "ALTER TABLE kt_chat_sessions ADD COLUMN IF NOT EXISTS title VARCHAR(200)"
+        ))
         conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS uq_user_email_group"))
         conn.execute(text("""
             DO $$

@@ -3,6 +3,7 @@ Chat sessions and messaging
 """
 
 from fastapi import APIRouter
+from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.kt.routers._shared import *  # noqa: F401, F403
@@ -108,6 +109,9 @@ async def send_message(
     db.add(user_msg)
     session.message_count = (session.message_count or 0) + 1
     session.last_message_at = datetime.now(timezone.utc)
+    # Auto-title the thread from the first message (ChatGPT-style).
+    if not session.title:
+        session.title = (body.message or "").strip()[:60] or "New chat"
     await db.commit()
 
     # Get conversation history
@@ -261,6 +265,7 @@ async def stream_message(
                     content=sanitize_output(assistant_content),
                     was_answered=bool(sources_meta),
                     sources_metadata=sources_meta,
+                    confidence_score=(final_payload or {}).get("confidence_score"),
                 )
             )
 
@@ -270,6 +275,10 @@ async def stream_message(
                 .values(
                     message_count=KTChatSession.message_count + 2,
                     last_message_at=datetime.now(timezone.utc),
+                    # Auto-title from the first message (keep any existing title).
+                    title=func.coalesce(
+                        KTChatSession.title, (body.message or "").strip()[:60] or "New chat"
+                    ),
                 )
             )
             await save_db.commit()
@@ -311,6 +320,76 @@ async def get_session_messages(
         }
         for m in msgs
     ]
+
+
+@router.get("/chat/sessions")
+async def list_chat_sessions(
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(verify_token),
+    company_id: Optional[str] = Query(None),
+):
+    """The caller's persisted chat threads (ChatGPT-style history), newest first.
+    Optionally filtered to one company. Ownership: the caller's own sessions."""
+    uid = int(current_user["sub"])
+    q = select(KTChatSession).where(KTChatSession.user_id == uid)
+    if company_id:
+        q = q.where(KTChatSession.resolved_company_id == company_id)
+    q = q.order_by(
+        KTChatSession.last_message_at.desc().nullslast(),
+        KTChatSession.created_at.desc(),
+    ).limit(200)
+    rows = (await db.execute(q)).scalars().all()
+    return [
+        {
+            "session_id": s.id,
+            "title": s.title or "New chat",
+            "company_id": s.resolved_company_id,
+            "project_ids": s.resolved_project_ids or [],
+            "message_count": s.message_count or 0,
+            "last_message_at": s.last_message_at,
+            "created_at": s.created_at,
+        }
+        for s in rows
+    ]
+
+
+@router.patch("/chat/sessions/{session_id}")
+async def rename_chat_session(
+    session_id: str,
+    body: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(verify_token),
+):
+    """Rename a chat thread."""
+    uid = int(current_user["sub"])
+    session = await db.get(KTChatSession, session_id)
+    if not session or session.user_id != uid:
+        raise HTTPException(404, "Session not found")
+    title = (body.get("title") or "").strip()[:200]
+    if not title:
+        raise HTTPException(400, "Title required")
+    session.title = title
+    await db.commit()
+    return {"session_id": session_id, "title": title}
+
+
+@router.delete("/chat/sessions/{session_id}")
+async def delete_chat_session(
+    session_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(verify_token),
+):
+    """Delete a chat thread and its messages."""
+    uid = int(current_user["sub"])
+    session = await db.get(KTChatSession, session_id)
+    if not session or session.user_id != uid:
+        raise HTTPException(404, "Session not found")
+    await db.execute(
+        delete(KTChatMessage).where(KTChatMessage.session_id == session_id)
+    )
+    await db.delete(session)
+    await db.commit()
+    return {"session_id": session_id, "deleted": True}
 
 
 # ════════════════════════════════════════════════════════════════════════════
