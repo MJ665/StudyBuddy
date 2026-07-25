@@ -1,6 +1,17 @@
 # StudyHubV2 → "StudyHub" — First-Principles Product Redesign Plan
 
 ---
+## 🛠️ EXAMS + REPORTS + ADMIN + MOBILE SPRINT (2026-07-25 — ✅ COMPLETE)
+
+Owner-reported defect batch fixed across 5 phases (commits after 9ef7b2f). Locked Q&A: exams = internal users email-notified, marks on profile; bank selection = searchable picker + inline create-bank wizard.
+
+- **Phase 1 ✅** — daily-challenge `not <Column>` → `.is_(False)` (idempotent, no more UniqueViolation); peer-review AI reply flattened (`/ai/ask` `data.response`); question reports return `status` + full question payload (dropped `response_model` that stripped it) + inline Edit-question modal (`PUT /quiz/questions/{id}`).
+- **Phase 2 ✅** — `Exam.recipient_emails` (ARRAY) + `send_exam_invite` email (direct `/exam/{id}` link) + in-app notif + best-effort push on publish; recipients ORG-scoped (User has no super_organization_id; PlatformAdmin cross-org), bogus emails dropped, returns `{invited}`. `GET /exams/me/attempts` (caller-scoped) → Exam Results on profile. Frontend: searchable bank picker + inline `BankCreationModal` wizard (auto-selects new bank) + recipient-email chips. **Live E2E:** publish→invited 1→notif→member took→me/attempts returns mark.
+- **Phase 3 ✅** — global mobile responsiveness: `useMobile` hook; AppLayout main `min-w-0 overflow-x-hidden`; Sidebar `flex-1 overflow-y-auto` region; **KTNavShell `w-80`→AppLayout drawer** (hamburger+backdrop, `max-w-[85vw]`, closes on nav); table `overflow-hidden→overflow-x-auto` (AdminTables×3, UsersTab, CodingTab, SystemHealthMonitor); UserIntelPanel `grid-cols-5→grid-cols-2 md:grid-cols-5`; exams-review wrapped scroll+`min-w-[560px]`; overlays capped `max-w-[92vw]`. **Verified via CDP headless at 390px on /login /dashboard /exams /leaderboard /profile /kt /admin → `body.scrollWidth===innerWidth` (0 overflow) ALL.**
+- **Phase 4 ✅** — Direct Mandate (`create_assignment`) always 500'd: `created_by` invalid kwarg (→ real column, see Phase 5) + `visibility_scope` NOT NULL unset (→ `target_type`). System Intelligence: `/admin/tasks/status` field mismatch (`executed_at`/`runs` added; UI shows real Last Executed/Total Runs, maps `failure`→Failed). Global Curriculum Deployment + `/admin/health` already 200.
+- **Phase 5 ✅** — **0×500 across all 87 no-arg GET endpoints** (fixed `GET /assignments` raw-ORM serialization 500 + added real `assignments.created_by` column for ownership checks). **533 tests pass** (`-m "not live"`); tsc 0; production build green (35 routes); mobile 390px pass. Idempotent ALTERs (`exams.recipient_emails`, `assignments.created_by`) in live DB + `phase1_provision`.
+
+---
 ## 🔍 FULL-PRODUCT AUDIT & COMPLETION SPRINT (2026-07-23 — CURRENT WORK)
 
 **Context:** Owner asked for a veteran-level whole-product audit (every file/folder), review of this plan, and a step-by-step completion of everything the plan promises. Three parallel deep audits ran (backend, frontend, plan-vs-reality); every finding below was **cross-verified by me** — several auditor claims were refuted with evidence and are listed so we never re-chase them.

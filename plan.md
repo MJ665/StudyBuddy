@@ -4,6 +4,19 @@
 # StudyHubV2 → "StudyHub" — First-Principles Product Redesign Plan
 
 ---
+## 🛠️ EXAMS + REPORTS + ADMIN + MOBILE SPRINT (2026-07-25 — ✅ COMPLETE)
+
+Owner-reported defect batch, 5 phases (commits after 9ef7b2f). Locked Q&A: exams = internal users email-notified (marks on profile); bank selection = searchable picker + inline create-bank wizard.
+
+- **P1 ✅** daily-challenge `.is_(False)`; peer-review AI reply flattened; question reports return `status`+question payload + inline Edit modal.
+- **P2 ✅** `Exam.recipient_emails` + `send_exam_invite` (direct `/exam/{id}`) + notif/push on publish (ORG-scoped recipients, `{invited}`); `GET /exams/me/attempts` → profile Exam Results; bank picker + inline wizard + recipient chips. Live E2E pass.
+- **P3 ✅** mobile: useMobile; AppLayout `overflow-x-hidden`; Sidebar scroll region; **KTNavShell→drawer**; table `overflow-x-auto` sweep; responsive grids; overlay `max-w-[92vw]`. CDP-verified 0 body overflow at 390px on 7 routes.
+- **P4 ✅** Direct Mandate 500 (created_by/visibility_scope); System Intelligence telemetry fields (executed_at/runs); subscribe + /admin/health already ok.
+- **P5 ✅** 0×500 across 87 GETs (fixed GET /assignments serialization + real `assignments.created_by`); 533 tests; tsc 0; build green; idempotent ALTERs in DB + phase1_provision.
+
+Full detail: top section of `docs/product-plan/PRODUCT_PLAN.md`.
+
+---
 ## 🔍 FULL-PRODUCT AUDIT & COMPLETION SPRINT (2026-07-23 — CURRENT WORK)
 
 **Context:** Owner asked for a veteran-level whole-product audit (every file/folder), review of this plan, and a step-by-step completion of everything the plan promises. Three parallel deep audits ran (backend, frontend, plan-vs-reality); every finding below was **cross-verified by me** — several auditor claims were refuted with evidence and are listed so we never re-chase them.
