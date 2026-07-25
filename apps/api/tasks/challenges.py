@@ -41,7 +41,7 @@ def generate_daily_challenges(
                 .filter(
                     models.DailyChallenge.group_id == group.id,
                     models.DailyChallenge.challenge_date == today,
-                    not models.DailyChallenge.is_mentor_override,
+                    models.DailyChallenge.is_mentor_override.is_(False),
                 )
                 .first()
             )

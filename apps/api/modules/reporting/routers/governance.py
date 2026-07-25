@@ -250,7 +250,7 @@ def notify_intervention(
         "recipients": [u.full_name for u in users],
     }
 
-@router.get("/reports", response_model=List[schemas.QuestionReportResponse])
+@router.get("/reports")  # returns a hand-enriched dict (status + full question), not the bare schema
 def get_question_reports(
     resolved: Optional[bool] = None,
     db: Session = Depends(get_db),
@@ -300,10 +300,17 @@ def get_question_reports(
                 "reason": r.issue_type,
                 "comment": r.description,
                 "is_resolved": r.is_resolved,
+                # The reports UI filters/labels on a string status; the model only
+                # stores is_resolved, so derive it here (else every card was hidden).
+                "status": "resolved" if r.is_resolved else "pending",
                 "resolved_by": r.resolved_by,
                 "resolved_at": r.resolved_at,
                 "created_at": r.created_at,
                 "question_text": q.question if q else "DELETED_QUESTION",
+                # Full question payload so L&D can EDIT the reported question inline.
+                "question_options": (q.options if q else None),
+                "question_answer": (q.answer if q else None),
+                "question_type": (q.question_type if q else None),
                 "reporter_name": reporter.full_name if reporter else "UNKNOWN_USER",
             }
         )

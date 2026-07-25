@@ -123,7 +123,9 @@ export default function Leaderboard({ bank: initialBank, user, onBack, onViewPro
       setAiLoading(prev => ({ ...prev, [key]: true }));
       try {
         const res = await ApiService.askAI(attemptId, questionId, query);
-        setAiResponses(prev => ({ ...prev, [key]: res }));
+        // /ai/ask nests the reply under `data` ({ai_generated, data:{response}}).
+        // Flatten so the render (aiData.response / is_out_of_context / from_cache) resolves.
+        setAiResponses(prev => ({ ...prev, [key]: { ...(res?.data || {}), ...res } }));
         
         // Strategic Cooldown: Prevent spamming even if request is fast
         setTimeout(() => {

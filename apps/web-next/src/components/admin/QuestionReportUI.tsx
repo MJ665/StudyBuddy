@@ -50,6 +50,43 @@ export default function QuestionReportUI() {
     }
   };
 
+  // ── Inline edit of the reported question ──
+  const [editing, setEditing] = useState<any>(null);
+  const [editText, setEditText] = useState('');
+  const [editOptions, setEditOptions] = useState('');
+  const [editAnswer, setEditAnswer] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const openEdit = (report: any) => {
+    setEditing(report);
+    setEditText(report.question_text || '');
+    setEditOptions(Array.isArray(report.question_options) ? report.question_options.join('\n') : '');
+    setEditAnswer(report.question_answer || '');
+  };
+
+  const saveEdit = async (resolveAfter: boolean) => {
+    if (!editing?.question_id) return;
+    setSavingEdit(true);
+    try {
+      const options = editOptions.split('\n').map(o => o.trim()).filter(Boolean);
+      await ApiService.updateQuestion(editing.question_id, {
+        question: editText,
+        ...(options.length ? { options } : {}),
+        ...(editAnswer ? { answer: editAnswer } : {}),
+      });
+      if (resolveAfter && editing.status === 'pending') {
+        await ApiService.resolveQuestionReport(editing.id);
+      }
+      toast('success', resolveAfter ? 'Question updated & report resolved' : 'Question updated');
+      setEditing(null);
+      fetchReports();
+    } catch (err: any) {
+      toast('error', `Update failed: ${err.message}`);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   const filteredReports = reports.filter(r => {
     const matchesFilter = filter === 'all' || r.status === filter;
     const matchesSearch = r.question_text?.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -150,20 +187,23 @@ export default function QuestionReportUI() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between gap-4">
-                  <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-all">
-                    <ExternalLink size={14} /> View Source Question
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <button
+                    onClick={() => openEdit(report)}
+                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-all"
+                  >
+                    <Edit3 size={14} /> Edit Question
                   </button>
-                  
+
                   {report.status === 'pending' && (
                     <div className="flex gap-2">
-                      <button 
+                      <button
                         onClick={() => handleResolve(report.id, 'dismissed')}
                         className="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-white/5"
                       >
                         Dismiss
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleResolve(report.id, 'resolved')}
                         className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 hover:scale-105 active:scale-95 transition-all"
                       >
@@ -177,6 +217,41 @@ export default function QuestionReportUI() {
           </div>
         )}
       </div>
+
+      {/* ── Edit-question modal ── */}
+      <AnimatePresence>
+        {editing && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => !savingEdit && setEditing(null)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center gap-2 text-indigo-400 mb-4">
+                <Edit3 size={16} /><span className="font-black uppercase tracking-widest text-[10px]">Edit Reported Question</span>
+              </div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Question</label>
+              <textarea value={editText} onChange={(e) => setEditText(e.target.value)} rows={3}
+                className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-sm text-white mb-4 outline-none focus:ring-1 focus:ring-indigo-500/50" />
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Options (one per line)</label>
+              <textarea value={editOptions} onChange={(e) => setEditOptions(e.target.value)} rows={4}
+                className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-sm text-white mb-4 outline-none focus:ring-1 focus:ring-indigo-500/50" />
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Correct Answer</label>
+              <input value={editAnswer} onChange={(e) => setEditAnswer(e.target.value)}
+                className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-sm text-white mb-5 outline-none focus:ring-1 focus:ring-indigo-500/50" />
+              <div className="flex flex-wrap justify-end gap-2">
+                <button disabled={savingEdit} onClick={() => setEditing(null)} className="px-4 py-2 text-slate-400 hover:text-white text-xs font-bold">Cancel</button>
+                <button disabled={savingEdit} onClick={() => saveEdit(false)} className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 text-xs font-bold border border-white/10">
+                  {savingEdit ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
+                </button>
+                <button disabled={savingEdit} onClick={() => saveEdit(true)} className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">
+                  Save & Resolve
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
