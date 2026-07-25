@@ -56,7 +56,15 @@ export default function WebAppScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [online, setOnline] = useState(true);
+  const [errored, setErrored] = useState(false);
   const [authToken, setAuthToken] = useState<string | null>(null);
+
+  // Never leave the native splash stuck: once we decide to show the offline/error
+  // screen (a cold launch that's offline or a failed first load never fires
+  // onLoadEnd), hide it so the Retry screen is actually visible.
+  useEffect(() => {
+    if (!online || errored) SplashScreen.hideAsync().catch(() => {});
+  }, [online, errored]);
 
   // ── Connectivity ──
   useEffect(() => {
@@ -128,8 +136,20 @@ export default function WebAppScreen() {
     setTimeout(() => setRefreshing(false), 800);
   }, []);
 
-  if (!online) {
-    return <OfflineScreen onRetry={() => NetInfo.fetch().then((s) => setOnline(!!s.isConnected))} />;
+  const retry = useCallback(() => {
+    setErrored(false);
+    setLoading(true);
+    NetInfo.fetch().then((s) => {
+      const connected = !!s.isConnected;
+      setOnline(connected);
+      if (connected) webRef.current?.reload();
+    });
+  }, []);
+
+  // Offline, OR the page failed to load (server unreachable even while the OS
+  // still reports a connection) → the native Retry screen, per plan.
+  if (!online || errored) {
+    return <OfflineScreen onRetry={retry} />;
   }
 
   return (
@@ -150,11 +170,19 @@ export default function WebAppScreen() {
           onMessage={onMessage}
           onShouldStartLoadWithRequest={onShouldStart}
           onNavigationStateChange={(nav) => setCanGoBack(nav.canGoBack)}
+          onLoadStart={() => setErrored(false)}
           onLoadEnd={() => {
             setLoading(false);
             SplashScreen.hideAsync().catch(() => {});
           }}
-          onError={() => setLoading(false)}
+          // A failed main-frame load surfaces the native Retry screen (and the
+          // splash-hide effect ensures it's visible). Sub-resource errors on an
+          // already-loaded page are ignored so a flaky asset can't blank the app.
+          onError={(e) => {
+            setLoading(false);
+            if (e.nativeEvent.url === WEB_URL || !canGoBack) setErrored(true);
+          }}
+          renderError={() => <View style={{ flex: 1, backgroundColor: '#0c1324' }} />}
           // Persistence + storage so login survives restarts.
           javaScriptEnabled
           domStorageEnabled
