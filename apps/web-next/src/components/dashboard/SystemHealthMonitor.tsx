@@ -49,14 +49,13 @@ export default function SystemHealthMonitor() {
               <th className="p-4">Task Definition</th>
               <th className="p-4">Status</th>
               <th className="p-4">Last Executed</th>
-              <th className="p-4">Duration</th>
-              <th className="p-4 text-right">Failure Rate</th>
+              <th className="p-4 text-right">Total Runs</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800">
             {!taskData || taskData.length === 0 ? (
               <tr>
-                <td colSpan={5} className="p-8 text-center text-zinc-500 text-sm">
+                <td colSpan={4} className="p-8 text-center text-zinc-500 text-sm">
                   <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   No telemetry data received from the engine yet.
                 </td>
@@ -73,29 +72,24 @@ export default function SystemHealthMonitor() {
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-xs font-semibold">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Healthy
                       </span>
-                    ) : task.status === 'failed' ? (
+                    ) : (task.status === 'failed' || task.status === 'failure') ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-500/10 text-red-400 text-xs font-semibold">
                         <XCircle className="w-3.5 h-3.5" /> Failed
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-400 text-xs font-semibold">
-                        <Activity className="w-3.5 h-3.5 animate-pulse" /> Running
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-500/10 text-zinc-400 text-xs font-semibold">
+                        <Clock className="w-3.5 h-3.5" /> Idle
                       </span>
                     )}
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-2 text-zinc-300 text-sm">
                       <Clock className="w-4 h-4 text-zinc-500" />
-                      {new Date(task.executed_at).toLocaleString()}
+                      {task.executed_at ? new Date(task.executed_at).toLocaleString() : 'Never'}
                     </div>
                   </td>
-                  <td className="p-4 text-zinc-300 text-sm font-mono">
-                    {task.duration_ms ? `${task.duration_ms}ms` : '---'}
-                  </td>
-                  <td className="p-4 text-right">
-                    <span className={`text-sm font-bold ${task.failure_rate > 5 ? 'text-red-400' : 'text-emerald-400'}`}>
-                      {task.failure_rate || 0}%
-                    </span>
+                  <td className="p-4 text-right text-zinc-300 text-sm font-mono">
+                    {task.runs ?? 0}
                   </td>
                 </tr>
               ))

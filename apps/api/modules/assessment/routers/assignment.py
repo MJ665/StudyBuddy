@@ -64,6 +64,10 @@ def create_assignment(
 
     assignment = models.Assignment(
         assignment_type=data.assignment_type or "quiz",
+        # visibility_scope is NOT NULL; the assignment's scope is the tree level it
+        # targets. (Only bank.visibility_scope drives access logic — this column is
+        # descriptive, but the DB still requires a value.)
+        visibility_scope=data.target_type,
         target_type=data.target_type,
         target_id=data.target_id,
         bank_id=data.bank_id,
@@ -74,7 +78,7 @@ def create_assignment(
         passing_score_percent=data.passing_score_percent,
         lock_after_due=data.lock_after_due,
         is_compulsory=data.is_compulsory,
-        created_by=int(current_user["sub"]),
+        created_by_role=current_user.get("role"),
     )
     db.add(assignment)
     db.commit()
@@ -219,7 +223,13 @@ def create_assignment(
         },
     )
 
-    return assignment
+    return {
+        "id": assignment.id,
+        "assignment_type": assignment.assignment_type,
+        "target_type": assignment.target_type,
+        "target_id": assignment.target_id,
+        "success": True,
+    }
 
 
 @router.get("/my")

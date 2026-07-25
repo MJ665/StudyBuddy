@@ -243,8 +243,11 @@ def get_all_task_status(
         {
             "task_name": t.task_name,
             "status": t.last_status,
-            "last_run": t.last_run_at,
-            "last_duration_seconds": 0,
+            # `executed_at` is the key the dashboard reads; keep `last_run` too for
+            # any other consumer.
+            "executed_at": t.last_run_at.isoformat() if t.last_run_at else None,
+            "last_run": t.last_run_at.isoformat() if t.last_run_at else None,
+            "runs": t.run_count,
             "error_message": t.last_error,
         }
         for t in tasks
