@@ -89,6 +89,11 @@ def provision_schema() -> None:
         conn.execute(text(
             "ALTER TABLE kt_chat_sessions ADD COLUMN IF NOT EXISTS title VARCHAR(200)"
         ))
+        # Exams carry the internal-user recipients emailed + notified on publish.
+        conn.execute(text(
+            "ALTER TABLE exams ADD COLUMN IF NOT EXISTS recipient_emails "
+            "VARCHAR[] NOT NULL DEFAULT '{}'::varchar[]"
+        ))
         conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS uq_user_email_group"))
         conn.execute(text("""
             DO $$
