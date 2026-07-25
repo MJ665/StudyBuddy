@@ -61,7 +61,8 @@ venv/
 htmlcov/
 
 # ── Generated / local caches (regenerable) ───────────────────────────────────
-graphify-out/          # local knowledge graph — regenerate with `graphify update .`
+# graphify-out is the local knowledge graph — regenerate with `graphify update .`
+graphify-out/
 _archive/
 
 # ── Logs ─────────────────────────────────────────────────────────────────────
