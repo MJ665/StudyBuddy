@@ -12,6 +12,8 @@ class Assignment(Base):
     bank_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("question_banks.id"), nullable=True)
     coding_question_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("coding_questions.id"), nullable=True)
     created_by_role: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # User id of the creator — enables per-creator ownership checks on update.
+    created_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     assignment_type: Mapped[str] = mapped_column(String(20), default="quiz", nullable=False)  # quiz, coding
     visibility_scope: Mapped[str] = mapped_column(String(20), nullable=False)

@@ -94,6 +94,10 @@ def provision_schema() -> None:
             "ALTER TABLE exams ADD COLUMN IF NOT EXISTS recipient_emails "
             "VARCHAR[] NOT NULL DEFAULT '{}'::varchar[]"
         ))
+        # Assignments record their creator's user id (per-creator ownership checks).
+        conn.execute(text(
+            "ALTER TABLE assignments ADD COLUMN IF NOT EXISTS created_by INTEGER"
+        ))
         conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS uq_user_email_group"))
         conn.execute(text("""
             DO $$

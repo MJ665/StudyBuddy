@@ -79,6 +79,7 @@ def create_assignment(
         lock_after_due=data.lock_after_due,
         is_compulsory=data.is_compulsory,
         created_by_role=current_user.get("role"),
+        created_by=int(current_user["sub"]),
     )
     db.add(assignment)
     db.commit()
@@ -528,7 +529,36 @@ def list_assignments(
     if target_id:
         query = query.filter(models.Assignment.target_id == target_id)
 
-    return paginate(query.order_by(models.Assignment.created_at.desc()), page, size)
+    result = paginate(query.order_by(models.Assignment.created_at.desc()), page, size)
+    # paginate() yields raw ORM rows; serialize them (pydantic can't encode the
+    # Assignment model directly — that was a live 500 on GET /assignments).
+    return {
+        "items": [
+            {
+                "id": a.id,
+                "assignment_type": a.assignment_type,
+                "visibility_scope": a.visibility_scope,
+                "target_type": a.target_type,
+                "target_id": a.target_id,
+                "bank_id": a.bank_id,
+                "coding_question_id": a.coding_question_id,
+                "due_date": a.due_date.isoformat() if a.due_date else None,
+                "instructions": a.instructions,
+                "max_attempts": a.max_attempts,
+                "passing_score_percent": a.passing_score_percent,
+                "lock_after_due": a.lock_after_due,
+                "is_compulsory": a.is_compulsory,
+                "created_by_role": a.created_by_role,
+                "created_by": a.created_by,
+                "created_at": a.created_at.isoformat() if a.created_at else None,
+            }
+            for a in result.items
+        ],
+        "total": result.total,
+        "page": result.page,
+        "size": result.size,
+        "pages": result.pages,
+    }
 
 
 @router.patch("/{assignment_id}")
