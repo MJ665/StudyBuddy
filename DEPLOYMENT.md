@@ -94,6 +94,17 @@ UPSTASH_REDIS_REST_TOKEN=<your token>
 >
 > To generate a secret on your Mac: open Terminal and run `openssl rand -hex 32`.
 
+### A2b. Exactly what to change vs your existing local `.env`
+You already have most values locally. Copy them over, then apply these **3 deltas** (your current local `.env` is wrong for production on these):
+
+| Var | Your local `.env` now | Set to (production) | Why |
+|-----|-----------------------|---------------------|-----|
+| `DEBUG` | `TRUE` (and a duplicate `False`) | **`false`** | `DEBUG=true` leaks verbose errors and only allows `localhost` in CORS. Remove the duplicate line too. |
+| `ALLOWED_ORIGINS` | *(missing)* | **`["https://studybuddy.mj665.in"]`** | Required once `DEBUG=false`; whitelists your web domain. |
+| `FRONTEND_URL` | *(missing)* | **`https://studybuddy.mj665.in`** | Builds exam-invite email links + notification deep-links (`…/exam/{id}`). |
+
+Everything else from your local `.env` carries over as-is (`DATABASE_URL`, `GEMINI_API_KEY`, `AWS_*`, `AWS_S3_BUCKET`, `UPSTASH_*`, `RESEND_*`, `JWT_SECRET_KEY`, `HMAC_KEY_SECRET`, the `*_ADMIN_*` seed vars). You can also drop the unused `NEO4J_*` lines — the KT store is Postgres/pgvector now.
+
 ### A3. Deploy + custom domain
 1. Railway builds and deploys automatically. Watch **Deployments → Logs** until you see `Application startup complete`.
 2. In **Settings → Networking → Custom Domain**, add `studybuddy-api.mj665.in`.
@@ -131,12 +142,14 @@ You asked for these to live in env, be changeable by you, and be seeded into the
   `APP_ADMIN_EMAIL/PASSWORD` and `LD_ADMIN_EMAIL/PASSWORD` and **creates the accounts if missing, or updates their password/role to match** if they already exist.
 - Because your database already has these two users, the seed will simply **enforce the passwords you set in Railway**.
 
-So after deploy you can log in at `https://studybuddy.mj665.in`:
+So after deploy you can log in at `https://studybuddy.mj665.in` with **whatever you set** in these env vars:
 
-| Role | Email | Password |
-|------|-------|----------|
-| App / Platform Admin | `meet.jain563@gmail.com` | `Meet@123` |
-| L&D Admin | `contact.hackathonmj@gmail.com` | `Contact@123` |
+| Role | Email (env var) | Password (env var) |
+|------|-----------------|--------------------|
+| App / Platform Admin | `APP_ADMIN_EMAIL` = `meet.jain563@gmail.com` | `APP_ADMIN_PASSWORD` |
+| L&D Admin | `LD_ADMIN_EMAIL` = `contact.hackathonmj@gmail.com` | `LD_ADMIN_PASSWORD` |
+
+> ⚠️ Heads-up: your current `.env` sets **`LD_ADMIN_PASSWORD=Meet@123`** (not `Contact@123`). Whatever you put in the env is what the L&D Admin login becomes — set it to what you actually want before deploying.
 
 **To change a password later:** edit the value in Railway → **Variables** → the service redeploys → the new password is enforced on the next boot. (No database surgery needed.)
 
