@@ -81,6 +81,9 @@ export function Sidebar({ currentView, onChangeView, onLogout, user, onOpenAIPat
         </div>
       </div>
       
+      {/* ─── Scrollable middle region (nav + tracks) so items never overflow
+             on short/zoomed viewports; branding + user card stay pinned ─── */}
+      <div className="flex-1 min-h-0 overflow-y-auto w-full custom-scrollbar">
       {/* ─── Navigation ────────────────────────────────────────── */}
       <nav className="flex flex-col gap-1 w-full px-4">
         {navItems.map((item: { icon: string; label: string; view?: string; href?: string }) => (
@@ -139,6 +142,7 @@ export function Sidebar({ currentView, onChangeView, onLogout, user, onOpenAIPat
         </div>
       )}
       </div>
+      </div>{/* /scrollable middle region */}
 
       {/* ─── Bottom Section: User + Accuracy ───────────────────── */}
       <div className="mt-auto w-full px-4 pt-8 border-t border-[var(--color-surface-bright)]">

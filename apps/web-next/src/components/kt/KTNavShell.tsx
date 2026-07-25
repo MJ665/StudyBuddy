@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  BookOpen, MessageSquare, Compass, Layers, UserMinus, Shield, 
-  TrendingUp, Mail, ChevronDown, Bell, LogOut, LayoutGrid, Award, HelpCircle
+import {
+  BookOpen, MessageSquare, Compass, Layers, UserMinus, Shield,
+  TrendingUp, Mail, ChevronDown, Bell, LogOut, LayoutGrid, Award, HelpCircle,
+  Menu, X
 } from 'lucide-react';
 import { useKTNavStore, KTView } from '@/stores/ktNavStore';
 import ApiService from '@/services/ApiService';
@@ -35,6 +36,10 @@ export default function KTNavShell({ user, onBack, children }: KTNavShellProps) 
   const [companies, setCompanies] = useState<KTCompany[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationsCount, setNotificationsCount] = useState(0);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // Close the mobile drawer whenever the active KT view changes.
+  useEffect(() => { setMobileNavOpen(false); }, [currentView]);
 
   useEffect(() => {
     // Fetch companies
@@ -125,6 +130,7 @@ export default function KTNavShell({ user, onBack, children }: KTNavShellProps) 
   );
 
   const handleNavClick = (viewId: string) => {
+    setMobileNavOpen(false);
     if (viewId === 'projects') {
       if (selectedProject) {
         setView('documents');
@@ -140,8 +146,44 @@ export default function KTNavShell({ user, onBack, children }: KTNavShellProps) 
 
   return (
     <div className="flex h-screen w-full bg-slate-950 text-slate-100 overflow-hidden font-sans">
-      {/* Sidebar */}
-      <aside className="w-80 border-r border-slate-800 bg-slate-900/60 backdrop-blur-xl flex flex-col h-full relative z-10">
+      {/* ── Mobile top bar (below md) — hamburger opens the KT drawer ── */}
+      <header className="md:hidden fixed top-0 inset-x-0 z-40 h-14 flex items-center gap-3 px-4 bg-slate-900/90 backdrop-blur-xl border-b border-slate-800">
+        <button
+          onClick={() => setMobileNavOpen(true)}
+          aria-label="Open KT navigation"
+          className="p-2 -ml-2 rounded-lg text-slate-300 hover:bg-white/5 active:scale-95 transition"
+        >
+          <Menu size={22} />
+        </button>
+        <Award className="text-indigo-400" size={20} />
+        <span className="text-base font-black text-white">StudyBuddy KT</span>
+        {notificationsCount > 0 && (
+          <span className="ml-auto w-5 h-5 rounded-full bg-indigo-600 text-[10px] font-bold flex items-center justify-center text-white">{notificationsCount}</span>
+        )}
+      </header>
+
+      {/* ── Backdrop when the drawer is open (mobile only) ── */}
+      {mobileNavOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden
+        />
+      )}
+
+      {/* Sidebar: static column on md+, slide-in drawer below md */}
+      <aside
+        className={`w-80 max-w-[85vw] border-r border-slate-800 bg-slate-900/95 md:bg-slate-900/60 backdrop-blur-xl flex flex-col h-full
+          fixed md:static inset-y-0 left-0 z-50 transition-transform duration-300 md:transition-none
+          ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+      >
+        <button
+          onClick={() => setMobileNavOpen(false)}
+          aria-label="Close KT navigation"
+          className="md:hidden absolute top-4 right-3 z-10 p-1.5 rounded-lg text-slate-400 hover:bg-white/5"
+        >
+          <X size={20} />
+        </button>
         
         {/* Sidebar Header & Company Selector */}
         <div className="p-6 border-b border-slate-800">
@@ -283,7 +325,7 @@ export default function KTNavShell({ user, onBack, children }: KTNavShellProps) 
       </aside>
 
       {/* Main Content Pane */}
-      <main className="flex-1 flex flex-col h-full bg-slate-950 relative overflow-hidden z-10">
+      <main className="flex-1 min-w-0 flex flex-col h-full bg-slate-950 relative overflow-hidden z-10 pt-14 md:pt-0">
         {/* Subtle radial background glows for premium visual aesthetic */}
         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-indigo-500/5 blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] rounded-full bg-indigo-600/3 blur-[100px] pointer-events-none" />

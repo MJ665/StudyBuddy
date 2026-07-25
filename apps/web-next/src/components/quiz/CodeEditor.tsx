@@ -181,7 +181,7 @@ export default function CodeEditor({ question, onFinish }: any) {
                   <button className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-brand-primary hover:text-white transition-colors">
                     Switch Engine <ChevronDown size={10} />
                   </button>
-                  <div className="absolute top-full left-0 mt-2 w-64 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover/lang:opacity-100 group-hover/lang:visible transition-all z-50 overflow-y-auto max-h-[70vh] p-2 custom-scrollbar">
+                  <div className="absolute top-full left-0 mt-2 w-64 max-w-[92vw] bg-slate-900 border border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover/lang:opacity-100 group-hover/lang:visible transition-all z-50 overflow-y-auto max-h-[70vh] p-2 custom-scrollbar">
                     {Object.keys(languagesByCategory).length > 0 ? (
                       Object.entries(languagesByCategory).map(([category, langs]) => (
                         <div key={category} className="mb-2 last:mb-0">
@@ -265,7 +265,7 @@ export default function CodeEditor({ question, onFinish }: any) {
           {showSettings && (
             <motion.div 
               initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-              className="absolute right-6 top-6 z-[60] bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl w-64"
+              className="absolute right-6 top-6 z-[60] bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl w-64 max-w-[calc(100vw-3rem)]"
             >
               <div className="flex items-center justify-between mb-6">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Configurations</h4>
@@ -406,7 +406,7 @@ export default function CodeEditor({ question, onFinish }: any) {
                    <div className="bg-indigo-600 text-white p-3 rounded-2xl shadow-lg cursor-help border border-white/10">
                       <Lightbulb size={18} />
                    </div>
-                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-72 bg-slate-900 border border-indigo-500/30 p-4 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all text-sm text-slate-300">
+                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-72 max-w-[92vw] bg-slate-900 border border-indigo-500/30 p-4 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all text-sm text-slate-300">
                       <p className="font-black text-brand-primary text-[10px] mb-2 uppercase tracking-widest">Protocol Hint L-{i + 1}</p>
                       {h}
                    </div>

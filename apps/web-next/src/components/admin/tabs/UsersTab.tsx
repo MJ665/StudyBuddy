@@ -299,7 +299,7 @@ export default function UsersTab({ ctx }: { ctx: AdminTabCtx }) {
                   </button>
                 </div>
 
-                <div className="bg-surface-dim/40 border border-surface-bright rounded-[2.5rem] overflow-hidden">
+                <div className="bg-surface-dim/40 border border-surface-bright rounded-[2.5rem] overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
                       <tr className="border-b border-surface-bright bg-surface-bright/5">

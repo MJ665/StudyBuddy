@@ -85,7 +85,7 @@ export function AppLayout({ children, currentView, onChangeView, onLogout, user,
         </div>
       )}
 
-      <main className="flex-1 overflow-y-auto print:overflow-visible relative custom-scrollbar pt-14 md:pt-0">
+      <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden print:overflow-visible relative custom-scrollbar pt-14 md:pt-0">
         {children}
         <div className="pointer-events-none fixed bottom-2 right-3 z-40 print:hidden opacity-50">
           <PoweredByStudyBuddy />

@@ -232,7 +232,7 @@ export default function UserIntelPanel({ userId, onClose, onViewPremium }: UserI
             {activeSection === 'overview' && (
               <motion.div key="overview" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-8">
                 {/* Core Vectors */}
-                <div className="grid grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div className="col-span-2 bg-slate-800/40 border border-white/5 rounded-3xl p-6 flex flex-col items-center">
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 w-full text-center">Intelligence Radar</p>
                     <div className="h-48 w-full">

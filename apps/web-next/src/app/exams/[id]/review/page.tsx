@@ -42,7 +42,8 @@ export default function ProctorReviewPage() {
 
         {error && <div className="rounded-lg bg-rose-500/10 text-rose-400 p-4 text-sm mb-4">{error}</div>}
 
-        <div className="rounded-xl bg-slate-900 border border-slate-800 overflow-hidden">
+        <div className="rounded-xl bg-slate-900 border border-slate-800 overflow-x-auto">
+          <div className="min-w-[560px]">
           <div className="grid grid-cols-5 gap-2 px-4 py-3 text-xs uppercase tracking-widest text-slate-500 border-b border-slate-800">
             <span>User</span><span>Status</span><span>Score</span><span>Result</span><span>Flags</span>
           </div>
@@ -59,6 +60,7 @@ export default function ProctorReviewPage() {
               <span className={a.flags > 0 ? 'text-amber-400 font-bold' : 'text-slate-500'}>{a.flags > 0 ? `⚠ ${a.flags}` : '0'}</span>
             </div>
           ))}
+          </div>
         </div>
         <p className="text-center text-slate-600 text-xs mt-6">Powered by StudyBuddy</p>
       </div>

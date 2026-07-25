@@ -204,7 +204,7 @@ export default function CodingTab({ ctx }: { ctx: AdminTabCtx }) {
 
 
                   {/* Coding Registry Table */}
-                  <div className="bg-slate-900/50 border border-white/5 rounded-[3rem] overflow-hidden">
+                  <div className="bg-slate-900/50 border border-white/5 rounded-[3rem] overflow-x-auto">
                     <table className="w-full text-left">
                       <thead>
                         <tr className="border-b border-white/5">

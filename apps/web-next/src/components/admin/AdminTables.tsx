@@ -82,7 +82,7 @@ export function AuditLogTable() {
           <RefreshCw size={14} /> Refresh Log
         </button>
       </div>
-      <div className="border border-surface-bright/30 rounded-2xl overflow-hidden">
+      <div className="border border-surface-bright/30 rounded-2xl overflow-x-auto">
         <table className="w-full text-left">
           <thead>
             <tr className="bg-surface-bright/5 border-b border-surface-bright/30">
@@ -178,7 +178,7 @@ export function EmailLogTable() {
           <RefreshCw size={14} /> Sync Communications
         </button>
       </div>
-      <div className="border border-surface-bright/30 rounded-2xl overflow-hidden">
+      <div className="border border-surface-bright/30 rounded-2xl overflow-x-auto">
         <table className="w-full text-left">
           <thead>
             <tr className="bg-surface-bright/5 border-b border-surface-bright/30">
@@ -292,7 +292,7 @@ export function QuestionReportTable() {
         </button>
       </div>
 
-      <div className="overflow-hidden border border-white/5 rounded-3xl">
+      <div className="overflow-x-auto border border-white/5 rounded-3xl">
         <table className="w-full text-left">
           <thead className="bg-white/5">
             <tr>
