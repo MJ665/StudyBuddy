@@ -38,10 +38,12 @@ export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
+  // EU-region org (studybuddy is on de.sentry.io) — source-map upload must target it.
+  sentryUrl: process.env.SENTRY_URL || 'https://de.sentry.io',
   silent: !process.env.CI,
   widenClientFileUpload: true,
   tunnelRoute: '/monitoring',
-  disableLogger: true,
+  // (disableLogger removed — it's deprecated; the default already tree-shakes fine.)
   // Only upload source maps when a build-time auth token is present.
   sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
   telemetry: false,
