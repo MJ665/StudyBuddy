@@ -23,7 +23,8 @@ import sys
 import urllib.error
 import urllib.request
 
-BASE = "https://sentry.io/api/0"
+# EU-region orgs (like meet-w7) live on de.sentry.io. Override via SENTRY_BASE_URL.
+BASE = os.environ.get("SENTRY_BASE_URL", "https://de.sentry.io").rstrip("/") + "/api/0"
 TOKEN = os.environ.get("SENTRY_AUTH_TOKEN")
 ORG = os.environ.get("SENTRY_ORG", "meet-w7")
 PROJECT = os.environ.get("SENTRY_PROJECT", "studybuddy")
