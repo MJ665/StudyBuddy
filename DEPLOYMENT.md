@@ -170,6 +170,44 @@ DNS can take a few minutes to a couple of hours. Both platforms auto-issue HTTPS
 
 ---
 
+## PART D2 — Observability (Sentry now, OpenTelemetry later)
+
+Errors, traces, logs, and metrics from **all three apps** (api, web, mobile) flow into **one Sentry project**, with alerts pushed to **Slack**. It's all env-driven and off by default (no DSN ⇒ nothing sends), so you turn it on by pasting a DSN.
+
+### One-time setup
+1. In Sentry (org `meet-w7`) create **one project** → copy its **DSN**.
+2. Set the **same DSN** in all three places:
+   - Railway (backend): `SENTRY_DSN=<dsn>` + `TELEMETRY_BACKEND=sentry` + `SENTRY_ENVIRONMENT=production`.
+   - Vercel (web): `NEXT_PUBLIC_SENTRY_DSN=<dsn>`.
+   - EAS (mobile): `EXPO_PUBLIC_SENTRY_DSN=<dsn>`.
+3. For **source maps** (readable stack traces), set the build-time token in each platform: `SENTRY_ORG=meet-w7`, `SENTRY_PROJECT=studybuddy`, `SENTRY_AUTH_TOKEN=<your sntrys_… token>`.
+4. **Slack:** in Sentry → Settings → Integrations → **Slack** → install & add it to a channel (e.g. `#alerts`). Then run the alert-rule script:
+   ```bash
+   export SENTRY_AUTH_TOKEN=sntrys_...  SENTRY_ORG=meet-w7  SENTRY_PROJECT=studybuddy  SLACK_CHANNEL='#alerts'
+   python scripts/setup_sentry.py       # creates error-volume / new-issue / regression / crash rules → Slack
+   ```
+5. **Direct critical alerts:** create a Slack **Incoming Webhook** and set `SLACK_WEBHOOK_URL=<url>` on Railway. The backend posts terminal job failures, scheduler-task failures, and unhandled 500s straight to it.
+
+### What you get (no extra hosting)
+- **Errors**: every unhandled 500 (backend), React error boundary (web), native crash/JS error (mobile) — tagged by `component` (api/web/mobile) and user/org.
+- **Traces**: request → DB → outbound-HTTP spans (backend); page loads + client navigations + **session replay on errors** (web); app performance (mobile).
+- **Logs**: structured JSON logs (`LOG_FORMAT=json`) shipped to Sentry Logs.
+- **Metrics** (ride on traces/logs — no metrics backend needed): `ai.cost_usd` / `ai.tokens.*` per feature+model, `job.duration` / `job.completed`, `task.run`, `http.request.duration`, `db.query.slow`.
+
+### Switching to OpenTelemetry later (when you want)
+No re-instrumentation — flip env on the backend:
+```
+TELEMETRY_BACKEND=otel
+OTEL_EXPORTER_OTLP_ENDPOINT=https://<your-collector>
+OTEL_EXPORTER_OTLP_HEADERS=authorization=Bearer <token>
+```
+and on that deploy: `pip install -r apps/api/requirements-otel.txt`. The same spans/metrics/logs then export over OTLP to any collector (Grafana Cloud free tier, self-hosted, etc.). Sentry stays for the frontend/mobile until you migrate those too.
+
+### Cost control
+Errors are captured 100%; traces/profiles/replay are **sampled** (defaults 20% traces, 10% replay) via `SENTRY_TRACES_SAMPLE_RATE` etc. — lower them if you approach Sentry's free-tier quota.
+
+---
+
 ## PART E — Final verification (once both are live)
 
 1. `https://studybuddy-api.mj665.in/health` → JSON ok (backend alive).
@@ -177,6 +215,7 @@ DNS can take a few minutes to a couple of hours. Both platforms auto-issue HTTPS
 3. Log in as the L&D Admin → dashboard loads (this proves the frontend→backend proxy + database all work end-to-end).
 4. Open on your phone browser at 390px width → no sideways scrolling (mobile responsive).
 5. Publish a test exam with your own email as a recipient → you get the invite email with a working link (proves Resend + `FRONTEND_URL`).
+6. **Observability**: after setting the Sentry DSN, hit `https://studybuddy-api.mj665.in/sentry-debug` isn't wired — instead trigger any real error (or use Sentry's "Send test event" in the project onboarding). Confirm the event appears in Sentry and an alert lands in your Slack `#alerts` channel.
 
 ---
 

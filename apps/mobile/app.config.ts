@@ -58,9 +58,19 @@ const config: ExpoConfig = {
         color: '#8083ff',
       },
     ],
+    // Sentry — native crash handling + JS errors + source-map upload on EAS builds.
+    // authToken comes from SENTRY_AUTH_TOKEN in the build env (never hardcode it).
+    [
+      '@sentry/react-native/expo',
+      {
+        organization: process.env.SENTRY_ORG ?? 'meet-w7',
+        project: process.env.SENTRY_PROJECT ?? 'studybuddy',
+      },
+    ],
   ],
   extra: {
     webUrl: WEB_URL,
+    sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
     eas: { projectId: process.env.EAS_PROJECT_ID ?? 'REPLACE_WITH_EAS_PROJECT_ID' },
   },
 };

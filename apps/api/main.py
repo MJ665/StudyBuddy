@@ -77,18 +77,11 @@ from routers import (  # noqa: E402
     resources,
 )
 
-# ── Sentry error tracking (no-op unless SENTRY_DSN is set) ──────────────────
-_sentry_dsn = os.environ.get("SENTRY_DSN")
-if _sentry_dsn:
-    import sentry_sdk
+# ── Observability: structured logging + telemetry backend (Sentry/OTel/none) ──
+# Vendor-neutral facade — flip TELEMETRY_BACKEND to switch the whole stack.
+from observability import logging_config, telemetry  # noqa: E402
 
-    sentry_sdk.init(
-        dsn=_sentry_dsn,
-        environment=settings.ENVIRONMENT,
-        traces_sample_rate=0.1,
-        send_default_pii=False,
-    )
-    logger.info("✅ Sentry error tracking enabled.")
+logging_config.setup()  # re-applies env-driven LOG_LEVEL/LOG_FORMAT over the bootstrap
 
 # Create the FastAPI app
 app = FastAPI(
@@ -97,6 +90,9 @@ app = FastAPI(
     version=settings.APP_VERSION,
     redirect_slashes=False,
 )
+
+# Initialize telemetry AFTER the app exists (OTel needs the app to instrument).
+telemetry.init_telemetry(app)
 
 # I: Strict CORS — restrict to known origins (not wildcard)
 origins = []
@@ -179,10 +175,12 @@ async def https_redirect(request: Request, call_next):
                 algorithms=[settings.ALGORITHM],
                 options={"verify_exp": False},
             )
-            ai_meter.set_request_context(
-                _p.get("organization_id"),
-                int(_p["sub"]) if _p.get("sub") else None,
-            )
+            _uid = int(_p["sub"]) if _p.get("sub") else None
+            _oid = _p.get("organization_id")
+            ai_meter.set_request_context(_oid, _uid)
+            from observability import tracing as _tracing
+
+            _tracing.set_user_org(_uid, _oid)  # attach identity for error triage
         else:
             ai_meter.set_request_context(None, None)
     except Exception:
@@ -205,6 +203,15 @@ async def https_redirect(request: Request, call_next):
     logger.info(
         f"{request.method} {request.url.path} → {response.status_code} ({ms}ms)"
     )
+    try:
+        from observability import metrics as _metrics
+
+        _metrics.distribution(
+            "http.request.duration", ms, unit="millisecond",
+            method=request.method, status=response.status_code,
+        )
+    except Exception:
+        pass
     return response
 
 

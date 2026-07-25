@@ -70,6 +70,20 @@ async def record(
 
         oid = org_id if org_id is not None else _org_ctx.get()
         uid = user_id if user_id is not None else _user_ctx.get()
+        cost = _estimate_cost(model, input_tokens, output_tokens)
+
+        # Telemetry: emit AI usage as metrics so cost/tokens are visible + alertable
+        # in Sentry (or OTel). DB row (below) stays the source of truth for billing.
+        try:
+            from observability import metrics
+
+            tags = {"feature": feature, "model": model, "org": str(oid or "none")}
+            metrics.distribution("ai.tokens.input", input_tokens, unit="none", **tags)
+            metrics.distribution("ai.tokens.output", output_tokens, unit="none", **tags)
+            metrics.distribution("ai.cost_usd", cost, unit="none", **tags)
+        except Exception:
+            pass
+
         async with db_session_factory() as db:
             db.add(
                 AIUsage(
@@ -79,7 +93,7 @@ async def record(
                     model=model,
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
-                    est_cost_usd=_estimate_cost(model, input_tokens, output_tokens),
+                    est_cost_usd=cost,
                 )
             )
             await db.commit()

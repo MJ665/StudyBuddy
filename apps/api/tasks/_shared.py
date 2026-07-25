@@ -31,3 +31,20 @@ def record_task_run(db: Session, task_name: str, status: str, error: str | None 
         db.commit()
     except Exception as e:
         logger.error(f"Failed to record task run for {task_name}: {e}")
+
+    # Telemetry: every scheduled task funnels through here → one metric + alert path.
+    try:
+        from observability import metrics, slack, tracing
+
+        metrics.counter("task.run", 1, task=task_name, status=status)
+        if status == "failure":
+            tracing.capture_message(
+                f"Scheduled task failed: {task_name}", level="error", error=error
+            )
+            slack.post_alert(
+                f"Scheduled task `{task_name}` failed",
+                level="error",
+                error=(error or "")[:300],
+            )
+    except Exception:
+        pass

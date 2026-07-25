@@ -232,13 +232,37 @@ async def run_once(session_factory, limit: int = BATCH_SIZE) -> int:
             )
             continue
 
+        from observability import metrics, slack, tracing
+
+        _t0 = _now()
         try:
-            await handler(**(job.payload or {}))
+            with tracing.span(f"job.{job.job_type}", op="queue.task", job_id=job.id):
+                await handler(**(job.payload or {}))
             await _finish(session_factory, job.id, None, job.max_attempts, attempts)
-        except Exception:
+            metrics.distribution(
+                "job.duration",
+                (_now() - _t0).total_seconds() * 1000.0,
+                unit="millisecond",
+                job_type=job.job_type,
+                outcome="success",
+            )
+            metrics.counter("job.completed", 1, job_type=job.job_type, outcome="success")
+        except Exception as exc:
             await _finish(
                 session_factory, job.id, traceback.format_exc(), job.max_attempts, attempts
             )
+            metrics.counter("job.completed", 1, job_type=job.job_type, outcome="failure")
+            tracing.capture_exception(
+                exc, job_id=job.id, job_type=job.job_type, attempt=attempts
+            )
+            # Only page on a TERMINAL failure (retries exhausted), not each retry.
+            if attempts >= (job.max_attempts or 1):
+                slack.post_alert(
+                    f"Background job `{job.job_type}` failed permanently after {attempts} attempts",
+                    level="critical",
+                    job_id=job.id,
+                    error=str(exc)[:200],
+                )
 
     return len(claimed)
 

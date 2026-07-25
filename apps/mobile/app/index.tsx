@@ -17,6 +17,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import NetInfo from '@react-native-community/netinfo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import * as Sentry from '@sentry/react-native';
+
 import { OfflineScreen } from '@/components/OfflineScreen';
 import { registerDeviceWithBackend, registerForPushToken } from '@/lib/push';
 
@@ -115,8 +117,9 @@ export default function WebAppScreen() {
     try {
       const msg = JSON.parse(e.nativeEvent.data);
       if (msg?.type === 'AUTH' && msg.token) setAuthToken(msg.token);
-    } catch {
-      /* ignore non-JSON messages */
+    } catch (err) {
+      // Non-JSON bridge messages are expected; record as a breadcrumb only.
+      Sentry.addBreadcrumb({ category: 'webview', message: 'non-JSON message', level: 'debug' });
     }
   }, []);
 
@@ -180,7 +183,14 @@ export default function WebAppScreen() {
           // already-loaded page are ignored so a flaky asset can't blank the app.
           onError={(e) => {
             setLoading(false);
-            if (e.nativeEvent.url === WEB_URL || !canGoBack) setErrored(true);
+            const { url, description, code } = e.nativeEvent;
+            if (url === WEB_URL || !canGoBack) {
+              setErrored(true);
+              Sentry.captureException(
+                new Error(`WebView load failed: ${description} (code ${code})`),
+                { tags: { url } },
+              );
+            }
           }}
           renderError={() => <View style={{ flex: 1, backgroundColor: '#0c1324' }} />}
           // Persistence + storage so login survives restarts.

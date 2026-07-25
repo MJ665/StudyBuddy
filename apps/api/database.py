@@ -99,3 +99,43 @@ async def get_async_db():
             raise
         finally:
             pass
+
+
+# ── Slow-query telemetry ─────────────────────────────────────────────────────
+# Individual query spans come free from the Sentry/OTel SQLAlchemy integration;
+# this adds a metric for queries slower than DB_SLOW_QUERY_MS so they're easy to
+# alert on. Attached to both engines; fully guarded (never affects queries).
+def _install_slow_query_listener() -> None:
+    try:
+        import time as _time
+
+        from sqlalchemy import event
+
+        from config import settings
+
+        threshold_ms = getattr(settings, "DB_SLOW_QUERY_MS", 500)
+
+        def _before(conn, cursor, statement, parameters, context, executemany):
+            context._query_start = _time.monotonic()
+
+        def _after(conn, cursor, statement, parameters, context, executemany):
+            start = getattr(context, "_query_start", None)
+            if start is None:
+                return
+            ms = (_time.monotonic() - start) * 1000.0
+            if ms >= threshold_ms:
+                try:
+                    from observability import metrics
+
+                    metrics.distribution("db.query.slow", ms, unit="millisecond")
+                except Exception:
+                    pass
+
+        for _eng in (engine, async_engine.sync_engine):
+            event.listen(_eng, "before_cursor_execute", _before)
+            event.listen(_eng, "after_cursor_execute", _after)
+    except Exception:
+        pass
+
+
+_install_slow_query_listener()

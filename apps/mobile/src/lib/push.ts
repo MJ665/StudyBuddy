@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import * as Sentry from '@sentry/react-native';
 
 /**
  * Registers this device for FCM push (via Expo's push service) and returns the
@@ -34,7 +35,8 @@ export async function registerForPushToken(): Promise<string | null> {
       projectId ? { projectId } : undefined,
     );
     return token.data;
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err);
     return null;
   }
 }
@@ -60,7 +62,8 @@ export async function registerDeviceWithBackend(
       // The WebView shares cookies with the same origin; include them too.
       body: JSON.stringify({ token: pushToken, platform: Platform.OS }),
     });
-  } catch {
-    /* non-fatal: push registration is best-effort */
+  } catch (err) {
+    // Non-fatal: push registration is best-effort — record for visibility.
+    Sentry.captureException(err);
   }
 }

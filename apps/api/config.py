@@ -84,6 +84,29 @@ class Settings(BaseSettings):
     ENFORCE_HTTPS: bool = False
     RESEND_FROM_EMAIL: str = "StudyHub L&D <noreply@email.mj665.in>"
 
+    # --- OBSERVABILITY (Sentry now, OpenTelemetry-swappable) ---
+    # One vendor-neutral facade (observability/) reads these. Flip TELEMETRY_BACKEND
+    # to switch the whole stack; every value is env-configurable.
+    TELEMETRY_BACKEND: str = "sentry"  # sentry | otel | none
+    SENTRY_DSN: Optional[str] = None
+    SENTRY_ENVIRONMENT: Optional[str] = None  # falls back to ENVIRONMENT
+    SENTRY_RELEASE: Optional[str] = None  # e.g. studybuddy-api@3.1.0
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.2  # errors are always 100%; traces sampled for cost
+    SENTRY_PROFILES_SAMPLE_RATE: float = 0.2
+    SENTRY_SEND_PII: bool = False
+    # Logging
+    LOG_LEVEL: str = "INFO"
+    LOG_FORMAT: str = "plain"  # json | plain (json recommended in prod)
+    # Slack (critical custom alerts via an Incoming Webhook)
+    SLACK_WEBHOOK_URL: Optional[str] = None
+    # Slow-query metric threshold (ms)
+    DB_SLOW_QUERY_MS: int = 500
+    # OpenTelemetry (only read when TELEMETRY_BACKEND=otel)
+    OTEL_SERVICE_NAME: str = "studybuddy-api"
+    OTEL_EXPORTER_OTLP_ENDPOINT: Optional[str] = None
+    OTEL_EXPORTER_OTLP_HEADERS: Optional[str] = None
+    OTEL_METRICS_ENABLED: bool = True
+
     # --- SANDBOX ---
     JUDGE0_API_URL: Optional[str] = None
     JUDGE0_API_KEY: Optional[str] = None

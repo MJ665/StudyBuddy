@@ -59,8 +59,34 @@ class ExternalServiceError(AppError):
 
 
 def register_error_handlers(app: FastAPI) -> None:
-    """Attach one JSON handler for the whole AppError family."""
+    """Attach JSON handlers for the AppError family + a catch-all, reporting
+    server-side failures (5xx / unhandled) to the observability backend."""
+    from observability import slack, tracing
 
     @app.exception_handler(AppError)
     async def _app_error_handler(request: Request, exc: AppError) -> JSONResponse:
+        # 4xx are expected (validation, scope, conflict) — don't page anyone.
+        # 5xx (base AppError, ExternalServiceError) are real failures → report.
+        if exc.status_code >= 500:
+            tracing.capture_exception(
+                exc, path=str(request.url.path), method=request.method
+            )
+            slack.post_alert(
+                f"{exc.status_code} on `{request.method} {request.url.path}` — {exc.detail}",
+                level="error",
+            )
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+    @app.exception_handler(Exception)
+    async def _unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
+        # Anything not modeled as an AppError is an unexpected 500 — always report.
+        tracing.capture_exception(
+            exc, path=str(request.url.path), method=request.method
+        )
+        slack.post_alert(
+            f"Unhandled 500 on `{request.method} {request.url.path}` — {type(exc).__name__}: {exc}",
+            level="critical",
+        )
+        return JSONResponse(
+            status_code=500, content={"detail": "Internal server error"}
+        )

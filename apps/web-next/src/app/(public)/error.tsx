@@ -2,6 +2,9 @@
 
 /** Route-group error boundary for public pages (login, recovery, profiles). */
 
+import { useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
+
 export default function PublicError({
   error,
   reset,
@@ -9,6 +12,10 @@ export default function PublicError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-8">
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-10 max-w-md w-full text-center">

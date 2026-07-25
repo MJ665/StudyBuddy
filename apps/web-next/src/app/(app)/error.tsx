@@ -2,6 +2,9 @@
 
 /** Route-group error boundary for the authenticated area (Phase 4 promise). */
 
+import { useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
+
 export default function AppAreaError({
   error,
   reset,
@@ -9,6 +12,10 @@ export default function AppAreaError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-8">
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-10 max-w-md w-full text-center">
