@@ -240,6 +240,43 @@ def send_assignment_email(
     )
 
 
+def send_exam_invite(
+    to_email: str,
+    full_name: str,
+    exam_title: str,
+    portal_url: str,
+    duration_minutes: Optional[int] = None,
+    passing_score: Optional[int] = None,
+) -> bool:
+    """Invite an internal user to a published exam, with a direct portal link."""
+    meta_bits = []
+    if duration_minutes:
+        meta_bits.append(f"<p><strong>Duration:</strong> {duration_minutes} minutes</p>")
+    if passing_score is not None:
+        meta_bits.append(f"<p><strong>Passing score:</strong> {passing_score}%</p>")
+    meta_str = "".join(meta_bits)
+    html = f"""
+    <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;border:1px solid #e2e8f0;border-radius:12px;">
+      <h2 style="color:#4f46e5;">📝 You've Been Invited to an Exam</h2>
+      <p>Hi <strong>{full_name}</strong>,</p>
+      <p>A proctored exam has been published for you:</p>
+      <div style="background:#eef2ff;padding:16px;border-radius:8px;margin:16px 0;border-left:4px solid #4f46e5;">
+        <strong style="font-size:18px;">{exam_title}</strong>
+        {meta_str}
+      </div>
+      <div style="text-align:center;margin:24px 0;">
+        <a href="{portal_url}" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;">Open Exam</a>
+      </div>
+      <p style="color:#475569;font-size:13px;">Or paste this link into your browser:<br/><span style="color:#4f46e5;word-break:break-all;">{portal_url}</span></p>
+    </div>"""
+    return _send(
+        to_email,
+        f"📝 Exam Invitation: {exam_title}",
+        html,
+        email_type="EXAM_INVITE",
+    )
+
+
 # ──────────────────────────────────────────────────────────────────────────────
 # 5. Streak Break Alert
 # ──────────────────────────────────────────────────────────────────────────────

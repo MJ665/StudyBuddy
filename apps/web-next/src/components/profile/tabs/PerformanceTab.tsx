@@ -54,6 +54,19 @@ export default function PerformanceTab({ ctx }: { ctx: ProfileTabCtx }) {
     handleSyncIntel, setShowEditModal, setActiveTab, onBack,
     currentUserId, slug, toast, loading,
     scoreHistory, scoreDistribution, radarData, expertiseSkills, strengthEntries } = ctx;
+
+  // Exam results — the taker's own proctored-exam marks. `/exams/me/attempts` is
+  // caller-scoped, so this only populates on the user's own profile.
+  const [examAttempts, setExamAttempts] = useState<any[]>([]);
+  useEffect(() => {
+    if (!isOwnProfile) { setExamAttempts([]); return; }
+    let alive = true;
+    ApiService.myExamAttempts()
+      .then((r) => { if (alive) setExamAttempts(r?.attempts || []); })
+      .catch(() => { if (alive) setExamAttempts([]); });
+    return () => { alive = false; };
+  }, [isOwnProfile]);
+
   return (
 <>
             <motion.div key="perf" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
@@ -113,6 +126,44 @@ export default function PerformanceTab({ ctx }: { ctx: ProfileTabCtx }) {
                   )}
                 </div>
               </div>
+
+              {/* Exam results (own profile) */}
+              {isOwnProfile && examAttempts.length > 0 && (
+                <div className="p-6 bg-slate-900/60 rounded-3xl border border-white/5">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-5 flex items-center gap-2">
+                    <ScrollText size={14} className="text-emerald-400" /> Exam Results
+                  </h3>
+                  <div className="space-y-2">
+                    {examAttempts.slice(0, 15).map((a: any, i: number) => {
+                      const pct = typeof a.percent === 'number' ? a.percent : 0;
+                      return (
+                        <div key={a.id ?? i} className="flex items-center gap-4 p-3 hover:bg-white/[0.02] rounded-xl transition-colors">
+                          <div className="w-8 text-slate-600 font-black text-xs">{i + 1}</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-slate-200 truncate">{a.exam_title || 'Exam'}</p>
+                            <p className="text-[10px] text-slate-500 font-mono">
+                              {a.submitted_at ? new Date(a.submitted_at).toLocaleDateString() : '—'}
+                              {a.flags ? ` · ${a.flags} flag${a.flags === 1 ? '' : 's'}` : ''}
+                            </p>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest ${a.passed ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                            {a.passed ? 'Pass' : 'Fail'}
+                          </span>
+                          <div className="text-right">
+                            <div className={`font-black text-sm ${pct >= 80 ? 'text-emerald-400' : pct >= 60 ? 'text-indigo-400' : 'text-rose-400'}`}>{pct}%</div>
+                            <div className="text-[10px] text-slate-500">{a.score}/{a.total}</div>
+                          </div>
+                          <div className="w-20">
+                            <div className="h-1.5 bg-slate-800 rounded-full">
+                              <div className={`h-full rounded-full ${pct >= 80 ? 'bg-emerald-500' : pct >= 60 ? 'bg-indigo-500' : 'bg-rose-500'}`} style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </motion.div>
 </>
   );

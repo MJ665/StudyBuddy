@@ -30,6 +30,9 @@ class Exam(Base):
     shuffle_options: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     proctoring_mode: Mapped[str] = mapped_column(String(12), default="standard", nullable=False)  # none|standard|advanced
     is_published: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Internal users invited by email when the exam is published. The invite email
+    # carries a direct portal link; each becomes an in-app notification too.
+    recipient_emails: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
     created_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

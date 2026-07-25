@@ -53,6 +53,7 @@ class ExamCreate(BaseModel):
     shuffle_options: bool = True
     proctoring_mode: str = Field(default="standard", pattern="^(none|standard|advanced)$")
     is_published: bool = False
+    recipient_emails: list[str] = Field(default_factory=list)
 
 
 @router.post("")
@@ -114,12 +115,116 @@ def create_exam(
         shuffle_options=body.shuffle_options,
         proctoring_mode=body.proctoring_mode,
         is_published=body.is_published,
+        recipient_emails=[e.strip().lower() for e in body.recipient_emails if e and e.strip()],
         created_by=int(current_user["sub"]),
     )
     db.add(exam)
     db.commit()
     db.refresh(exam)
-    return {"id": exam.id, "title": exam.title, "question_count": len(q_ids)}
+
+    invited = 0
+    if exam.is_published and exam.recipient_emails:
+        invited = _notify_exam_recipients(exam, current_user, db)
+
+    return {
+        "id": exam.id,
+        "title": exam.title,
+        "question_count": len(q_ids),
+        "invited": invited,
+    }
+
+
+def _notify_exam_recipients(
+    exam: "models.Exam", current_user: dict, db: Session
+) -> int:
+    """Resolve recipient emails to internal users in the caller's super-org and
+    notify each by email (with a direct portal link) + in-app notification.
+
+    Best-effort: an email/push failure never aborts exam creation.
+    """
+    import os
+
+    emails = list(exam.recipient_emails or [])
+    if not emails:
+        return 0
+
+    # Resolve emails to active users, then keep only those the caller can reach.
+    # Learner/user data is ORG-scoped (unlike the exam itself, which is shared
+    # super-org content), so recipients are filtered to the caller's org — a
+    # PlatformAdmin (org-less, cross-org by design) may invite any matched user.
+    candidates = (
+        db.query(models.User)
+        .filter(
+            models.User.email.in_(emails),
+            models.User.is_active.is_(True),
+        )
+        .all()
+    )
+    if not candidates:
+        return 0
+
+    from auth_utils import is_platform_admin, resolve_user_organization_id
+
+    caller_org = caller_org_id(current_user)
+    if is_platform_admin(current_user):
+        users = candidates
+    else:
+        users = [
+            u
+            for u in candidates
+            if caller_org is not None
+            and resolve_user_organization_id(u, db) == caller_org
+        ]
+    if not users:
+        return 0
+
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+    portal_url = f"{frontend_url}/exam/{exam.id}"
+
+    notified = 0
+    for u in users:
+        notif = models.Notification(
+            user_id=u.id,
+            notification_type="exam_invite",
+            title=f"📝 Exam Published: {exam.title}",
+            body="You have been invited to take a proctored exam.",
+            link_type="exam",
+            link_id=exam.id,
+        )
+        db.add(notif)
+        notified += 1
+
+        # Mobile push (best-effort; never blocks).
+        try:
+            from services.push_service import send_push_to_user
+
+            send_push_to_user(
+                db,
+                u.id,
+                f"Exam Published: {exam.title}",
+                "You have been invited to take a proctored exam.",
+                url=f"/exam/{exam.id}",
+            )
+        except Exception:
+            pass
+
+        if u.email:
+            try:
+                from services.email_service import send_exam_invite
+
+                send_exam_invite(
+                    to_email=u.email,
+                    full_name=u.full_name,
+                    exam_title=exam.title,
+                    portal_url=portal_url,
+                    duration_minutes=exam.duration_minutes,
+                    passing_score=exam.passing_score,
+                )
+            except Exception as e:
+                print(f"Exam invite email failed for {u.email}: {e}")
+
+    db.commit()
+    return notified
 
 
 @router.get("")
@@ -337,6 +442,51 @@ def log_proctor_event(
         attempt.flags_count = (attempt.flags_count or 0) + 1
     db.commit()
     return {"logged": True, "flags": attempt.flags_count}
+
+
+@router.get("/me/attempts")
+def my_exam_attempts(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token),
+):
+    """The caller's own exam results — surfaced on their profile alongside
+    quiz + coding attempts. Only completed (non-in-progress) attempts."""
+    uid = int(current_user["sub"])
+    attempts = (
+        db.query(models.ExamAttempt)
+        .filter(
+            models.ExamAttempt.user_id == uid,
+            models.ExamAttempt.status != "in_progress",
+        )
+        .order_by(models.ExamAttempt.submitted_at.desc().nullslast())
+        .all()
+    )
+    exam_ids = list({a.exam_id for a in attempts})
+    titles = {
+        e.id: e.title
+        for e in db.query(models.Exam).filter(models.Exam.id.in_(exam_ids)).all()
+    } if exam_ids else {}
+    def _pct(a: "models.ExamAttempt") -> float:
+        tot = a.total or 0.0
+        return round((a.score or 0.0) / tot * 100.0, 1) if tot > 0 else 0.0
+
+    return {
+        "attempts": [
+            {
+                "id": a.id,
+                "exam_id": a.exam_id,
+                "exam_title": titles.get(a.exam_id, "Exam"),
+                "score": a.score,
+                "total": a.total,
+                "percent": _pct(a),
+                "passed": a.passed,
+                "status": a.status,
+                "flags": a.flags_count,
+                "submitted_at": a.submitted_at.isoformat() if a.submitted_at else None,
+            }
+            for a in attempts
+        ]
+    }
 
 
 @router.get("/{exam_id}/attempts")

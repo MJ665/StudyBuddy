@@ -185,11 +185,15 @@ export class ApiClient3 extends ApiClient2 {
     title: string; description?: string; bank_id?: number; question_ids?: number[];
     duration_minutes: number; passing_score: number; max_attempts?: number;
     shuffle_questions?: boolean; shuffle_options?: boolean; proctoring_mode?: string; is_published?: boolean;
+    recipient_emails?: string[];
   }) {
     return this.request('/exams', { method: 'POST', body: JSON.stringify(data) });
   }
   static async listExams() {
     return this.request('/exams');
+  }
+  static async myExamAttempts() {
+    return this.request('/exams/me/attempts');
   }
   static async startExam(examId: number) {
     return this.request(`/exams/${examId}/start`, { method: 'POST' });
