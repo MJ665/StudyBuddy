@@ -413,17 +413,31 @@ JSON Format:
                   </p>
                 </div>
 
-                {/* Tab switcher */}
+                {/* JSON is the only supported paste format (Text Format removed). */}
                 <div className="flex bg-slate-800 p-1 rounded-xl">
-                  <button onClick={() => setActiveTab('JSON')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'JSON' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}><Code size={16} /> JSON Format</button>
-                  <button onClick={() => setActiveTab('TEXT')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'TEXT' ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}><AlignLeft size={16} /> Text Format</button>
+                  <div className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-bold text-sm bg-indigo-500 text-white shadow-md"><Code size={16} /> JSON Format</div>
                 </div>
 
                 {activeTab === 'JSON' ? (
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <label className="text-xs text-slate-400 font-bold uppercase">Paste JSON Array from AI</label>
-                      <button className="text-xs text-indigo-400 hover:underline" onClick={() => setBankJson(`[\n  {\n    "question": "What is 2+2?",\n    "options": ["3", "4", "5", "6"],\n    "answer": "4",\n    "difficulty": "${bankDiff}",\n    "user_description": ""\n  }\n]`)}>Load Template</button>
+                      <button className="text-xs text-indigo-400 hover:underline" onClick={() => setBankJson(`[
+  {
+    "question": "Which HTTP method is idempotent and used to fully replace a resource?",
+    "options": ["POST", "PUT", "PATCH", "CONNECT"],
+    "answer": "PUT",
+    "difficulty": "${bankDiff}",
+    "user_description": "PUT replaces the entire resource and is idempotent; POST creates and is not."
+  },
+  {
+    "question": "In Big-O notation, what is the average time complexity of a hash-map lookup?",
+    "options": ["O(1)", "O(log n)", "O(n)", "O(n log n)"],
+    "answer": "O(1)",
+    "difficulty": "${bankDiff}",
+    "user_description": "Hash lookups are constant time on average; worst case is O(n) on heavy collisions."
+  }
+]`)}>Load Template</button>
                     </div>
                     <textarea value={bankJson} onChange={e => setBankJson(e.target.value)} className="w-full h-52 bg-slate-800 border border-slate-700 rounded-xl p-4 text-emerald-400 font-mono text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 resize-y" placeholder={`[\n  {\n    "question": "...",\n    "options": ["A", "B", "C", "D"],\n    "answer": "A",\n    "difficulty": "Medium",\n    "user_description": ""\n  }\n]`} />
                     <JSONValidator value={bankJson} />

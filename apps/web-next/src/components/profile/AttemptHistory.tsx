@@ -175,7 +175,12 @@ export default function AttemptHistory({ user, onBack }: AttemptHistoryProps) {
                            <TrendingUp size={16} className="text-emerald-400" />
                            <span className="text-xs font-bold">Accuracy</span>
                         </div>
-                         <span className="text-sm font-black text-white">{(data?.completion_rate || 0).toFixed(1)}%</span>
+                         <span className="text-sm font-black text-white">{(() => {
+                           const qa = data?.quiz_attempts || [];
+                           const s = qa.reduce((acc, x) => acc + (x.score || 0), 0);
+                           const t = qa.reduce((acc, x) => acc + (x.total || 0), 0);
+                           return (t > 0 ? (s / t) * 100 : 0).toFixed(1);
+                         })()}%</span>
                      </div>
                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 text-slate-300">

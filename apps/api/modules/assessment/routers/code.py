@@ -204,6 +204,23 @@ async def evaluate_code(
         await db.commit()
         await db.refresh(attempt)
 
+        # Bug 22: record this attempt against any mandatory coding assignment so
+        # attempts_used advances (previously only quizzes updated completion).
+        try:
+            from services.assignment_service import update_assignment_completion
+
+            await db.run_sync(
+                lambda sync_db: update_assignment_completion(
+                    db=sync_db,
+                    user_id=current_user["id"],
+                    coding_question_id=question.id,
+                    score=int(score),
+                    total=100,
+                )
+            )
+        except Exception as e:
+            logger.warning(f"Coding assignment completion update failed: {e}")
+
         # Proactive Intelligence Cache Invalidation (STRAT-CACHE-SYNC)
         try:
             user_id = current_user.get("id") or current_user.get("sub")
@@ -342,6 +359,79 @@ def verify_coding_attempt(
     attempt.is_verified = True
     db.commit()
     return {"message": "Attempt verified successfully", "attempt_id": attempt_id}
+
+
+from pydantic import BaseModel, Field  # noqa: E402
+
+
+class _TestCaseIn(BaseModel):
+    input_data: str = ""
+    expected_output: str = ""
+    is_public: bool = True
+    weight: int = 1
+
+
+class CodingQuestionCreate(BaseModel):
+    title: str = Field(min_length=1, max_length=255)
+    description: str = ""
+    language: str = "python"
+    sample_solution: str = ""
+    expected_approach: Optional[str] = None
+    evaluation_criteria: List[str] = Field(default_factory=list)
+    difficulty: str = "Medium"
+    course_id: Optional[int] = None
+    is_public: bool = True
+    concept_tags: Optional[List[str]] = None
+    test_cases: List[_TestCaseIn] = Field(default_factory=list)
+
+
+@router.post("/questions")
+def create_coding_question(
+    body: CodingQuestionCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Create a coding question (was missing → the L&D wizard 405'd)."""
+    if current_user.get("role") not in ["LDAdmin", "Mentor", "GroupAdmin"]:
+        raise HTTPException(403, "Not authorized to create coding questions")
+
+    author_id = current_user.get("id")
+    if author_id is None:
+        author_id = current_user.get("sub")
+    if author_id is None:
+        raise HTTPException(401, "Unable to resolve the authoring user.")
+
+    q = CodingQuestion(
+        title=body.title,
+        description=body.description or body.title,
+        language=body.language or "python",
+        sample_solution=body.sample_solution or "",
+        expected_approach=body.expected_approach,
+        evaluation_criteria=body.evaluation_criteria
+        or ["Functionality", "Logic", "Clean Code"],
+        difficulty=body.difficulty or "Medium",
+        concept_tags=body.concept_tags,
+        course_id=body.course_id,
+        created_by=int(author_id),
+        organization_id=caller_org_id(current_user),
+        super_organization_id=caller_super_org_id(current_user, db),
+    )
+    db.add(q)
+    db.flush()  # get q.id for the test cases
+    for tc in body.test_cases:
+        if tc.input_data or tc.expected_output:
+            db.add(
+                CodingTestCase(
+                    coding_question_id=q.id,
+                    input_data=tc.input_data,
+                    expected_output=tc.expected_output,
+                    is_public=tc.is_public,
+                    weight=tc.weight or 1,
+                )
+            )
+    db.commit()
+    db.refresh(q)
+    return {"id": q.id, "title": q.title, "success": True}
 
 
 @router.delete("/questions/{question_id}")

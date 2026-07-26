@@ -127,6 +127,7 @@ def get_banks(
         bank_dict = {c.name: getattr(bank, c.name) for c in bank.__table__.columns}
         bank_dict["question_count"] = q_count
         bank_dict["attempt_count"] = a_count
+        bank_dict["total_attempts"] = a_count  # the Library UI reads total_attempts
         banks.append(bank_dict)
 
     return {
