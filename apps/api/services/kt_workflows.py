@@ -115,6 +115,20 @@ async def run_rag_query(
 ) -> Dict:
     start = time.time()
 
+    # Friendly: greetings / "what can you do" get a conversational reply instead
+    # of the grounding refusal (the assistant must never refuse a "hi").
+    from .kt_engine import classify_conversational, conversational_reply
+
+    _kind = classify_conversational(query)
+    if _kind:
+        return {
+            "answer": conversational_reply(_kind),
+            "sources": [],
+            "confidence": 1.0,
+            "was_answered": True,
+            "latency_ms": int((time.time() - start) * 1000),
+        }
+
     query_emb = await gemini.embed_query(query)
 
     # pgvector (Phase 2) — replaced neo4j.vector_search; same chunk contract.

@@ -385,7 +385,7 @@ async def add_resource_comment(
     )
 
     comment = models.ResourceComment(
-        resource_id=resource_id, user_id=int(current_user["sub"]), content=data.content
+        resource_id=resource_id, user_id=int(current_user["sub"]), comment=data.content
     )
     db.add(comment)
     await db.commit()
@@ -434,7 +434,7 @@ async def get_resource_comments(
     res = [
         {
             "id": c.id,
-            "content": c.content,
+            "content": c.comment,
             "created_at": c.created_at.isoformat() if c.created_at else None,
             "user_name": c.user.full_name if c.user else "Unknown",
             "role": c.user.role if c.user else "Member",

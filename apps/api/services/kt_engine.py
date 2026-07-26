@@ -26,6 +26,57 @@ RAG_SYSTEM_PROMPT = """You are a highly capable AI assistant for an enterprise s
 Your goal is to provide accurate, concise, and helpful answers based strictly on the provided context.
 If the answer cannot be found in the context, politely state that you don't know."""
 
+# ── Conversational (greeting / meta) handling ────────────────────────────────
+# The KT chatbot is grounded (it answers from approved documents) but must also
+# be *friendly*: greetings and "what can you do" should get a warm, conversational
+# reply instead of the "I don't have enough knowledge" refusal. Only genuine
+# knowledge questions fall through to retrieval + grounded generation.
+_GREETING_RE = re.compile(
+    r"^\s*(hi+|hey+|hello+|yo|hiya|hii+|howdy|sup|greetings|good\s*(morning|afternoon|evening|day)|"
+    r"thanks?|thank\s*you|thx|ty|ok(ay)?|cool|nice|great|awesome|got\s*it|bye|goodbye)"
+    r"(\s+(there|team|bot|assistant|everyone|folks|all|buddy|mate))?"
+    r"[\s!.,?😊👋🙏]*$",
+    re.IGNORECASE,
+)
+_META_RE = re.compile(
+    r"\b(who\s+are\s+you|what\s+are\s+you|what\s+can\s+you\s+do|what\s+do\s+you\s+do|"
+    r"how\s+do\s+you\s+work|how\s+can\s+you\s+help|help\s+me|what\s+is\s+this|"
+    r"your\s+(capabilities|purpose)|what\s+should\s+i\s+ask|how\s+to\s+use)\b",
+    re.IGNORECASE,
+)
+
+
+def classify_conversational(query: str) -> Optional[str]:
+    """Return 'greeting' or 'meta' for small-talk/meta queries that should be
+    answered conversationally (no RAG grounding needed); None for real questions."""
+    q = (query or "").strip()
+    if not q:
+        return None
+    if _GREETING_RE.match(q):
+        return "greeting"
+    # Keep meta detection tight so real knowledge questions are never intercepted.
+    if _META_RE.search(q) and len(q.split()) <= 14:
+        return "meta"
+    return None
+
+
+def conversational_reply(kind: str) -> str:
+    """Friendly, non-refusal reply for greeting/meta queries."""
+    if kind == "greeting":
+        return (
+            "Hi! 👋 I'm your Knowledge Transfer assistant. I answer questions grounded "
+            "in the approved knowledge documents for the projects you have access to — "
+            "how a system works, why a decision was made, or how to do a task — and I "
+            "cite my sources. What would you like to know?"
+        )
+    return (
+        "I'm your Knowledge Transfer assistant. I draw on the approved knowledge "
+        "documents in the projects you can access, and I always cite my sources. Ask me "
+        "about a specific system, process, or decision — for example, "
+        '"How does the auth migration work?" (If a project has no approved documents yet, '
+        "I won't have anything to draw from there.)"
+    )
+
 # ── Knowledge access policy ──────────────────────────────────────────────────
 # Sensitivity vocabulary (see /kt/registry/sensitivities): low | medium | high.
 # `high` means credentials/PII are present, so it is withheld unless the caller

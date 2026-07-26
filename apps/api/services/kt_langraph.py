@@ -305,6 +305,19 @@ async def stream_kt_chatbot_response(
         ) + "\n"
         return
 
+    # Friendly: greetings / "what can you do" get a conversational reply (no RAG
+    # grounding needed) so the assistant never refuses a "hi".
+    from services.kt_engine import classify_conversational, conversational_reply
+
+    _kind = classify_conversational(query)
+    if _kind:
+        _reply = conversational_reply(_kind)
+        yield json.dumps({"token": _reply, "done": False}) + "\n"
+        yield json.dumps(
+            {"token": "", "done": True, "sources": [], "full_response": _reply}
+        ) + "\n"
+        return
+
     try:
         chunks = await _retrieve_and_rerank(query, company_id, project_ids)
     except Exception as e:  # noqa: BLE001
