@@ -1,58 +1,44 @@
 import logging
-from typing import Any, Dict
 
-from auth_utils import verify_token
-from fastapi import APIRouter, Depends, HTTPException
-from services.email_service import SECURITY_EMAIL, _send
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, EmailStr, Field
+
+from services.email_service import send_contact_email
 
 router = APIRouter(prefix="/contact", tags=["contact"])
 logger = logging.getLogger(__name__)
 
 
+class ContactForm(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    email: EmailStr
+    subject: str | None = Field(default="", max_length=300)
+    category: str | None = Field(default="General Inquiry", max_length=100)
+    message: str = Field(min_length=1, max_length=5000)
+
+
 @router.post("")
-def contact_support(
-    payload: Dict[str, Any], current_user: dict = Depends(verify_token)
-):
-    """Handles inbound contact/support requests from the frontend ContactMe component."""
-    subject = payload.get("subject", "Support Request")
-    message = payload.get("message", "")
-    priority = payload.get("priority", "Medium")
-
-    if not message:
-        raise HTTPException(status_code=400, detail="Message cannot be empty")
-
-    user_email = current_user.get("email") or current_user.get("sub", "Unknown User")
-    full_name = current_user.get("full_name", "Unknown User")
-
-    html_content = f"""
-    <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;border:1px solid #e2e8f0;border-radius:12px;">
-      <h2 style="color:#4f46e5;">New Support Request</h2>
-      <p><strong>From:</strong> {full_name} ({user_email})</p>
-      <p><strong>Priority:</strong> {priority}</p>
-      <div style="background:#f8fafc;padding:16px;border-radius:8px;margin:20px 0;white-space:pre-wrap;">
-        {message}
-      </div>
-    </div>
-    """
-
+def contact_support(body: ContactForm):
+    """Public contact form (marketing site + support). Emails the submission to
+    the configured CONTACT_EMAIL with the sender as Reply-To. No auth — anyone
+    can reach out."""
     try:
-        # Use email_service to send the support ticket
-        success = _send(
-            to_email=SECURITY_EMAIL,
-            subject=f"[Support Ticket - {priority}] {subject}",
-            html=html_content,
-            user_id=current_user.get("sub"),
-            email_type="SUPPORT_TICKET",
+        sent = send_contact_email(
+            name=body.name,
+            email=str(body.email),
+            subject=body.subject or "",
+            category=body.category or "General Inquiry",
+            message=body.message,
         )
-        if not success:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to dispatch support email. Please ensure the email system is properly configured.",
-            )
-        return {
-            "status": "success",
-            "message": "Support request submitted successfully",
-        }
-    except Exception as e:
-        logger.error(f"Failed to submit support request: {e}")
-        raise HTTPException(status_code=500, detail="Failed to process support request")
+    except Exception as e:  # noqa: BLE001
+        logger.error("Contact form send failed: %s", e)
+        raise HTTPException(status_code=502, detail="Could not send your message right now. Please try again later.")
+
+    if not sent:
+        # Email backend unconfigured (no Resend key). Don't 500 the visitor —
+        # log it so the message isn't silently lost, and report a clear error.
+        logger.warning("Contact form: email not sent (email backend unconfigured). From %s <%s>: %s",
+                       body.name, body.email, body.message[:200])
+        raise HTTPException(status_code=503, detail="Messaging is temporarily unavailable. Please email us directly.")
+
+    return {"status": "success", "message": "Message sent successfully"}

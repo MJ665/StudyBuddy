@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Phone, MapPin, Send, Loader2, MessageSquare, Globe, Clock, Layers } from 'lucide-react';
+import { Mail, Send, Loader2, MessageSquare, Clock, Layers } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import ApiService from '@/services/ApiService';
 
@@ -93,11 +93,9 @@ const ContactMe = () => {
           {/* Sidebar Info */}
           <div className="lg:col-span-5 space-y-6">
             {[
-              { icon: Mail, label: 'Email Support', value: 'support@studyhub.io', color: 'indigo' },
-              { icon: Phone, label: 'Global Hotline', value: '+1 (800) KT-HUB-01', color: 'blue' },
-              { icon: MapPin, label: 'Headquarters', value: '77 Silicon Valley Blvd, CA', color: 'emerald' },
-              { icon: Clock, label: 'Availability', value: '24/7 Enterprise Support', color: 'purple' },
-              { icon: Globe, label: 'Website', value: 'studyhub.io/support', color: 'amber' },
+              { icon: Mail, label: 'Email us', value: 'contact.hackathonmj@gmail.com', color: 'indigo' },
+              { icon: MessageSquare, label: 'What we help with', value: 'Product, demos & enterprise', color: 'blue' },
+              { icon: Clock, label: 'Response time', value: 'Usually within 2 business days', color: 'emerald' },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -140,7 +138,7 @@ const ContactMe = () => {
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    placeholder="E.g. Elon Musk"
+                    placeholder="e.g. Jane Doe"
                     className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-700 font-bold"
                   />
                 </div>
@@ -220,7 +218,7 @@ const ContactMe = () => {
               </motion.div>
               
               <p className="text-center text-[10px] text-slate-500 font-medium">
-                By submitting, you agree to our <span className="text-slate-300 underline cursor-pointer">Privacy Protocol</span> and <span className="text-slate-300 underline cursor-pointer">Terms of Service</span>.
+                By submitting, you agree to our <a href="/privacy" className="text-slate-300 underline">Privacy Policy</a> and <a href="/terms" className="text-slate-300 underline">Terms of Service</a>.
               </p>
             </form>
           </motion.div>

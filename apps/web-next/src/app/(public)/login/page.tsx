@@ -58,7 +58,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-black text-white">Welcome back</h1>
-          <p className="text-slate-400 mt-2">Sign in to your StudyHub account</p>
+          <p className="text-slate-400 mt-2">Sign in to your StudyBuddy account</p>
         </div>
 
         <form

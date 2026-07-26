@@ -83,6 +83,8 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: List[str] = []
     ENFORCE_HTTPS: bool = False
     RESEND_FROM_EMAIL: str = "StudyHub L&D <noreply@email.mj665.in>"
+    # Where public contact-form submissions are delivered (configurable).
+    CONTACT_EMAIL: str = "contact.hackathonmj@gmail.com"
 
     # --- OBSERVABILITY (Sentry now, OpenTelemetry-swappable) ---
     # One vendor-neutral facade (observability/) reads these. Flip TELEMETRY_BACKEND

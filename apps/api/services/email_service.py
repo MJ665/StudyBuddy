@@ -27,6 +27,7 @@ def _send(
     from_addr: str = FROM_EMAIL,
     user_id: Optional[int] = None,
     email_type: str = "SYSTEM",
+    reply_to: Optional[str] = None,
 ) -> bool:
     """Low-level send helper. Returns True on success."""
     if not api_key:
@@ -56,9 +57,10 @@ def _send(
     db = SessionLocal()
 
     try:
-        resend.Emails.send(
-            {"from": from_addr, "to": [to_email], "subject": subject, "html": html}
-        )
+        _payload = {"from": from_addr, "to": [to_email], "subject": subject, "html": html}
+        if reply_to:
+            _payload["reply_to"] = [reply_to]
+        resend.Emails.send(_payload)  # type: ignore[arg-type]
         logger.info(f"Email sent: '{subject}' → {to_email}")
 
         # Log to DB
@@ -94,6 +96,41 @@ def _send(
         return False
     finally:
         db.close()
+
+
+def send_contact_email(
+    name: str,
+    email: str,
+    subject: str,
+    category: str,
+    message: str,
+) -> bool:
+    """Deliver a public contact-form submission to the configured CONTACT_EMAIL.
+    Reply-To is set to the submitter so a reply goes straight back to them."""
+    from config import settings
+
+    safe = lambda s: (s or "").strip()  # noqa: E731
+    html = f"""
+    <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;border:1px solid #e2e8f0;border-radius:12px;">
+      <h2 style="color:#4f46e5;">📬 New contact request — someone reached out via StudyBuddy</h2>
+      <p><strong>{safe(name)}</strong> has contacted you through the StudyBuddy website with these details:</p>
+      <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+        <tr><td style="padding:6px 0;color:#64748b;width:120px;">Name</td><td style="padding:6px 0;"><strong>{safe(name)}</strong></td></tr>
+        <tr><td style="padding:6px 0;color:#64748b;">Email</td><td style="padding:6px 0;"><a href="mailto:{safe(email)}">{safe(email)}</a></td></tr>
+        <tr><td style="padding:6px 0;color:#64748b;">Category</td><td style="padding:6px 0;">{safe(category) or 'General Inquiry'}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b;">Subject</td><td style="padding:6px 0;">{safe(subject) or '(none)'}</td></tr>
+      </table>
+      <p style="color:#64748b;margin-bottom:6px;">Message</p>
+      <div style="background:#f8fafc;padding:16px;border-radius:8px;white-space:pre-wrap;border-left:4px solid #4f46e5;">{safe(message)}</div>
+      <p style="color:#94a3b8;font-size:12px;margin-top:20px;">Reply to this email to respond directly to {safe(name)}.</p>
+    </div>"""
+    return _send(
+        to_email=settings.CONTACT_EMAIL,
+        subject=f"[StudyBuddy Contact] {safe(category) or 'Inquiry'}: {safe(subject) or safe(name)}",
+        html=html,
+        email_type="CONTACT_FORM",
+        reply_to=safe(email) or None,
+    )
 
 
 # ──────────────────────────────────────────────────────────────────────────────

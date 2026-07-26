@@ -92,17 +92,22 @@ export class ApiClient0 {
     // Attempt to clear the HttpOnly refresh cookie silently
     fetch(`${getBaseUrl()}/auth/logout`, { method: 'POST', credentials: 'include' }).catch(() => { });
 
-    const publicPaths = ['/profile/', '/p/', '/reset-password'];
-    const isPublicPath = publicPaths.some(p => window.location.pathname.startsWith(p));
+    // Public pages a guest can legitimately sit on — a 401 here is expected
+    // (e.g. the login page's initial "am I logged in?" probe) and must NOT
+    // trigger a redirect. Note "/" is now the marketing landing (public).
+    const path = window.location.pathname;
+    const publicPrefixes = [
+      '/login', '/forgot-password', '/reset-password',
+      '/privacy', '/terms', '/contact-me', '/onboard',
+      '/profile/', '/p/',
+    ];
+    const isPublicPath = path === '/' || publicPrefixes.some((p) => path.startsWith(p));
 
-    if (!isPublicPath) {
-      setTimeout(() => {
-        if (window.location.pathname === '/') {
-          if (hadToken) window.location.reload();
-        } else {
-          window.location.href = '/';
-        }
-      }, 100);
+    // On an authenticated page whose session just expired, send the user to the
+    // sign-in page (NOT the marketing home). hadToken avoids a redirect when we
+    // were never logged in to begin with.
+    if (!isPublicPath && hadToken) {
+      setTimeout(() => { window.location.href = '/login'; }, 100);
     }
   }
 
