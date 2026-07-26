@@ -70,6 +70,9 @@ const config: ExpoConfig = {
   ],
   extra: {
     webUrl: WEB_URL,
+    // The installed app opens straight into the product, skipping the web
+    // marketing home ("/"). Default /dashboard is auth-gated → /login if needed.
+    entryPath: process.env.EXPO_PUBLIC_ENTRY_PATH ?? '/dashboard',
     sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
     eas: { projectId: process.env.EAS_PROJECT_ID ?? 'REPLACE_WITH_EAS_PROJECT_ID' },
   },

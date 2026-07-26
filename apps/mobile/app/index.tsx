@@ -24,10 +24,17 @@ import { registerDeviceWithBackend, registerForPushToken } from '@/lib/push';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-const WEB_URL: string =
-  (Constants.expoConfig?.extra as { webUrl?: string } | undefined)?.webUrl ??
-  'https://REPLACE_ME.studybuddy.app';
+const _extra = (Constants.expoConfig?.extra ?? {}) as {
+  webUrl?: string;
+  entryPath?: string;
+};
+const WEB_URL: string = _extra.webUrl ?? 'https://REPLACE_ME.studybuddy.app';
 const WEB_HOST = safeHost(WEB_URL);
+// The app opens directly into the product, NOT the web marketing home ("/").
+// /dashboard is auth-gated (→ /login if there's no session), so the installed
+// app is a focused client — never a marketing brochure.
+const ENTRY_PATH = _extra.entryPath ?? '/dashboard';
+const INITIAL_URL = WEB_URL.replace(/\/$/, '') + ENTRY_PATH;
 
 // Injected into the page: surfaces the auth token (localStorage 'study_token')
 // to the native layer so we can register this device for push against the
@@ -167,7 +174,7 @@ export default function WebAppScreen() {
       >
         <WebView
           ref={webRef}
-          source={{ uri: WEB_URL }}
+          source={{ uri: INITIAL_URL }}
           originWhitelist={['*']}
           injectedJavaScript={INJECTED_JS}
           onMessage={onMessage}
@@ -184,7 +191,7 @@ export default function WebAppScreen() {
           onError={(e) => {
             setLoading(false);
             const { url, description, code } = e.nativeEvent;
-            if (url === WEB_URL || !canGoBack) {
+            if (url === INITIAL_URL || !canGoBack) {
               setErrored(true);
               Sentry.captureException(
                 new Error(`WebView load failed: ${description} (code ${code})`),

@@ -30,5 +30,6 @@ reportlab>=4.0
 slowapi>=0.1.9
 sentry-sdk[fastapi]>=2.35
 python-json-logger>=3.1
+PyYAML>=6.0
 alembic==1.18.5
 pgvector
