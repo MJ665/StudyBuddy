@@ -215,6 +215,16 @@ def discovery_users(
         .outerjoin(models.Organization)
     )
 
+    # L&D admins see their whole ENTERPRISE (super-org) — not every customer's
+    # users. This also makes the L&D filter dropdowns show a consistent set.
+    from auth_utils import caller_super_org_id, is_ld_admin_plus, is_platform_admin
+
+    if not is_platform_admin(current_user) and is_ld_admin_plus(current_user):
+        _sid = caller_super_org_id(current_user, db)
+        if _sid is None:
+            return {"items": [], "total": 0, "page": page, "size": size, "pages": 0}
+        query = query.filter(models.Organization.super_organization_id == _sid)
+
     if q:
         query = query.filter(
             (models.User.full_name.ilike(f"%{q}%"))

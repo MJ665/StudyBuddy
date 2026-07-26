@@ -98,6 +98,20 @@ def provision_schema() -> None:
         conn.execute(text(
             "ALTER TABLE assignments ADD COLUMN IF NOT EXISTS created_by INTEGER"
         ))
+        # Discussion upvotes are a per-user toggle (voter_ids), not a raw counter.
+        conn.execute(text(
+            "ALTER TABLE question_discussions ADD COLUMN IF NOT EXISTS voter_ids "
+            "INTEGER[] NOT NULL DEFAULT '{}'::integer[]"
+        ))
+        # Every org must belong to a SuperOrganization so L&D admins (enterprise-
+        # wide) can scope into orgs they create. Backfill orphaned orgs to the
+        # single seed super-org (single-enterprise deploy).
+        conn.execute(text(
+            "UPDATE organizations SET super_organization_id = "
+            "(SELECT id FROM super_organizations ORDER BY id LIMIT 1) "
+            "WHERE super_organization_id IS NULL "
+            "AND EXISTS (SELECT 1 FROM super_organizations)"
+        ))
         conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS uq_user_email_group"))
         conn.execute(text("""
             DO $$

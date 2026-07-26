@@ -50,12 +50,18 @@ export default function DiscussionForum({ user, onViewProfile, onBack }: { user:
     }
   };
 
+  const [voting, setVoting] = useState<number | null>(null);
+
   const handleVote = async (id: number, direction: 'up' | 'down') => {
+    if (voting === id) return; // guard against rapid re-fire (was incrementing infinitely)
+    setVoting(id);
     try {
       const res = await ApiService.request(`/interaction/discussions/${id}/vote?direction=${direction}`, { method: 'POST' });
-      setThreads(prev => prev.map(t => t.id === id ? { ...t, upvotes: res.upvotes } : t));
+      setThreads(prev => prev.map(t => t.id === id ? { ...t, upvotes: res.upvotes, voted: res.voted } : t));
     } catch (err: any) {
       toast('error', 'Transmission failed');
+    } finally {
+      setVoting(null);
     }
   };
 
@@ -173,7 +179,8 @@ export default function DiscussionForum({ user, onViewProfile, onBack }: { user:
                       <div className="flex flex-col items-center gap-2 pt-1">
                         <button
                           onClick={() => handleVote(thread.id, 'up')}
-                          className="p-2 text-slate-600 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-xl transition-all"
+                          disabled={voting === thread.id}
+                          className={`p-2 rounded-xl transition-all disabled:opacity-50 ${thread.voted ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-600 hover:text-indigo-400 hover:bg-indigo-500/10'}`}
                         >
                           <ThumbsUp size={18} />
                         </button>

@@ -24,6 +24,33 @@ export default function QuestionManagement({ user }: { user: any }) {
   
   const [isDeleting, setIsDeleting] = useState<number | null>(null);
 
+  // ── Inline edit (rename bank / coding question) ──
+  const [editItem, setEditItem] = useState<{ id: number; type: 'Quiz' | 'Coding'; name: string; description: string } | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const openEditBank = (b: any) => setEditItem({ id: b.id, type: 'Quiz', name: b.name || '', description: b.description || '' });
+  const openEditCoding = (q: any) => setEditItem({ id: q.id, type: 'Coding', name: q.title || '', description: q.description || '' });
+
+  const saveEdit = async () => {
+    if (!editItem || !editItem.name.trim()) { toast('error', 'Name is required'); return; }
+    setSavingEdit(true);
+    try {
+      if (editItem.type === 'Quiz') {
+        await ApiService.updateBankMetadata(editItem.id, { name: editItem.name.trim(), description: editItem.description });
+        setBanks(prev => prev.map(b => b.id === editItem.id ? { ...b, name: editItem.name.trim(), description: editItem.description } : b));
+      } else {
+        await ApiService.updateCodingQuestion(editItem.id, { title: editItem.name.trim(), description: editItem.description });
+        setCodingQs(prev => prev.map(q => q.id === editItem.id ? { ...q, title: editItem.name.trim(), description: editItem.description } : q));
+      }
+      toast('success', 'Saved');
+      setEditItem(null);
+    } catch (err: any) {
+      toast('error', err?.message || 'Failed to save');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   useEffect(() => {
     fetchResources();
   }, []);
@@ -171,10 +198,10 @@ export default function QuestionManagement({ user }: { user: any }) {
                 </div>
 
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                  <button className="p-3 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all border border-white/5">
+                  <button onClick={() => openEditBank(bank)} className="p-3 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all border border-white/5">
                     <Edit3 size={18} />
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleDeleteBank(bank.id)}
                     disabled={isDeleting === bank.id}
                     className="p-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl transition-all border border-rose-500/20"
@@ -214,10 +241,10 @@ export default function QuestionManagement({ user }: { user: any }) {
                 </div>
 
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                  <button className="p-3 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all border border-white/5">
+                  <button onClick={() => openEditCoding(q)} className="p-3 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all border border-white/5">
                     <Edit3 size={18} />
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleDeleteCoding(q.id)}
                     disabled={isDeleting === q.id}
                     className="p-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl transition-all border border-rose-500/20"
@@ -260,6 +287,27 @@ export default function QuestionManagement({ user }: { user: any }) {
         confirmText="Execute Purge"
         variant="danger"
       />
+
+      {/* ── Inline edit modal ── */}
+      <AnimatePresence>
+        {editItem && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => !savingEdit && setEditItem(null)}>
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} onClick={(e) => e.stopPropagation()} className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl">
+              <div className="flex items-center gap-2 text-indigo-400 mb-4"><Edit3 size={16} /><span className="font-black uppercase tracking-widest text-[10px]">Edit {editItem.type === 'Quiz' ? 'Question Bank' : 'Coding Challenge'}</span></div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">{editItem.type === 'Quiz' ? 'Bank name' : 'Title'}</label>
+              <input value={editItem.name} onChange={(e) => setEditItem({ ...editItem, name: e.target.value })} className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-sm text-white mb-4 outline-none focus:ring-1 focus:ring-indigo-500/50" />
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Description</label>
+              <textarea value={editItem.description} onChange={(e) => setEditItem({ ...editItem, description: e.target.value })} rows={3} className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-sm text-white mb-5 outline-none focus:ring-1 focus:ring-indigo-500/50" />
+              <div className="flex justify-end gap-2">
+                <button disabled={savingEdit} onClick={() => setEditItem(null)} className="px-4 py-2 text-slate-400 hover:text-white text-xs font-bold">Cancel</button>
+                <button disabled={savingEdit} onClick={saveEdit} className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2">
+                  {savingEdit ? <Loader2 size={14} className="animate-spin" /> : 'Save'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import datetime
 from database import Base
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Text
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship
 
 
@@ -19,6 +20,8 @@ class QuestionDiscussion(Base):
 
     content: Mapped[str] = mapped_column(Text, nullable=False)  # max 2000 chars enforced in schema
     upvotes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # Users who upvoted — makes the thumbs-up a toggle (one vote per user).
+    voter_ids: Mapped[list[int]] = mapped_column(ARRAY(Integer), nullable=False, default=list)
     is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default="now()", nullable=False)

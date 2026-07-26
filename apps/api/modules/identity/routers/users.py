@@ -151,8 +151,16 @@ def create_user(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_admin),
 ):
-    if user.group_id != current_user["group_id"]:
-        raise HTTPException(status_code=403, detail="Forbidden")
+    # Scope: L&D admins (and above) may add members to any group in their whole
+    # enterprise (super-org). GroupAdmin/Mentor stay restricted to their own group.
+    from auth_utils import assert_group_in_org, is_ld_admin_plus, is_platform_admin
+
+    if is_platform_admin(current_user) or is_ld_admin_plus(current_user):
+        assert_group_in_org(user.group_id, db, current_user)  # super-org aware
+    elif user.group_id != current_user.get("group_id"):
+        raise HTTPException(
+            status_code=403, detail="You can only add members to your own group."
+        )
 
     # Email is a GLOBAL identity (one email = one account platform-wide). Block
     # any existing use of this email anywhere — including the Platform Admin /

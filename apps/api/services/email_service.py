@@ -20,6 +20,11 @@ FROM_EMAIL = "StudyHub L&D <noreply@email.mj665.in>"
 SECURITY_EMAIL = "StudyHub Security <security@email.mj665.in>"
 
 
+def _frontend_url() -> str:
+    """Base URL for links in emails — the deployed web app. Env-configurable."""
+    return os.getenv("FRONTEND_URL", "https://studybuddy.mj665.in").rstrip("/")
+
+
 def _send(
     to_email: str,
     subject: str,
@@ -502,7 +507,7 @@ def send_coauthor_invite(
         As a co-author, you can collaborate on this document, update its content, and contribute to the collective intelligence of your team.
       </p>
       <div style="margin:24px 0;text-align:center;">
-        <a href="https://mj665.in/kt/documents/{doc_id}" 
+        <a href="{_frontend_url()}/kt/documents/{doc_id}"
            style="background:#4f46e5;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block;">
            View Document
         </a>
@@ -529,7 +534,7 @@ def send_doc_submitted(
       <p>A new document has been submitted for your review: <br/>
       <strong style="font-size:16px;">{doc_title}</strong></p>
       <div style="margin:24px 0;text-align:center;">
-        <a href="https://mj665.in/kt/documents/{doc_id}" 
+        <a href="{_frontend_url()}/kt/documents/{doc_id}"
            style="background:#4f46e5;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block;">
            Review Document
         </a>

@@ -67,7 +67,14 @@ async def create_org(
     db: AsyncSession = Depends(get_async_db),
     current_user: dict = Depends(require_ldadmin),
 ):
-    org = models.Organization(name=data.name, slug=data.slug)
+    # New orgs belong to the creator's enterprise (SuperOrganization) so L&D
+    # admins can then manage/scope into them (content + hierarchy super-org reach).
+    from auth_utils import caller_super_org_id
+
+    super_id = await db.run_sync(lambda s: caller_super_org_id(current_user, s))
+    org = models.Organization(
+        name=data.name, slug=data.slug, super_organization_id=super_id
+    )
     db.add(org)
     await db.commit()
     await db.refresh(org)
@@ -101,10 +108,23 @@ async def get_orgs(
             models.Organization.is_active.is_(True)
         )
         if not is_platform_admin(current_user):
-            org_id = caller_org_id(current_user)
-            if org_id is None:
-                return []
-            stmt = stmt.where(models.Organization.id == org_id)
+            # L&D admins see their whole enterprise (super-org); others see their org.
+            from auth_utils import caller_super_org_id, is_ld_admin_plus
+
+            if is_ld_admin_plus(current_user):
+                super_id = await db.run_sync(
+                    lambda s: caller_super_org_id(current_user, s)
+                )
+                if super_id is None:
+                    return []
+                stmt = stmt.where(
+                    models.Organization.super_organization_id == super_id
+                )
+            else:
+                org_id = caller_org_id(current_user)
+                if org_id is None:
+                    return []
+                stmt = stmt.where(models.Organization.id == org_id)
         result = await db.execute(stmt)
         orgs = result.scalars().all()
         return [{"id": o.id, "name": o.name, "slug": o.slug} for o in orgs]
@@ -121,8 +141,18 @@ async def get_org_tree(
     db: AsyncSession = Depends(get_async_db),
     current_user: dict = Depends(verify_token),
 ):
-    """Enriched tree view for the LDAdmin dashboard."""
-    redis_key = "org:tree:data"
+    """Enriched tree view for the LDAdmin dashboard — scoped to the caller's
+    enterprise (super-org) so it never leaks other customers' hierarchies."""
+    from auth_utils import caller_super_org_id
+
+    if is_platform_admin(current_user):
+        super_id = None  # PlatformAdmin sees everything
+    else:
+        super_id = await db.run_sync(lambda s: caller_super_org_id(current_user, s))
+        if super_id is None:
+            return []
+
+    redis_key = f"org:tree:data:{super_id if super_id is not None else 'all'}"
     try:
         cached = await redis_client.get(redis_key)
         if cached:
@@ -132,9 +162,11 @@ async def get_org_tree(
 
     # Eager-load the whole hierarchy: async sessions raise MissingGreenlet on
     # implicit lazy loads, so every level traversed below must be loaded up front.
+    _stmt = select(models.Organization).where(models.Organization.is_active.is_(True))
+    if super_id is not None:
+        _stmt = _stmt.where(models.Organization.super_organization_id == super_id)
     result = await db.execute(
-        select(models.Organization)
-        .where(models.Organization.is_active.is_(True))
+        _stmt
         .options(
             selectinload(models.Organization.departments)
             .selectinload(models.Department.verticals)

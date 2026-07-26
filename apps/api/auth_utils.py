@@ -439,6 +439,34 @@ def _org_of_group(group_id: int, db: Session) -> Optional[int]:
     return None
 
 
+# ── Enterprise (super-org) reach for L&D admins ─────────────────────────────
+# An L&D Admin manages the WHOLE enterprise tree (every org under their
+# SuperOrganization), so hierarchy/user guards pass for anything in that
+# super-org. Member/Mentor/GroupAdmin stay strictly org-scoped.
+def _super_org_of_org(org_id: Optional[int], db: Session) -> Optional[int]:
+    if org_id is None:
+        return None
+    row = (
+        db.query(Organization.super_organization_id)
+        .filter(Organization.id == org_id)
+        .first()
+    )
+    return row[0] if row else None
+
+
+def _super_org_of_batch(batch_id: int, db: Session) -> Optional[int]:
+    return _super_org_of_org(_org_of_batch(batch_id, db), db)
+
+
+def _super_org_of_group(group_id: int, db: Session) -> Optional[int]:
+    return _super_org_of_org(_org_of_group(group_id, db), db)
+
+
+def is_ld_admin_plus(current_user: Dict) -> bool:
+    """Enterprise-level admin (manages the whole super-organization tree)."""
+    return current_user.get("role") in ("LDAdmin", "ld_admin", "Owner", "owner")
+
+
 def assert_batch_in_org(batch_id: int, db: Session, current_user: Dict) -> None:
     """Guard reports/analytics entry points that take a batch id.
 
@@ -448,6 +476,11 @@ def assert_batch_in_org(batch_id: int, db: Session, current_user: Dict) -> None:
     """
     if is_platform_admin(current_user) or batch_id is None:
         return
+    if is_ld_admin_plus(current_user):
+        cs = caller_super_org_id(current_user, db)
+        bs = _super_org_of_batch(batch_id, db)
+        if cs is not None and bs is not None and bs == cs:
+            return
     org_id = caller_org_id(current_user)
     batch_org = _org_of_batch(batch_id, db)
     if org_id is None or batch_org is None or batch_org != org_id:
@@ -458,6 +491,11 @@ def assert_group_in_org(group_id: int, db: Session, current_user: Dict) -> None:
     """Guard reports/analytics entry points that take a group id."""
     if is_platform_admin(current_user) or group_id is None:
         return
+    if is_ld_admin_plus(current_user):
+        cs = caller_super_org_id(current_user, db)
+        gs = _super_org_of_group(group_id, db)
+        if cs is not None and gs is not None and gs == cs:
+            return
     org_id = caller_org_id(current_user)
     group_org = _org_of_group(group_id, db)
     if org_id is None or group_org is None or group_org != org_id:
@@ -468,9 +506,14 @@ def assert_user_in_org(user_id: int, db: Session, current_user: Dict) -> None:
     """Guard per-learner reports (growth atlas, consistency, velocity)."""
     if is_platform_admin(current_user) or user_id is None:
         return
-    org_id = caller_org_id(current_user)
     target = db.query(User).filter(User.id == user_id).first()
     target_org = resolve_user_organization_id(target, db) if target else None
+    if is_ld_admin_plus(current_user):
+        cs = caller_super_org_id(current_user, db)
+        ts = _super_org_of_org(target_org, db)
+        if cs is not None and ts is not None and ts == cs:
+            return
+    org_id = caller_org_id(current_user)
     if org_id is None or target_org is None or target_org != org_id:
         raise HTTPException(status_code=404, detail="Member not found")
 

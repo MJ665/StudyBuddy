@@ -375,16 +375,22 @@ def vote_discussion(
     db: Session = Depends(get_db),
     current_user: dict = Depends(verify_token),
 ):
-    """Increment/Decrement discussion upvotes."""
+    """Toggle the caller's upvote on a discussion (one vote per user)."""
     d = _require_discussion_scope(discussion_id, db, current_user)
 
-    if direction == "up":
-        d.upvotes += 1
+    uid = int(current_user["sub"])
+    voters = list(d.voter_ids or [])
+    if uid in voters:
+        voters.remove(uid)
+        d.upvotes = max(0, (d.upvotes or 0) - 1)
+        voted = False
     else:
-        d.upvotes = max(0, d.upvotes - 1)
-
+        voters.append(uid)
+        d.upvotes = (d.upvotes or 0) + 1
+        voted = True
+    d.voter_ids = voters
     db.commit()
-    return {"upvotes": d.upvotes}
+    return {"upvotes": d.upvotes, "voted": voted}
 
 
 @router.delete("/discussions/{discussion_id}")
