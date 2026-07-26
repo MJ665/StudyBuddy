@@ -10,6 +10,24 @@ and external-link handling.
 You can add real native screens later without a rewrite: this uses **expo-router**, so
 `app/index.tsx` is the WebView and any new `app/<name>.tsx` becomes a native screen.
 
+## The app vs. the web homepage (the "balance")
+
+The web app has a **marketing landing page at `/`** (for browsers, SEO, shared links). An
+installed app should **not** open to a marketing brochure — that's poor UX and a common
+Play Store rejection ("this is just a website"). So:
+
+| Surface | Opens at | Marketing home? |
+|---|---|---|
+| Web browser / shared link | `/` (marketing landing) | ✅ yes |
+| **This app** (WebView) | `EXPO_PUBLIC_ENTRY_PATH` = **`/dashboard`** | ❌ no |
+| PWA ("Add to Home Screen") | `start_url` = `/dashboard` | ❌ no |
+
+`/dashboard` is **auth-gated** — if there's no session it redirects to `/login`, so first
+launch → login → dashboard, and later launches (persisted cookie) open straight in. The app
+is a **focused product client**; `/` is the public front door. The WebView loads
+`EXPO_PUBLIC_WEB_URL + EXPO_PUBLIC_ENTRY_PATH` (`app/index.tsx`, `app.config.ts extra.entryPath`).
+Change the landing target by setting `EXPO_PUBLIC_ENTRY_PATH`.
+
 ## One-time setup
 
 ```bash
@@ -25,8 +43,10 @@ Set in `.env` (or `eas.json` per build profile):
 | Var | What |
 |-----|------|
 | `EXPO_PUBLIC_WEB_URL` | Deployed web app URL the WebView loads. For the Android **emulator** against a local `npm run dev` web server use `http://10.0.2.2:3000`. |
+| `EXPO_PUBLIC_ENTRY_PATH` | Path the app opens to (default `/dashboard`, auth-gated). Skips the web marketing home. |
 | `GOOGLE_SERVICES_JSON` | Path to Firebase `google-services.json` (see `google-services.json.example`). |
 | `EAS_PROJECT_ID` | From `eas init`. |
+| `EXPO_PUBLIC_SENTRY_DSN` | Optional — Sentry error/crash tracking (no-ops if unset). Same DSN as web/api. |
 
 ## Run in development
 
@@ -50,6 +70,13 @@ Wired end-to-end:
 - Tapping a notification deep-links the WebView to the notification's `url`.
 
 Requires the Firebase `google-services.json` (above) for production delivery.
+
+## Error & crash tracking (Sentry)
+
+`@sentry/react-native` is initialized in `app/_layout.tsx` (native crash + JS errors +
+performance), with capture wired into the WebView `onError`/bridge and push registration.
+Source maps upload on EAS builds via the `@sentry/react-native/expo` plugin + the metro
+wrapper. Set `EXPO_PUBLIC_SENTRY_DSN` (same DSN as web/api) — it no-ops if unset.
 
 ## Ship to Google Play (one-shot approval checklist)
 
