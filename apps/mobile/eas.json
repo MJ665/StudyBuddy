@@ -13,14 +13,18 @@
       "distribution": "internal",
       "android": { "buildType": "apk" },
       "env": {
-        "EXPO_PUBLIC_WEB_URL": "https://REPLACE_ME.studybuddy.app"
+        "EXPO_PUBLIC_WEB_URL": "https://studybuddy.mj665.in",
+        "EXPO_PUBLIC_ENTRY_PATH": "/dashboard",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://43f9b91b73124895a8d2f7d7747c90c0@o4511797721366528.ingest.de.sentry.io/4511797811675216"
       }
     },
     "production": {
       "autoIncrement": true,
       "android": { "buildType": "app-bundle" },
       "env": {
-        "EXPO_PUBLIC_WEB_URL": "https://REPLACE_ME.studybuddy.app"
+        "EXPO_PUBLIC_WEB_URL": "https://studybuddy.mj665.in",
+        "EXPO_PUBLIC_ENTRY_PATH": "/dashboard",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://43f9b91b73124895a8d2f7d7747c90c0@o4511797721366528.ingest.de.sentry.io/4511797811675216"
       }
     }
   },
