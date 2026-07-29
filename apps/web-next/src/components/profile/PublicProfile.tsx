@@ -21,6 +21,41 @@ import ActivityHeatmap from '../common/ActivityHeatmap';
 
 type TabId = 'STRATEGIC' | 'ANALYTICS' | 'REGISTRY' | 'ATLAS' | 'COMMUNITY';
 
+/**
+ * Normalize an intro video URL into something embeddable.
+ * Returns { kind: 'iframe', src } for YouTube/Vimeo, { kind: 'video', src }
+ * for a direct file, or null when the URL is unusable.
+ */
+function normalizeVideoEmbed(raw?: string | null): { kind: 'iframe' | 'video'; src: string } | null {
+  if (!raw || typeof raw !== 'string') return null;
+  const url = raw.trim();
+  if (!url) return null;
+  try {
+    // YouTube: watch?v=, youtu.be/, /embed/, /shorts/
+    const yt = url.match(
+      /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/,
+    );
+    if (yt) return { kind: 'iframe', src: `https://www.youtube.com/embed/${yt[1]}` };
+
+    // Vimeo: vimeo.com/{id}
+    const vm = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    if (vm) return { kind: 'iframe', src: `https://player.vimeo.com/video/${vm[1]}` };
+
+    // Loom: loom.com/share/{id}
+    const lm = url.match(/loom\.com\/share\/([A-Za-z0-9]+)/);
+    if (lm) return { kind: 'iframe', src: `https://www.loom.com/embed/${lm[1]}` };
+
+    // Direct video file
+    if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url)) return { kind: 'video', src: url };
+
+    // Unknown but http(s) — try an iframe as a last resort
+    if (/^https?:\/\//i.test(url)) return { kind: 'iframe', src: url };
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 export default function PublicProfile({ 
   slug, 
   onBack,
@@ -197,6 +232,32 @@ export default function PublicProfile({
               )}
             </div>
           </div>
+
+          {/* ─── Intro Video ────────────────────────────────────────── */}
+          {(() => {
+            const embed = normalizeVideoEmbed(profile.intro_video_url);
+            if (!embed) return null;
+            return (
+              <div className="mb-10">
+                <h3 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-400 mb-4">
+                  <Sparkles size={16} className="text-indigo-400" /> Introduction
+                </h3>
+                <div className="relative w-full max-w-3xl aspect-video rounded-3xl overflow-hidden border border-white/10 bg-slate-900 shadow-2xl">
+                  {embed.kind === 'iframe' ? (
+                    <iframe
+                      src={embed.src}
+                      title="Introduction video"
+                      className="absolute inset-0 w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video src={embed.src} controls className="absolute inset-0 w-full h-full object-contain bg-black" />
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ─── Navigation Tabs ────────────────────────────────────── */}
           <div className="flex gap-1 p-1.5 bg-slate-900/60 rounded-2xl border border-white/5 w-fit mb-10 overflow-x-auto">
