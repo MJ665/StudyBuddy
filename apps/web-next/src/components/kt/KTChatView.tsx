@@ -49,21 +49,40 @@ export default function KTChatView() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, streaming]);
 
-  const refreshSessions = useCallback(async () => {
+  // Persist the active session per project so the conversation survives
+  // navigation and reloads (Bug 15: chat was wiped because sessionId lived only
+  // in component state).
+  const activeKey = selectedProject ? `kt_active_session:${selectedProject.id}` : null;
+  const rememberSession = useCallback((sid: string | null) => {
+    if (typeof window === 'undefined' || !activeKey) return;
+    if (sid) localStorage.setItem(activeKey, sid);
+    else localStorage.removeItem(activeKey);
+  }, [activeKey]);
+
+  const refreshSessions = useCallback(async (): Promise<SessionRow[]> => {
     try {
       const rows = await ApiService.getKTSessions();
-      setSessions(Array.isArray(rows) ? rows : []);
-    } catch { /* non-fatal */ }
+      const list = Array.isArray(rows) ? rows : [];
+      setSessions(list);
+      return list;
+    } catch { return []; }
   }, []);
 
-  // Boot: JWT users get the multi-session experience.
+  // Boot: JWT users get the multi-session experience. Restore the last active
+  // session (or the most recent one) so returning to chat shows the conversation.
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('study_token') : null;
     if (!token || !selectedProject) { setBooting(false); return; }
     setInternalAuth(true);
     if (gateStore.authMode !== 'jwt') gateStore.setAuthMode('jwt');
     (async () => {
-      await refreshSessions();
+      const list = await refreshSessions();
+      const stored = typeof window !== 'undefined' && activeKey ? localStorage.getItem(activeKey) : null;
+      const target =
+        (stored && list.find(s => s.session_id === stored)?.session_id) ||
+        list[0]?.session_id ||
+        null;
+      if (target) await openSession(target);
       setBooting(false);
     })();
   }, [selectedProject, refreshSessions]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -73,6 +92,7 @@ export default function KTChatView() {
     try {
       const res = await ApiService.startKTChatSession([selectedProject.id]);
       setSessionId(res.session_id);
+      rememberSession(res.session_id);
       setMessages([]);
       refreshSessions();
     } catch (e: any) {
@@ -82,6 +102,7 @@ export default function KTChatView() {
 
   const openSession = useCallback(async (sid: string) => {
     setSessionId(sid);
+    rememberSession(sid);
     try {
       const rows = await ApiService.getSessionMessages(sid);
       setMessages(
@@ -104,7 +125,7 @@ export default function KTChatView() {
     if (!window.confirm('Delete this chat and its messages?')) return;
     try {
       await ApiService.deleteKTSession(sid);
-      if (sid === sessionId) { setSessionId(null); setMessages([]); }
+      if (sid === sessionId) { setSessionId(null); rememberSession(null); setMessages([]); }
       refreshSessions();
     } catch (e: any) { toast.error(e?.message || 'Delete failed'); }
   }, [sessionId, refreshSessions]);
