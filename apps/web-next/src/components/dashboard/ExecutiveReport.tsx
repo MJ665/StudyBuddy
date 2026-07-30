@@ -34,7 +34,13 @@ export default function ExecutiveReport({ batchId, onBack }: { batchId: number, 
         ]) as [any, ExecutiveSummary, any];
         setData(reportRes);
         setAiSummary(summaryRes.summary);
-        setAiInsights(insightsRes.insights || []);
+        // Defense: only keep insights with a readable body so we never render
+        // hollow "Impact / Recommended Intervention" cards (Bug 21).
+        setAiInsights(
+          (insightsRes.insights || []).filter(
+            (x: any) => x && (x.observation || x.insight)
+          )
+        );
       } catch (err) {
         console.error(err);
       } finally {

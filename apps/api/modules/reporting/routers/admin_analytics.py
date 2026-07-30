@@ -61,7 +61,12 @@ async def get_batch_ai_insights(
     }
 
     insights = await ai_executive.generate_batch_insights(batch.name, data)
-    return {"insights": insights.get("data", [])}
+    # Structure the flat "[Category] text" strings into the objects the executive
+    # report renders (category/impact/dimension/observation/actionable_step) so
+    # the "Strategic Observations" grid is populated, not 30 empty rows (Bug 21).
+    from services.ai_reporting import structure_batch_observations
+
+    return {"insights": structure_batch_observations(insights.get("data", []))}
 
 @router.get("/batch/{batch_id}/executive-summary")
 @cache_manager.cached("batch_exec_summary", ttl=86400)  # 24h cache

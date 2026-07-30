@@ -25,6 +25,74 @@ def _xml_wrap(key: str, value: str) -> str:
     return f"<{key}>{value}</{key}>"
 
 
+# Category → impact mapping for structuring batch observations.
+_CATEGORY_IMPACT = {
+    "risk vector": "High",
+    "strategic intervention": "High",
+    "operational readiness": "Medium",
+    "leadership velocity": "Medium",
+    "engagement index": "Medium",
+    "technical proficiency": "Low",
+}
+_INTERVENTION_MARKERS = ("recommend", "intervention", "should", "suggest", "prioritize", "consider")
+
+
+def structure_batch_observations(raw: list) -> list[dict]:
+    """Convert batch insight strings (``"[Category] observation..."``) into the
+    ``{category, impact, dimension, observation, actionable_step}`` objects the
+    executive report renders. Fixes Bug 21 (30 empty 'Impact / Intervention'
+    rows because the frontend mapped object fields onto flat strings).
+
+    Already-structured dict items are passed through untouched. Empty/blank
+    items are dropped so the report never shows hollow cards.
+    """
+    structured: list[dict] = []
+    for item in raw or []:
+        if isinstance(item, dict):
+            # Trust pre-structured items but skip ones with no readable body.
+            if item.get("observation") or item.get("insight") or item.get("dimension"):
+                structured.append(item)
+            continue
+        text = str(item or "").strip()
+        if not text:
+            continue
+        m = re.match(r"^\s*\[([^\]]+)\]\s*(.*)$", text)
+        if m:
+            category = m.group(1).strip()
+            observation = m.group(2).strip()
+        else:
+            category = "Strategic Insight"
+            observation = text
+        if not observation:
+            continue
+        impact = _CATEGORY_IMPACT.get(category.lower(), "Medium")
+        # Derive an actionable step from any recommendation clause in the text.
+        actionable = ""
+        low = observation.lower()
+        for marker in _INTERVENTION_MARKERS:
+            idx = low.find(marker)
+            if idx != -1:
+                # Take from the sentence containing the marker onward.
+                sent_start = observation.rfind(".", 0, idx) + 1
+                actionable = observation[sent_start:].strip()
+                break
+        if not actionable:
+            actionable = (
+                f"Review the {category.lower()} signal with the batch mentor and "
+                "define a concrete follow-up action."
+            )
+        structured.append(
+            {
+                "category": category,
+                "impact": impact,
+                "dimension": category,
+                "observation": observation,
+                "actionable_step": actionable,
+            }
+        )
+    return structured
+
+
 class ExecutiveAIService:
     def __init__(self):
         self.api_key = settings.GEMINI_API_KEY
