@@ -72,7 +72,7 @@ class ProctorEvent(Base):
     # tab_switch | copy | paste | focus_loss | fullscreen_exit | webcam_snapshot | screen_snapshot
     event_type: Mapped[str] = mapped_column(String(24), nullable=False)
     detail: Mapped[str | None] = mapped_column(Text, nullable=True)
-    media_url: Mapped[str | None] = mapped_column(String(500), nullable=True)  # S3 URL for webcam/screen snapshots
+    media_url: Mapped[str | None] = mapped_column(Text, nullable=True)  # S3 URL or inline data-URL for webcam/screen snapshots
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     attempt = relationship("ExamAttempt", back_populates="proctor_events")

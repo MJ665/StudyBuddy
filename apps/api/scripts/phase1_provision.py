@@ -103,6 +103,11 @@ def provision_schema() -> None:
             "ALTER TABLE question_discussions ADD COLUMN IF NOT EXISTS voter_ids "
             "INTEGER[] NOT NULL DEFAULT '{}'::integer[]"
         ))
+        # Proctor snapshots can be inline data-URLs (live face-presence capture),
+        # which exceed VARCHAR(500) — widen media_url to TEXT.
+        conn.execute(text(
+            "ALTER TABLE proctor_events ALTER COLUMN media_url TYPE TEXT"
+        ))
         # Every org must belong to a SuperOrganization so L&D admins (enterprise-
         # wide) can scope into orgs they create. Backfill orphaned orgs to the
         # single seed super-org (single-enterprise deploy).

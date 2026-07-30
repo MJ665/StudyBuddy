@@ -163,11 +163,31 @@ def _notify_exam_recipients(
     if not candidates:
         return 0
 
-    from auth_utils import is_platform_admin, resolve_user_organization_id
+    from auth_utils import (
+        is_ld_admin_plus,
+        is_platform_admin,
+        resolve_user_organization_id,
+    )
 
     caller_org = caller_org_id(current_user)
     if is_platform_admin(current_user):
         users = candidates
+    elif is_ld_admin_plus(current_user):
+        # LDAdmin+ manages the whole enterprise (super-org), so recipients in any
+        # org of the caller's super-org are reachable — not just the home org.
+        # (Fixes Bug 9: '0 recipients notified' when invitees live in sibling
+        # orgs created under the same enterprise.)
+        from auth_utils import _super_org_of_org, caller_super_org_id
+
+        caller_super = caller_super_org_id(current_user, db)
+        users = []
+        for u in candidates:
+            u_org = resolve_user_organization_id(u, db)
+            u_super = _super_org_of_org(u_org, db) if u_org is not None else None
+            if caller_super is not None and u_super == caller_super:
+                users.append(u)
+            elif caller_org is not None and u_org == caller_org:
+                users.append(u)
     else:
         users = [
             u
@@ -414,9 +434,18 @@ async def submit_exam(
 
 
 class ProctorEventIn(BaseModel):
-    event_type: str = Field(pattern="^(tab_switch|copy|paste|focus_loss|fullscreen_exit|webcam_snapshot|screen_snapshot)$")
+    event_type: str = Field(
+        pattern=(
+            "^(tab_switch|copy|paste|focus_loss|fullscreen_exit|webcam_snapshot|"
+            "screen_snapshot|no_face|multiple_faces|camera_blocked|camera_denied)$"
+        )
+    )
     detail: str | None = None
     media_url: str | None = None
+
+
+# Event types that are integrity FLAGS (everything except plain snapshots).
+_PROCTOR_SNAPSHOT_TYPES = ("webcam_snapshot", "screen_snapshot")
 
 
 @router.post("/attempts/{attempt_id}/proctor-event")
@@ -438,10 +467,66 @@ def log_proctor_event(
     )
     db.add(ev)
     # Non-media events are integrity flags.
-    if body.event_type not in ("webcam_snapshot", "screen_snapshot"):
+    if body.event_type not in _PROCTOR_SNAPSHOT_TYPES:
         attempt.flags_count = (attempt.flags_count or 0) + 1
     db.commit()
     return {"logged": True, "flags": attempt.flags_count}
+
+
+@router.get("/attempts/{attempt_id}/proctor-events")
+def get_proctor_events(
+    attempt_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_mentor_or_above),
+):
+    """Proctor review: full event timeline + webcam snapshots for one attempt.
+
+    Returns snapshots (with media_url) and flag events (no_face, multiple_faces,
+    tab_switch, …) so the review UI can render a snapshot gallery + flag timeline.
+    """
+    attempt = (
+        db.query(models.ExamAttempt)
+        .filter(models.ExamAttempt.id == attempt_id)
+        .first()
+    )
+    if not attempt:
+        raise HTTPException(404, "Attempt not found")
+    # Same-super-org guard via the parent exam; attempts themselves stay org-scoped.
+    exam = db.query(models.Exam).filter(models.Exam.id == attempt.exam_id).first()
+    assert_same_super_org(exam, current_user, db, "Exam")
+
+    events = (
+        db.query(models.ProctorEvent)
+        .filter(models.ProctorEvent.exam_attempt_id == attempt_id)
+        .order_by(models.ProctorEvent.created_at.asc())
+        .all()
+    )
+    snapshots = [
+        {
+            "id": e.id,
+            "media_url": e.media_url,
+            "at": e.created_at.isoformat() if e.created_at else None,
+        }
+        for e in events
+        if e.event_type in _PROCTOR_SNAPSHOT_TYPES and e.media_url
+    ]
+    flags = [
+        {
+            "id": e.id,
+            "event_type": e.event_type,
+            "detail": e.detail,
+            "at": e.created_at.isoformat() if e.created_at else None,
+        }
+        for e in events
+        if e.event_type not in _PROCTOR_SNAPSHOT_TYPES
+    ]
+    return {
+        "attempt_id": attempt_id,
+        "user_id": attempt.user_id,
+        "flags_count": attempt.flags_count or 0,
+        "snapshots": snapshots,
+        "flags": flags,
+    }
 
 
 @router.get("/me/attempts")
@@ -513,11 +598,25 @@ def exam_attempts_for_review(
         .limit(limit)  # cap: a large cohort would otherwise return every attempt
         .all()
     )
+
+    # Bug 8: resolve candidate identities so the review UI shows name + email
+    # instead of "User 2 / User 78".
+    user_ids = list({a.user_id for a in attempts})
+    users = (
+        db.query(models.User).filter(models.User.id.in_(user_ids)).all()
+        if user_ids
+        else []
+    )
+    user_map = {u.id: u for u in users}
+
     return {
         "attempts": [
             {
                 "id": a.id,
                 "user_id": a.user_id,
+                "user_name": (user_map.get(a.user_id).full_name if user_map.get(a.user_id) else None)
+                or f"User {a.user_id}",
+                "user_email": user_map.get(a.user_id).email if user_map.get(a.user_id) else None,
                 "status": a.status,
                 "score": a.score,
                 "total": a.total,
