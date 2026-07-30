@@ -34,8 +34,12 @@ async def list_companies(
     # NOTE: this is the ADMIN LISTING only — it does NOT widen knowledge
     # RETRIEVAL, which stays least-privilege via _resolve_retrieval_scope().
     if not is_platform_admin(current_user):
-        org_id = int(current_user["organization_id"])
-        stmt = stmt.where(KTCompany.organization_id == org_id)
+        raw_org = current_user.get("organization_id")
+        if raw_org is None:
+            # Org-less, non-platform-admin caller has no company scope — fail
+            # closed with an empty list rather than crashing on int(None).
+            return []
+        stmt = stmt.where(KTCompany.organization_id == int(raw_org))
     result = await db.execute(stmt)
     return result.scalars().all()
 

@@ -33,6 +33,9 @@ ALLOWED_ANONYMOUS = {
     "/topics",
     # signature-verified webhook (see routers/billing.py)
     "/webhook",
+    # public "Contact us" form — POST /api/contact (@router.post("") under the
+    # /contact prefix); prospective customers submit before any account exists.
+    "",
     # signed, expiring link — the browser cannot send a bearer token via window.open
     "/attempts/{attempt_id}/certificate/download",
     # SSE stream authenticates via query token

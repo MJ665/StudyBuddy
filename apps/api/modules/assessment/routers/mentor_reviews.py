@@ -117,9 +117,25 @@ def get_unified_inbox(
     # Assessment side — reuse the existing queue builder verbatim.
     assessment_queue = get_pending_reviews(db, current_user)
 
+    # The unified inbox is an org-scoped L&D surface. An org-less caller
+    # (PlatformAdmin, id 0 — cross-org by design) has no home org to scope KT
+    # docs to, so return just the assessment queue instead of crashing on
+    # int(None).
+    raw_org = current_user.get("organization_id")
+    if raw_org is None:
+        return {
+            "assessment": assessment_queue,
+            "kt_documents": [],
+            "counts": {
+                "assessment": len(assessment_queue),
+                "kt_documents": 0,
+                "total": len(assessment_queue),
+            },
+        }
+
     # KT side — docs pending review, mentor-scoped exactly like
     # modules/kt/routers/insights.py::mentor_inbox (sync twin).
-    org_id = int(current_user["organization_id"])
+    org_id = int(raw_org)
     uid = int(current_user["sub"])
     role = current_user.get("role", "Member")
 
