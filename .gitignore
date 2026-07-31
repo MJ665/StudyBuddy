@@ -85,3 +85,6 @@ Thumbs.db
 temp*
 tempPlan.md
 tempProcess.md
+
+# ── Google Play Store release kit (local-only: listing drafts, assets, secrets) ──
+google-playstore/
