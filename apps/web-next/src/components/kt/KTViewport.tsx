@@ -105,6 +105,7 @@ export default function KTViewport({ user }: KTViewportProps) {
             user={user}
             projectId={selectedProject?.id || ''}
             onClose={() => setView('documents')}
+            onComplete={() => { setRefreshKey(prev => prev + 1); setView('documents'); }}
           />
         );
       
