@@ -470,7 +470,10 @@ def send_access_key(
         <p style="margin:8px 0 0 0;font-size:12px;color:#dc2626;font-weight:bold;">⚠️ DO NOT SHARE THIS KEY. It will only be shown once in the portal.</p>
       </div>
       {expiry_str}
-      <p style="color:#475569;font-size:13px;">Use this key to authenticate with the KT Knowledge Base AI.</p>
+      <div style="text-align:center;margin:24px 0;">
+        <a href="{_frontend_url()}/kt" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;">Open the KT Portal</a>
+      </div>
+      <p style="color:#475569;font-size:13px;">Open the portal, redeem this key, and start asking the Knowledge Base AI about your projects.</p>
     </div>"""
     return _send(
         to_email, f"🔑 Access Key: {scope_label}", html, email_type="KT_ACCESS_KEY"
