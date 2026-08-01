@@ -90,6 +90,36 @@ async def enqueue(
     return job
 
 
+def enqueue_sync(
+    db,
+    job_type: str,
+    payload: Optional[dict] = None,
+    max_attempts: int = 5,
+    delay_seconds: int = 0,
+) -> BackgroundJob:
+    """Synchronous twin of :func:`enqueue` for endpoints that hold a sync Session.
+
+    The queue is just a Postgres table, so a sync caller can insert the row
+    directly. Like ``enqueue`` it does NOT commit — the caller commits in the
+    same transaction as the work the job describes.
+    """
+    if job_type not in _HANDLERS:
+        raise ValueError(
+            f"No handler registered for job_type {job_type!r}. "
+            f"Known: {sorted(_HANDLERS)}"
+        )
+    job = BackgroundJob(
+        job_type=job_type,
+        payload=payload or {},
+        status=JobStatus.PENDING,
+        max_attempts=max_attempts,
+        run_after=_now() + datetime.timedelta(seconds=delay_seconds) if delay_seconds else _now(),
+    )
+    db.add(job)
+    db.flush()
+    return job
+
+
 async def recover_stale_jobs(session_factory) -> int:
     """Return jobs abandoned by a dead worker to the pending pool.
 

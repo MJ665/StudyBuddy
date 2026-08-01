@@ -5,6 +5,7 @@ a single secure attempt (server-side), deterministic server-side shuffling (so a
 reload can't reshuffle to peek), and proctoring event capture.
 """
 import datetime
+import logging
 import random
 
 import models
@@ -21,11 +22,14 @@ from auth_utils import (
 from database import get_async_db, get_db
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
+from services.job_handlers import JOB_EMAIL
+from services.job_queue import enqueue_sync
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/exams", tags=["exam"])
+logger = logging.getLogger("exam")
 
 
 def _now() -> datetime.datetime:
@@ -229,19 +233,28 @@ def _notify_exam_recipients(
             pass
 
         if u.email:
+            # Route through the durable queue (like KT emails) so a transient
+            # Resend failure retries and lands in `failed` — visible — instead of
+            # being swallowed by a synchronous print. This is the reliability fix
+            # for "invite emails don't arrive → only the L&D can reach the exam".
             try:
-                from services.email_service import send_exam_invite
-
-                send_exam_invite(
-                    to_email=u.email,
-                    full_name=u.full_name,
-                    exam_title=exam.title,
-                    portal_url=portal_url,
-                    duration_minutes=exam.duration_minutes,
-                    passing_score=exam.passing_score,
+                enqueue_sync(
+                    db,
+                    JOB_EMAIL,
+                    {
+                        "method": "send_exam_invite",
+                        "kwargs": {
+                            "to_email": u.email,
+                            "full_name": u.full_name,
+                            "exam_title": exam.title,
+                            "portal_url": portal_url,
+                            "duration_minutes": exam.duration_minutes,
+                            "passing_score": exam.passing_score,
+                        },
+                    },
                 )
             except Exception as e:
-                print(f"Exam invite email failed for {u.email}: {e}")
+                logger.error(f"Failed to enqueue exam invite for {u.email}: {e}")
 
     db.commit()
     return notified

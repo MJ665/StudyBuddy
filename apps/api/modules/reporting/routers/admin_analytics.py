@@ -370,3 +370,45 @@ async def sync_infrastructure_status(
         ),
         "telemetry": health_results,
     }
+
+
+@router.get("/email/health")
+def email_health(
+    send_test: bool = False,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_ldadmin),
+):
+    """Report whether transactional email is configured, and optionally send a
+    live test email to the caller. Surfaces the #1 cause of 'emails don't work':
+    an unset RESEND key or an unverified sender domain."""
+    import os as _os
+
+    from services import email_service
+
+    configured = bool(email_service.api_key)
+    result = {
+        "configured": configured,
+        "from_email": email_service.FROM_EMAIL,
+        "frontend_url": email_service._frontend_url(),
+        "env": (_os.environ.get("ENVIRONMENT") or "development"),
+    }
+    if send_test:
+        me = db.query(models.User).filter(models.User.id == int(current_user["sub"])).first()
+        to = me.email if me and me.email else None
+        if not to:
+            result["test_sent"] = False
+            result["test_error"] = "No email on the calling account."
+        else:
+            try:
+                ok = email_service._send(
+                    to,
+                    "StudyBuddy email health check",
+                    "<p>Your StudyBuddy transactional email is working. ✅</p>",
+                    email_type="SYSTEM",
+                )
+                result["test_sent"] = bool(ok)
+                result["test_to"] = to
+            except Exception as e:
+                result["test_sent"] = False
+                result["test_error"] = str(e)
+    return result
