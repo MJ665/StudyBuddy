@@ -108,6 +108,19 @@ def provision_schema() -> None:
         conn.execute(text(
             "ALTER TABLE proctor_events ALTER COLUMN media_url TYPE TEXT"
         ))
+        # Exam scheduling window + granular Mettl-style config (settings JSONB).
+        conn.execute(text(
+            "ALTER TABLE exams ADD COLUMN IF NOT EXISTS starts_at TIMESTAMPTZ"
+        ))
+        conn.execute(text(
+            "ALTER TABLE exams ADD COLUMN IF NOT EXISTS ends_at TIMESTAMPTZ"
+        ))
+        conn.execute(text(
+            "ALTER TABLE exams ADD COLUMN IF NOT EXISTS timezone VARCHAR(64) NOT NULL DEFAULT 'UTC'"
+        ))
+        conn.execute(text(
+            "ALTER TABLE exams ADD COLUMN IF NOT EXISTS settings JSONB NOT NULL DEFAULT '{}'::jsonb"
+        ))
         # Every org must belong to a SuperOrganization so L&D admins (enterprise-
         # wide) can scope into orgs they create. Backfill orphaned orgs to the
         # single seed super-org (single-enterprise deploy).

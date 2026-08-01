@@ -45,6 +45,17 @@ def _shuffled(items: list, seed: int) -> list:
 # ── Authoring ────────────────────────────────────────────────────────────────
 
 
+class ExamSettings(BaseModel):
+    require_camera: bool = False
+    record_video: bool = False
+    require_fullscreen: bool = False
+    max_tab_switches: int = Field(default=0, ge=0, le=100)  # 0 = unlimited
+    negative_marking: float = Field(default=0.0, ge=0.0, le=1.0)
+    allow_backtrack: bool = True
+    show_results_immediately: bool = True
+    instructions: str = ""
+
+
 class ExamCreate(BaseModel):
     title: str = Field(min_length=2, max_length=255)
     description: str | None = None
@@ -58,6 +69,11 @@ class ExamCreate(BaseModel):
     proctoring_mode: str = Field(default="standard", pattern="^(none|standard|advanced)$")
     is_published: bool = False
     recipient_emails: list[str] = Field(default_factory=list)
+    # Scheduling window (ISO 8601, tz-aware). None = always open.
+    starts_at: datetime.datetime | None = None
+    ends_at: datetime.datetime | None = None
+    timezone: str = Field(default="UTC", max_length=64)
+    settings: ExamSettings = Field(default_factory=ExamSettings)
 
 
 @router.post("")
@@ -120,6 +136,10 @@ def create_exam(
         proctoring_mode=body.proctoring_mode,
         is_published=body.is_published,
         recipient_emails=[e.strip().lower() for e in body.recipient_emails if e and e.strip()],
+        starts_at=body.starts_at,
+        ends_at=body.ends_at,
+        timezone=body.timezone or "UTC",
+        settings={**models.DEFAULT_EXAM_SETTINGS, **body.settings.model_dump()},
         created_by=int(current_user["sub"]),
     )
     db.add(exam)
@@ -136,6 +156,66 @@ def create_exam(
         "question_count": len(q_ids),
         "invited": invited,
     }
+
+
+def _format_exam_window(exam: "models.Exam") -> str | None:
+    """Human-readable scheduling window in the exam's timezone, e.g.
+    "12 Aug 2026, 10:00–12:00 IST". None when the exam has no start/end."""
+    if not exam.starts_at and not exam.ends_at:
+        return None
+    tzname = exam.timezone or "UTC"
+    try:
+        from zoneinfo import ZoneInfo
+
+        tz = ZoneInfo(tzname)
+    except Exception:
+        tz = datetime.timezone.utc
+        tzname = "UTC"
+
+    def _fmt(dt: datetime.datetime | None) -> datetime.datetime | None:
+        if not dt:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        return dt.astimezone(tz)
+
+    s = _fmt(exam.starts_at)
+    e = _fmt(exam.ends_at)
+    if s and e:
+        if s.date() == e.date():
+            return f"{s.strftime('%d %b %Y, %H:%M')}–{e.strftime('%H:%M')} {tzname}"
+        return f"{s.strftime('%d %b %Y %H:%M')} → {e.strftime('%d %b %Y %H:%M')} {tzname}"
+    if s:
+        return f"Opens {s.strftime('%d %b %Y, %H:%M')} {tzname}"
+    return f"Closes {e.strftime('%d %b %Y, %H:%M')} {tzname}"  # type: ignore[union-attr]
+
+
+def _in_super_org(exam: "models.Exam", current_user: dict, db: Session) -> bool:
+    """True when the caller belongs to the exam's super-organization (shared
+    content scope), or is a cross-org platform admin."""
+    from auth_utils import is_platform_admin
+
+    if is_platform_admin(current_user):
+        return True
+    caller_super = caller_super_org_id(current_user, db)
+    return (
+        exam.super_organization_id is not None
+        and caller_super is not None
+        and exam.super_organization_id == caller_super
+    )
+
+
+def _find_invite(
+    exam: "models.Exam", current_user: dict, db: Session
+) -> "models.ExamInvite | None":
+    """The caller's invite for this exam, matched by user_id or email."""
+    uid = int(current_user["sub"])
+    email = (current_user.get("email") or "").strip().lower()
+    q = db.query(models.ExamInvite).filter(models.ExamInvite.exam_id == exam.id)
+    inv = q.filter(models.ExamInvite.user_id == uid).first()
+    if inv is None and email:
+        inv = q.filter(models.ExamInvite.email == email).first()
+    return inv
 
 
 def _notify_exam_recipients(
@@ -204,9 +284,31 @@ def _notify_exam_recipients(
 
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
     portal_url = f"{frontend_url}/exam/{exam.id}"
+    window_label = _format_exam_window(exam)
+    instructions = (exam.settings or {}).get("instructions") or None
+
+    # Existing invite rows for this exam, keyed by lowercased email (idempotent
+    # re-publish).
+    existing_invites = {
+        i.email: i
+        for i in db.query(models.ExamInvite)
+        .filter(models.ExamInvite.exam_id == exam.id)
+        .all()
+    }
 
     notified = 0
     for u in users:
+        # Candidate list (Mettl-style): explicit, trackable access grant.
+        email_key = (u.email or "").strip().lower()
+        inv = existing_invites.get(email_key)
+        if inv is None:
+            inv = models.ExamInvite(
+                exam_id=exam.id, email=email_key, user_id=u.id, status="invited"
+            )
+            db.add(inv)
+        else:
+            inv.user_id = u.id
+
         notif = models.Notification(
             user_id=u.id,
             notification_type="exam_invite",
@@ -250,6 +352,8 @@ def _notify_exam_recipients(
                             "portal_url": portal_url,
                             "duration_minutes": exam.duration_minutes,
                             "passing_score": exam.passing_score,
+                            "window_label": window_label,
+                            "instructions": instructions,
                         },
                     },
                 )
@@ -284,10 +388,76 @@ def list_exams(
                 "question_count": len(e.question_ids or []),
                 "proctoring_mode": e.proctoring_mode,
                 "is_published": e.is_published,
+                "starts_at": e.starts_at.isoformat() if e.starts_at else None,
+                "ends_at": e.ends_at.isoformat() if e.ends_at else None,
+                "timezone": e.timezone,
+                "window_label": _format_exam_window(e),
             }
             for e in exams
         ]
     }
+
+
+@router.get("/me/invited")
+def my_invited_exams(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token),
+):
+    """Exams the caller has been invited to — the member-facing 'My Exams' feed.
+
+    Returns schedule, live open/closed state, and the caller's status so the
+    dashboard can show 'attend on <date>' and an Open/Start button in-window.
+    """
+    uid = int(current_user["sub"])
+    email = (current_user.get("email") or "").strip().lower()
+    invites = (
+        db.query(models.ExamInvite)
+        .filter(
+            (models.ExamInvite.user_id == uid)
+            | (models.ExamInvite.email == email)
+        )
+        .all()
+    )
+    exam_ids = list({i.exam_id for i in invites})
+    exams = (
+        {e.id: e for e in db.query(models.Exam).filter(models.Exam.id.in_(exam_ids)).all()}
+        if exam_ids
+        else {}
+    )
+    inv_by_exam = {i.exam_id: i for i in invites}
+    now = _now()
+    out = []
+    for eid, e in exams.items():
+        if not e.is_published:
+            continue
+        starts = e.starts_at.replace(tzinfo=datetime.timezone.utc) if e.starts_at and not e.starts_at.tzinfo else e.starts_at
+        ends = e.ends_at.replace(tzinfo=datetime.timezone.utc) if e.ends_at and not e.ends_at.tzinfo else e.ends_at
+        if starts and now < starts:
+            window_state = "upcoming"
+        elif ends and now > ends:
+            window_state = "closed"
+        else:
+            window_state = "open"
+        inv = inv_by_exam.get(eid)
+        out.append(
+            {
+                "id": e.id,
+                "title": e.title,
+                "duration_minutes": e.duration_minutes,
+                "question_count": len(e.question_ids or []),
+                "proctoring_mode": e.proctoring_mode,
+                "starts_at": e.starts_at.isoformat() if e.starts_at else None,
+                "ends_at": e.ends_at.isoformat() if e.ends_at else None,
+                "timezone": e.timezone,
+                "window_label": _format_exam_window(e),
+                "window_state": window_state,
+                "my_status": inv.status if inv else "invited",
+            }
+        )
+    # Soonest-first: open, then upcoming, then closed.
+    order = {"open": 0, "upcoming": 1, "closed": 2}
+    out.sort(key=lambda x: (order.get(x["window_state"], 3), x["starts_at"] or ""))
+    return {"exams": out}
 
 
 # ── Taking an exam ───────────────────────────────────────────────────────────
@@ -300,12 +470,34 @@ def start_exam(
     current_user: dict = Depends(verify_token),
 ):
     """Single secure attempt: reuse an in-progress attempt or create one; block
-    once max_attempts submitted attempts exist."""
+    once max_attempts submitted attempts exist.
+
+    Access = the caller is EITHER in the exam's super-org OR on its invite list.
+    This is what lets any invited internal member take the exam (fixing "only the
+    L&D can take it") without opening it to unrelated tenants.
+    """
     uid = int(current_user["sub"])
     exam = db.query(models.Exam).filter(models.Exam.id == exam_id).first()
-    assert_same_super_org(exam, current_user, db, "Exam")
-    if not exam.is_published:
+    if not exam or not exam.is_published:
         raise HTTPException(404, "Exam not found or not published")
+
+    invite = _find_invite(exam, current_user, db)
+    if not _in_super_org(exam, current_user, db) and invite is None:
+        raise HTTPException(404, "Exam not found or not published")
+
+    # Scheduling window (Mettl-style). NULL bounds = always open.
+    now = _now()
+    if exam.starts_at:
+        starts = exam.starts_at if exam.starts_at.tzinfo else exam.starts_at.replace(tzinfo=datetime.timezone.utc)
+        if now < starts:
+            raise HTTPException(
+                403,
+                f"This exam opens at {_format_exam_window(exam) or starts.isoformat()}.",
+            )
+    if exam.ends_at:
+        ends = exam.ends_at if exam.ends_at.tzinfo else exam.ends_at.replace(tzinfo=datetime.timezone.utc)
+        if now > ends:
+            raise HTTPException(403, "This exam is closed — the scheduled window has ended.")
 
     existing = (
         db.query(models.ExamAttempt)
@@ -328,6 +520,13 @@ def start_exam(
         db.add(attempt)
         db.commit()
         db.refresh(attempt)
+
+    # Track invite progression for the candidate dashboard.
+    if invite is not None and invite.status == "invited":
+        invite.status = "started"
+        invite.attempt_id = attempt.id
+        invite.user_id = uid
+        db.commit()
 
     return _exam_paper(exam, attempt, db)
 
@@ -372,6 +571,10 @@ def _exam_paper(exam: models.Exam, attempt: models.ExamAttempt, db: Session) -> 
         "duration_minutes": exam.duration_minutes,
         "deadline": deadline.isoformat(),
         "server_time": _now().isoformat(),
+        # Mettl config the runner honors (camera/fullscreen/tab-limit/etc.) +
+        # the schedule label for the lobby.
+        "settings": {**models.DEFAULT_EXAM_SETTINGS, **(exam.settings or {})},
+        "window_label": _format_exam_window(exam),
         "questions": questions,
     }
 
@@ -418,10 +621,23 @@ async def submit_exam(
         exam.question_ids or [],
         body.answers,
         difficulty_weights=None,
-        collect_details=False,
+        collect_details=True,
     )
     earned = graded.earned_points
     max_total = graded.max_points
+
+    # Negative marking (Mettl-style): deduct a fraction of each wrong answer's
+    # points. Only applies to answered-but-wrong items; unanswered are neutral.
+    settings = exam.settings or {}
+    neg = float(settings.get("negative_marking") or 0.0)
+    if neg > 0:
+        penalty = 0.0
+        for item in graded.items:
+            ans = body.answers.get(str(item.question_id))
+            answered = ans not in (None, "", [], {})
+            if answered and not item.grade.is_correct:
+                penalty += neg * float(item.grade.max_points)
+        earned = max(0.0, earned - penalty)
 
     pct = (earned / max_total * 100.0) if max_total > 0 else 0.0
     attempt.answers = body.answers
@@ -430,7 +646,29 @@ async def submit_exam(
     attempt.passed = pct >= exam.passing_score
     attempt.status = "expired" if expired else "submitted"
     attempt.submitted_at = _now()
+
+    # Mark the candidate's invite as submitted (dashboard progression).
+    _inv = await db.execute(
+        select(models.ExamInvite).where(
+            models.ExamInvite.exam_id == exam.id,
+            models.ExamInvite.user_id == uid,
+        )
+    )
+    invite = _inv.scalar_one_or_none()
+    if invite is not None:
+        invite.status = "submitted"
+        invite.attempt_id = attempt.id
+
     await db.commit()
+
+    # Honor "show results immediately": when off, withhold the score at submit
+    # (the L&D releases results later); the candidate just sees a confirmation.
+    if not settings.get("show_results_immediately", True):
+        return {
+            "attempt_id": attempt.id,
+            "status": attempt.status,
+            "results_withheld": True,
+        }
 
     return {
         "attempt_id": attempt.id,

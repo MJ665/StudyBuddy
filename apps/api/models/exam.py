@@ -33,10 +33,52 @@ class Exam(Base):
     # Internal users invited by email when the exam is published. The invite email
     # carries a direct portal link; each becomes an in-app notification too.
     recipient_emails: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
+    # Scheduling window (Mettl-style). NULL = always open. Enforced at start_exam.
+    starts_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ends_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    timezone: Mapped[str] = mapped_column(String(64), default="UTC", nullable=False)  # display tz for the slot
+    # Granular exam configuration (Mettl "how the exam is conducted"). JSONB so new
+    # toggles don't need a migration. See DEFAULT_EXAM_SETTINGS for the shape.
+    settings: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     created_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     attempts = relationship("ExamAttempt", back_populates="exam", cascade="all, delete-orphan")
+    invites = relationship("ExamInvite", back_populates="exam", cascade="all, delete-orphan")
+
+
+# Default exam configuration. Persisted per-exam in Exam.settings; the runner and
+# grader read these to decide how the exam is conducted.
+DEFAULT_EXAM_SETTINGS: dict = {
+    "require_camera": False,      # webcam mandatory to start
+    "record_video": False,       # continuous webcam recording -> S3
+    "require_fullscreen": False,  # force fullscreen; exiting is flagged
+    "max_tab_switches": 0,        # 0 = unlimited; >0 auto-submits when exceeded
+    "negative_marking": 0.0,      # fraction of points deducted per wrong answer
+    "allow_backtrack": True,      # can revisit previous questions
+    "show_results_immediately": True,  # show score at submit
+    "instructions": "",          # candidate instructions shown in the lobby
+}
+
+
+class ExamInvite(Base):
+    """Explicit candidate list for an exam (the Mettl 'invited candidates').
+
+    Grants access independent of org-tree scoping and tracks each candidate's
+    progress (invited -> started -> submitted) so the L&D dashboard can show who
+    has/hasn't attempted.
+    """
+    __tablename__ = "exam_invites"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    exam_id: Mapped[int] = mapped_column(Integer, ForeignKey("exams.id", ondelete="CASCADE"), nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    user_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(12), default="invited", nullable=False)  # invited|started|submitted
+    attempt_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    invited_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    exam = relationship("Exam", back_populates="invites")
 
 
 class ExamAttempt(Base):

@@ -289,13 +289,27 @@ def send_exam_invite(
     portal_url: str,
     duration_minutes: Optional[int] = None,
     passing_score: Optional[int] = None,
+    window_label: Optional[str] = None,
+    instructions: Optional[str] = None,
 ) -> bool:
-    """Invite an internal user to a published exam, with a direct portal link."""
+    """Invite an internal user to a published exam, with a direct portal link.
+
+    `window_label` is a human-readable schedule (e.g. "12 Aug 2026, 10:00–12:00
+    IST") shown prominently so candidates know when to attend (Mettl-style).
+    """
     meta_bits = []
+    if window_label:
+        meta_bits.append(
+            f'<p><strong>🗓️ When:</strong> {window_label}</p>'
+        )
     if duration_minutes:
         meta_bits.append(f"<p><strong>Duration:</strong> {duration_minutes} minutes</p>")
     if passing_score is not None:
         meta_bits.append(f"<p><strong>Passing score:</strong> {passing_score}%</p>")
+    if instructions:
+        meta_bits.append(
+            f'<p style="margin-top:8px;color:#475569;font-size:13px;">{instructions}</p>'
+        )
     meta_str = "".join(meta_bits)
     html = f"""
     <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;border:1px solid #e2e8f0;border-radius:12px;">
