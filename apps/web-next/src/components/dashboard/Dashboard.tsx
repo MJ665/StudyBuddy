@@ -48,6 +48,7 @@ export default function Dashboard({
   const [codingTotal, setCodingTotal] = useState(0);
   const [codingPage, setCodingPage] = useState(1);
   const [dailyChallenge, setDailyChallenge] = useState<any>(null);
+  const [myExams, setMyExams] = useState<any[]>([]);
 
   const [showBankModal, setShowBankModal] = useState(false);
   const [showLearningPath, setShowLearningPath] = useState(false);
@@ -98,6 +99,11 @@ export default function Dashboard({
         else setDailyChallenge(null);
       })
       .catch(() => setDailyChallenge(null));
+
+    // Invited exams (open/upcoming) → surfaced as a "My Exams" alert card.
+    ApiService.myInvitedExams()
+      .then(res => setMyExams((res?.exams || []).filter((e: any) => e.window_state !== 'closed' && e.my_status !== 'submitted')))
+      .catch(() => setMyExams([]));
 
   }, [user.group_id, onViewProfile]);
 
@@ -174,7 +180,43 @@ export default function Dashboard({
     <div className="w-full flex gap-6">
       {/* Main Content */}
       <main className="flex-1 max-w-5xl px-8 py-10 w-full overflow-y-auto">
-        
+
+        {/* My Exams — invited/scheduled proctored exams (Mettl-style) */}
+        {myExams.length > 0 && (
+          <div className="mb-8 rounded-3xl border border-emerald-500/30 bg-gradient-to-r from-emerald-900/40 to-slate-900/40 p-6">
+            <div className="flex items-center gap-2 mb-4 text-emerald-400 text-sm font-black uppercase tracking-widest">
+              <ClipboardList size={16} /> My Exams
+            </div>
+            <div className="space-y-2">
+              {myExams.map((e: any) => {
+                const open = e.window_state === 'open';
+                return (
+                  <div key={e.id} className="flex items-center justify-between gap-3 flex-wrap rounded-2xl bg-slate-900/60 border border-white/5 p-4">
+                    <div className="min-w-0">
+                      <div className="font-bold text-white truncate">{e.title}</div>
+                      <div className="text-xs text-slate-400">
+                        {e.question_count} questions · {e.duration_minutes} min
+                        {e.window_label ? ` · 🗓️ ${e.window_label}` : ''}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-black uppercase px-2 py-1 rounded ${open ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
+                        {open ? 'Open now' : 'Upcoming'}
+                      </span>
+                      <a
+                        href={open ? `/exam/${e.id}` : '/exams'}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold ${open ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
+                      >
+                        {open ? (e.my_status === 'started' ? 'Resume' : 'Start') : 'View'}
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Course/Assignment Toggle */}
         <div className="flex flex-wrap gap-4 mb-8 bg-surface-container p-2 rounded-2xl w-fit">
            <button onClick={() => setActiveTab('courses')} className={`flex items-center justify-center px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'courses' ? 'bg-brand-primary text-surface-dim shadow-lg shadow-brand-primary/20' : 'text-on-surface hover:bg-surface-container-high'}`}><BookOpen size={16} className="mr-2"/> Courses</button>

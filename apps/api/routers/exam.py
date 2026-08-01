@@ -1056,3 +1056,59 @@ async def exam_stats(
             "avg_flags_per_candidate": round(total_flags / len(submitted), 2) if submitted else 0.0,
         },
     }
+
+
+@router.get("/{exam_id}/export")
+def export_exam_results(
+    exam_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_mentor_or_above),
+):
+    """Download the candidate results as CSV (Mettl-style results export)."""
+    import csv
+    import io
+
+    from fastapi.responses import StreamingResponse
+
+    exam = db.query(models.Exam).filter(models.Exam.id == exam_id).first()
+    assert_same_super_org(exam, current_user, db, "Exam")
+    attempts = (
+        scope_to_org(
+            db.query(models.ExamAttempt).filter(models.ExamAttempt.exam_id == exam_id),
+            models.ExamAttempt,
+            current_user,
+        )
+        .order_by(models.ExamAttempt.started_at.desc())
+        .all()
+    )
+    user_ids = list({a.user_id for a in attempts})
+    users = {
+        u.id: u
+        for u in (db.query(models.User).filter(models.User.id.in_(user_ids)).all() if user_ids else [])
+    }
+
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["Name", "Email", "Status", "Score", "Total", "Percent", "Result", "Flags", "Started", "Submitted"])
+    for a in attempts:
+        u = users.get(a.user_id)
+        pct = round(float(a.score) / float(a.total) * 100.0, 1) if a.total and a.score is not None else ""
+        w.writerow([
+            (u.full_name if u else f"User {a.user_id}"),
+            (u.email if u else ""),
+            a.status,
+            a.score if a.score is not None else "",
+            a.total if a.total is not None else "",
+            pct,
+            ("Pass" if a.passed else "Fail" if a.passed is False else ""),
+            a.flags_count or 0,
+            a.started_at.isoformat() if a.started_at else "",
+            a.submitted_at.isoformat() if a.submitted_at else "",
+        ])
+    buf.seek(0)
+    safe_title = "".join(c for c in (exam.title or "exam") if c.isalnum() or c in " -_")[:40].strip() or "exam"
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{safe_title}_results.csv"'},
+    )

@@ -129,7 +129,23 @@ export default function ProctorReviewPage() {
             <h1 className="text-2xl font-black">Proctor review</h1>
             <p className="text-slate-400 text-sm">Exam #{examId} · attempts &amp; integrity flags</p>
           </div>
-          <a href="/exams" className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm">← Exams</a>
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                try {
+                  const blob = await ApiService.exportExamResults(examId);
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url; a.download = `exam_${examId}_results.csv`; a.click();
+                  URL.revokeObjectURL(url);
+                } catch { setError('Export failed'); }
+              }}
+              className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-sm font-bold"
+            >
+              Export CSV
+            </button>
+            <a href="/exams" className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm">← Exams</a>
+          </div>
         </header>
 
         {error && <div className="rounded-lg bg-rose-500/10 text-rose-400 p-4 text-sm mb-4">{error}</div>}
