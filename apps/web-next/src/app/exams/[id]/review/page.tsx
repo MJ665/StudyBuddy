@@ -19,14 +19,16 @@ interface Attempt {
 
 interface ProctorSnapshot { id: number; media_url: string; at: string | null; }
 interface ProctorFlag { id: number; event_type: string; detail: string | null; at: string | null; }
+interface ProctorVideo { id: number; media_url: string; at: string | null; }
 
 function ProctorDetail({ attemptId }: { attemptId: number }) {
-  const [data, setData] = useState<{ snapshots: ProctorSnapshot[]; flags: ProctorFlag[] } | null>(null);
+  const [data, setData] = useState<{ snapshots: ProctorSnapshot[]; flags: ProctorFlag[]; videos: ProctorVideo[] } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [vIdx, setVIdx] = useState(0);
   useEffect(() => {
     ApiService.getProctorEvents(attemptId)
-      .then((r) => setData({ snapshots: r.snapshots || [], flags: r.flags || [] }))
-      .catch(() => setData({ snapshots: [], flags: [] }))
+      .then((r) => setData({ snapshots: r.snapshots || [], flags: r.flags || [], videos: r.video_chunks || [] }))
+      .catch(() => setData({ snapshots: [], flags: [], videos: [] }))
       .finally(() => setLoading(false));
   }, [attemptId]);
 
@@ -35,6 +37,28 @@ function ProctorDetail({ attemptId }: { attemptId: number }) {
   const fmt = (s: string | null) => (s ? new Date(s).toLocaleTimeString() : '—');
   return (
     <div className="px-4 py-4 bg-slate-950/60 border-b border-slate-800/50 space-y-4">
+      {data.videos.length > 0 && (
+        <div>
+          <div className="text-xs uppercase tracking-widest text-slate-500 mb-2">Webcam recording ({data.videos.length} segment{data.videos.length > 1 ? 's' : ''})</div>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video
+            key={data.videos[vIdx]?.id}
+            src={data.videos[vIdx]?.media_url}
+            controls
+            autoPlay
+            onEnded={() => setVIdx((i) => (i + 1 < data.videos.length ? i + 1 : i))}
+            className="w-full max-w-md rounded-lg border border-slate-700 bg-black"
+          />
+          <div className="flex gap-1 mt-2 flex-wrap">
+            {data.videos.map((v, i) => (
+              <button key={v.id} onClick={() => setVIdx(i)}
+                className={`text-[10px] px-2 py-1 rounded ${i === vIdx ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}>
+                {fmt(v.at)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div>
         <div className="text-xs uppercase tracking-widest text-slate-500 mb-2">Webcam snapshots ({data.snapshots.length})</div>
         {data.snapshots.length === 0 ? (
