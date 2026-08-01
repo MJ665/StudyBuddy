@@ -222,6 +222,12 @@ export class ApiClient3 extends ApiClient2 {
   static async getProctorEvents(attemptId: number) {
     return this.request(`/exams/attempts/${attemptId}/proctor-events`);
   }
+  static async getProctorMediaUploadUrl(attemptId: number, filename: string, contentType: string) {
+    return this.request(`/exams/attempts/${attemptId}/proctor-media`, {
+      method: 'POST',
+      body: JSON.stringify({ filename, content_type: contentType }),
+    });
+  }
 
   // ─── Gradebook + item analysis ──────────────────────────────────────────────
   static async gradebook(bankId: number) {

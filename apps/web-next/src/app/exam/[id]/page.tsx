@@ -5,17 +5,38 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import ApiService from '@/services/ApiService';
 import QuestionCard, { QCard } from '@/components/quiz/cards/QuestionCard';
+import { uploadProctorMedia } from '@/lib/proctorMedia';
 
+interface ExamSettings {
+  require_camera: boolean;
+  record_video: boolean;
+  require_fullscreen: boolean;
+  max_tab_switches: number;
+  negative_marking: number;
+  allow_backtrack: boolean;
+  show_results_immediately: boolean;
+  instructions: string;
+}
 interface Paper {
   attempt_id: number;
   title: string;
   proctoring_mode: string;
+  duration_minutes?: number;
   deadline: string;
+  window_label?: string | null;
+  settings?: Partial<ExamSettings>;
   questions: QCard[];
 }
 interface Result {
-  score: number; total: number; percent: number; passed: boolean; status: string; flags: number;
+  score?: number; total?: number; percent?: number; passed?: boolean;
+  status: string; flags?: number; results_withheld?: boolean;
 }
+
+const DEFAULTS: ExamSettings = {
+  require_camera: false, record_video: false, require_fullscreen: false,
+  max_tab_switches: 0, negative_marking: 0, allow_backtrack: true,
+  show_results_immediately: true, instructions: '',
+};
 
 function fmtTime(ms: number): string {
   if (ms < 0) ms = 0;
@@ -34,12 +55,19 @@ export default function ExamRunnerPage() {
   const [error, setError] = useState<string | null>(null);
   const [remaining, setRemaining] = useState<number>(0);
   const [flags, setFlags] = useState<number>(0);
-  const [consent, setConsent] = useState(false);
+  const [phase, setPhase] = useState<'lobby' | 'running'>('lobby');
+  const [camStatus, setCamStatus] = useState<'idle' | 'live' | 'no_face' | 'multiple' | 'denied'>('idle');
+  const [starting, setStarting] = useState(false);
   const submittingRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [camStatus, setCamStatus] = useState<'idle' | 'live' | 'no_face' | 'multiple' | 'denied'>('idle');
+  const streamRef = useRef<MediaStream | null>(null);
+  const tabSwitchesRef = useRef(0);
 
-  // Start the exam.
+  const settings: ExamSettings = { ...DEFAULTS, ...(paper?.settings || {}) };
+  const webcamNeeded = !!paper && paper.proctoring_mode !== 'none' &&
+    (settings.require_camera || settings.record_video || paper.proctoring_mode === 'advanced');
+
+  // Load the paper (start attempt on the server).
   useEffect(() => {
     ApiService.startExam(examId)
       .then((p: Paper) => setPaper(p))
@@ -52,137 +80,183 @@ export default function ExamRunnerPage() {
     try {
       const r = await ApiService.submitExam(paper.attempt_id, answers);
       setResult(r);
+      // Release camera + fullscreen on finish.
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Submit failed');
       submittingRef.current = false;
     }
   }, [paper, answers, result]);
 
-  // Countdown timer → auto-submit at deadline.
+  // Countdown → auto-submit at deadline.
   useEffect(() => {
-    if (!paper || result) return;
+    if (!paper || result || phase !== 'running') return;
     const dl = new Date(paper.deadline).getTime();
     const t = setInterval(() => {
       const rem = dl - Date.now();
       setRemaining(rem);
-      if (rem <= 0) {
-        clearInterval(t);
-        submit();
-      }
+      if (rem <= 0) { clearInterval(t); submit(); }
     }, 1000);
     return () => clearInterval(t);
-  }, [paper, result, submit]);
+  }, [paper, result, phase, submit]);
 
-  // Proctoring: integrity listeners (Standard) → POST proctor-event + flag.
+  // Integrity listeners (tab/copy/paste/focus/fullscreen) once running.
   useEffect(() => {
-    if (!paper || result || paper.proctoring_mode === 'none') return;
+    if (!paper || result || phase !== 'running' || paper.proctoring_mode === 'none') return;
     const flag = (event_type: string, detail?: string) => {
       setFlags((f) => f + 1);
       ApiService.logProctorEvent(paper.attempt_id, event_type, detail).catch(() => {});
     };
-    const onVis = () => document.hidden && flag('tab_switch');
+    const onVis = () => {
+      if (!document.hidden) return;
+      tabSwitchesRef.current += 1;
+      flag('tab_switch', `Tab switch #${tabSwitchesRef.current}`);
+      // Auto-submit when the tab-switch budget is exceeded (Mettl-style).
+      if (settings.max_tab_switches > 0 && tabSwitchesRef.current > settings.max_tab_switches) {
+        setError('Exam auto-submitted: tab-switch limit exceeded.');
+        submit();
+      }
+    };
     const onBlur = () => flag('focus_loss');
     const onCopy = () => flag('copy');
     const onPaste = () => flag('paste');
+    const onFsChange = () => {
+      if (settings.require_fullscreen && !document.fullscreenElement) flag('fullscreen_exit', 'Left fullscreen');
+    };
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('blur', onBlur);
     document.addEventListener('copy', onCopy);
     document.addEventListener('paste', onPaste);
+    document.addEventListener('fullscreenchange', onFsChange);
     return () => {
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('blur', onBlur);
       document.removeEventListener('copy', onCopy);
       document.removeEventListener('paste', onPaste);
+      document.removeEventListener('fullscreenchange', onFsChange);
     };
-  }, [paper, result]);
+  }, [paper, result, phase, settings.max_tab_switches, settings.require_fullscreen, submit]);
 
-  // Advanced proctoring: live webcam + on-device face-presence detection +
-  // periodic snapshots (Bug 10). Face detection uses the browser FaceDetector
-  // API where available; snapshots are downscaled JPEG data-URLs so they work
-  // without any external storage. Flags: no_face, multiple_faces, camera_denied.
+  // Webcam pipeline: face-presence detection + periodic snapshots (→S3) +
+  // continuous video recording (→S3) once running.
   useEffect(() => {
-    if (!paper || result || paper.proctoring_mode !== 'advanced' || !consent) return;
-    let stream: MediaStream | null = null;
+    if (!paper || result || phase !== 'running' || !webcamNeeded) return;
+    const stream = streamRef.current;
+    if (!stream) return;
     let snapTimer: ReturnType<typeof setInterval> | null = null;
     let faceTimer: ReturnType<typeof setInterval> | null = null;
-    let cancelled = false;
-    // Debounce identical face-state flags so we don't spam the log.
+    let recorder: MediaRecorder | null = null;
     let lastFaceFlag = '';
+    const aid = paper.attempt_id;
 
     const flagFace = (event_type: string, detail: string) => {
-      ApiService.logProctorEvent(paper.attempt_id, event_type, detail).catch(() => {});
+      ApiService.logProctorEvent(aid, event_type, detail).catch(() => {});
       setFlags((f) => f + 1);
     };
 
-    const captureDataUrl = (max = 320, quality = 0.5): string | null => {
+    const snapshotBlob = async (max = 480, quality = 0.6): Promise<Blob | null> => {
       const v = videoRef.current;
       if (!v || !v.videoWidth) return null;
       const scale = Math.min(1, max / v.videoWidth);
-      const w = Math.round(v.videoWidth * scale);
-      const h = Math.round(v.videoHeight * scale);
       const c = document.createElement('canvas');
-      c.width = w; c.height = h;
+      c.width = Math.round(v.videoWidth * scale);
+      c.height = Math.round(v.videoHeight * scale);
       const ctx = c.getContext('2d');
       if (!ctx) return null;
-      ctx.drawImage(v, 0, 0, w, h);
-      try { return c.toDataURL('image/jpeg', quality); } catch { return null; }
+      ctx.drawImage(v, 0, 0, c.width, c.height);
+      return new Promise((resolve) => c.toBlob((b) => resolve(b), 'image/jpeg', quality));
     };
 
-    (async () => {
+    // Periodic snapshot every 15s → S3 (data-URL fallback if S3 absent).
+    snapTimer = setInterval(async () => {
+      const b = await snapshotBlob();
+      if (b) uploadProctorMedia(aid, b, { eventType: 'webcam_snapshot', filename: `snap_${Date.now()}.jpg`, detail: 'periodic' });
+    }, 15000);
+
+    // Continuous video recording → 20s chunks → S3.
+    if (settings.record_video && typeof MediaRecorder !== 'undefined') {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-        if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play().catch(() => {});
-        }
-        setCamStatus('live');
+        const mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+          .find((m) => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+        recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 300_000 });
+        recorder.ondataavailable = (ev) => {
+          if (ev.data && ev.data.size > 0) {
+            uploadProctorMedia(aid, ev.data, { eventType: 'video_chunk', filename: `vid_${Date.now()}.webm`, detail: 'recording' });
+          }
+        };
+        recorder.start(20000); // fire ondataavailable every 20s
+      } catch { /* recording unsupported — snapshots still cover it */ }
+    }
 
-        // FaceDetector (Chromium). Absent elsewhere → snapshots still upload.
-        const FD = (window as unknown as { FaceDetector?: new (o?: unknown) => { detect: (v: unknown) => Promise<unknown[]> } }).FaceDetector;
-        const detector = FD ? new FD({ fastMode: true, maxDetectedFaces: 5 }) : null;
-
-        // Periodic snapshot upload (every 15s).
-        snapTimer = setInterval(() => {
-          const url = captureDataUrl();
-          if (url) ApiService.logProctorEvent(paper.attempt_id, 'webcam_snapshot', 'periodic', url).catch(() => {});
-        }, 15000);
-
-        // Face-presence check (every 4s).
-        if (detector) {
-          faceTimer = setInterval(async () => {
-            const v = videoRef.current;
-            if (!v || !v.videoWidth) return;
-            try {
-              const faces = await detector.detect(v);
-              const n = Array.isArray(faces) ? faces.length : 0;
-              if (n === 0) {
-                setCamStatus('no_face');
-                if (lastFaceFlag !== 'no_face') { flagFace('no_face', 'No face detected in webcam'); lastFaceFlag = 'no_face'; }
-              } else if (n > 1) {
-                setCamStatus('multiple');
-                if (lastFaceFlag !== 'multiple') { flagFace('multiple_faces', `${n} faces detected`); lastFaceFlag = 'multiple'; }
-              } else {
-                setCamStatus('live');
-                lastFaceFlag = '';
-              }
-            } catch { /* detection hiccup — ignore this tick */ }
-          }, 4000);
-        }
-      } catch {
-        setCamStatus('denied');
-        flagFace('camera_denied', 'Webcam permission denied or unavailable');
-      }
-    })();
+    // Face-presence detection (FaceDetector where available).
+    const FD = (window as unknown as { FaceDetector?: new (o?: unknown) => { detect: (v: unknown) => Promise<unknown[]> } }).FaceDetector;
+    const detector = FD ? new FD({ fastMode: true, maxDetectedFaces: 5 }) : null;
+    if (detector) {
+      faceTimer = setInterval(async () => {
+        const v = videoRef.current;
+        if (!v || !v.videoWidth) return;
+        try {
+          const faces = await detector.detect(v);
+          const n = Array.isArray(faces) ? faces.length : 0;
+          if (n === 0) {
+            setCamStatus('no_face');
+            if (lastFaceFlag !== 'no_face') { flagFace('no_face', 'No face detected in webcam'); lastFaceFlag = 'no_face'; }
+          } else if (n > 1) {
+            setCamStatus('multiple');
+            if (lastFaceFlag !== 'multiple') { flagFace('multiple_faces', `${n} faces detected`); lastFaceFlag = 'multiple'; }
+          } else {
+            setCamStatus('live'); lastFaceFlag = '';
+          }
+        } catch { /* detection hiccup */ }
+      }, 4000);
+    }
 
     return () => {
-      cancelled = true;
       if (snapTimer) clearInterval(snapTimer);
       if (faceTimer) clearInterval(faceTimer);
-      stream?.getTracks().forEach((t) => t.stop());
+      try { recorder?.state !== 'inactive' && recorder?.stop(); } catch { /* noop */ }
     };
-  }, [paper, result, consent]);
+  }, [paper, result, phase, webcamNeeded, settings.record_video]);
 
+  // ── Start (from lobby): acquire camera + fullscreen, then run ──────────────
+  const startExam = async () => {
+    if (!paper) return;
+    setStarting(true);
+    setError(null);
+    try {
+      if (webcamNeeded) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+          streamRef.current = stream;
+          if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play().catch(() => {}); }
+          setCamStatus('live');
+        } catch {
+          setCamStatus('denied');
+          if (settings.require_camera) {
+            setError('This exam requires camera access. Please allow the camera and try again.');
+            setStarting(false);
+            return;
+          }
+        }
+      }
+      if (settings.require_fullscreen) {
+        try { await document.documentElement.requestFullscreen(); } catch { /* user can still proceed */ }
+      }
+      setPhase('running');
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  if (error && phase === 'lobby') return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-8">
+      <div className="max-w-md text-center">
+        <div className="text-rose-400 mb-4">{error}</div>
+        <a href="/exams" className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm">← Back to exams</a>
+      </div>
+    </div>
+  );
   if (error) return <div className="min-h-screen bg-slate-950 text-rose-400 flex items-center justify-center p-8">{error}</div>;
   if (!paper) return <div className="min-h-screen bg-slate-950 text-slate-400 flex items-center justify-center">Preparing exam…</div>;
 
@@ -190,35 +264,76 @@ export default function ExamRunnerPage() {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-8">
         <div className="text-center max-w-md">
-          <div className={`text-5xl font-black mb-2 ${result.passed ? 'text-emerald-400' : 'text-rose-400'}`}>{result.percent}%</div>
-          <div className="text-xl font-bold mb-4">{result.passed ? 'Passed' : 'Not passed'}</div>
-          <div className="text-slate-400 text-sm">Score {result.score}/{result.total} · status {result.status} · {result.flags} integrity flag(s)</div>
+          {result.results_withheld ? (
+            <>
+              <div className="text-3xl font-black mb-2 text-emerald-400">Submitted ✓</div>
+              <div className="text-slate-400 text-sm">Your responses were recorded. Results will be shared by your L&amp;D team.</div>
+            </>
+          ) : (
+            <>
+              <div className={`text-5xl font-black mb-2 ${result.passed ? 'text-emerald-400' : 'text-rose-400'}`}>{result.percent}%</div>
+              <div className="text-xl font-bold mb-4">{result.passed ? 'Passed' : 'Not passed'}</div>
+              <div className="text-slate-400 text-sm">Score {result.score}/{result.total} · status {result.status} · {result.flags} integrity flag(s)</div>
+            </>
+          )}
+          <div className="mt-6"><a href="/exams" className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm">← Back to exams</a></div>
         </div>
       </div>
     );
   }
 
-  const needsConsent = paper.proctoring_mode === 'advanced' && !consent;
-  const camActive = paper.proctoring_mode === 'advanced' && consent && !result;
+  // ── Pre-exam lobby ─────────────────────────────────────────────────────────
+  if (phase === 'lobby') {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
+        <div className="max-w-lg w-full rounded-2xl bg-slate-900 border border-slate-800 p-8">
+          <h1 className="text-2xl font-black mb-1">{paper.title}</h1>
+          <p className="text-slate-400 text-sm mb-5">Proctored exam · Powered by StudyBuddy</p>
+
+          <div className="grid grid-cols-2 gap-3 text-sm mb-5">
+            <div className="rounded-lg bg-slate-800/60 p-3"><div className="text-slate-500 text-[11px] uppercase tracking-widest">Questions</div><div className="font-bold">{paper.questions.length}</div></div>
+            <div className="rounded-lg bg-slate-800/60 p-3"><div className="text-slate-500 text-[11px] uppercase tracking-widest">Duration</div><div className="font-bold">{paper.duration_minutes ?? Math.round((new Date(paper.deadline).getTime() - Date.now()) / 60000)} min</div></div>
+            {paper.window_label && <div className="col-span-2 rounded-lg bg-slate-800/60 p-3"><div className="text-slate-500 text-[11px] uppercase tracking-widest">Window</div><div className="font-bold">🗓️ {paper.window_label}</div></div>}
+          </div>
+
+          {settings.instructions && (
+            <div className="rounded-lg bg-indigo-500/10 border border-indigo-500/20 p-4 mb-5 text-sm text-slate-300 whitespace-pre-wrap">{settings.instructions}</div>
+          )}
+
+          <ul className="text-xs text-slate-400 space-y-1 mb-6">
+            {webcamNeeded && <li>📷 This exam is webcam-proctored{settings.record_video ? ' and your session will be recorded' : ''}. Leaving frame / a second person is flagged.</li>}
+            {settings.require_fullscreen && <li>🖥️ Fullscreen is required. Exiting fullscreen is flagged.</li>}
+            {settings.max_tab_switches > 0 && <li>🔁 Max {settings.max_tab_switches} tab-switch(es) — exceeding auto-submits your exam.</li>}
+            {settings.negative_marking > 0 && <li>➖ Negative marking: {settings.negative_marking} of the points per wrong answer.</li>}
+            <li>⏱️ The timer starts when you click Start and cannot be paused.</li>
+          </ul>
+
+          {error && <div className="rounded-lg bg-rose-500/10 text-rose-400 p-3 text-sm mb-4">{error}</div>}
+          <button onClick={startExam} disabled={starting} className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 py-3 font-bold">
+            {starting ? 'Preparing…' : 'Start exam'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const camActive = webcamNeeded && phase === 'running';
   const camBadge =
     camStatus === 'no_face' ? { text: 'No face — stay in frame', cls: 'bg-amber-500/90' }
     : camStatus === 'multiple' ? { text: 'Multiple faces detected', cls: 'bg-rose-500/90' }
     : camStatus === 'denied' ? { text: 'Camera blocked', cls: 'bg-rose-600/90' }
-    : { text: 'Monitoring', cls: 'bg-emerald-500/90' };
+    : { text: settings.record_video ? 'Recording' : 'Monitoring', cls: 'bg-emerald-500/90' };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      {/* Live proctoring preview (advanced mode) */}
       {camActive && (
         <div className="fixed bottom-4 right-4 z-30 w-40 rounded-xl overflow-hidden border-2 border-slate-700 shadow-2xl bg-black">
           <video ref={videoRef} muted playsInline className="w-full h-28 object-cover scale-x-[-1]" />
-          <div className={`text-[10px] font-bold text-white text-center py-1 ${camBadge.cls}`}>
-            {camBadge.text}
-          </div>
+          <div className={`text-[10px] font-bold text-white text-center py-1 ${camBadge.cls}`}>{camBadge.text}</div>
         </div>
       )}
-      {/* Hidden video anchor so detection/snapshots run even before preview mounts */}
-      {camActive ? null : <video ref={videoRef} className="hidden" muted playsInline />}
+      {!camActive && <video ref={videoRef} className="hidden" muted playsInline />}
+
       <div className="sticky top-0 z-10 bg-slate-950/95 backdrop-blur border-b border-slate-800">
         <div className="max-w-3xl mx-auto flex items-center justify-between px-5 py-3">
           <div className="font-bold truncate">{paper.title}</div>
@@ -230,29 +345,17 @@ export default function ExamRunnerPage() {
       </div>
 
       <div className="max-w-3xl mx-auto p-5">
-        {needsConsent && (
-          <div className="rounded-xl bg-slate-900 border border-slate-800 p-6 mb-6">
-            <h2 className="font-bold mb-2">Proctored exam — consent required</h2>
-            <p className="text-slate-400 text-sm mb-4">This exam uses live webcam monitoring with on-device face-presence detection. By continuing you consent to periodic webcam snapshots and integrity monitoring — leaving the frame, a second person appearing, blocking the camera, tab-switching, copy/paste, and focus loss are all flagged for the proctor.</p>
-            <button onClick={() => setConsent(true)} className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-bold text-sm">I consent — start</button>
-          </div>
-        )}
-
-        {!needsConsent && (
-          <>
-            {paper.questions.map((q, i) => (
-              <QuestionCard
-                key={q.id}
-                q={q}
-                index={i}
-                value={answers[String(q.id)] ?? (q.question_type === 'mcq_multi' ? [] : '')}
-                onChange={(v) => setAnswers((a) => ({ ...a, [String(q.id)]: v }))}
-              />
-            ))}
-            <button onClick={submit} className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 py-3 font-bold mt-2">Submit exam</button>
-            <p className="text-center text-slate-600 text-xs mt-4">Powered by StudyBuddy</p>
-          </>
-        )}
+        {paper.questions.map((q, i) => (
+          <QuestionCard
+            key={q.id}
+            q={q}
+            index={i}
+            value={answers[String(q.id)] ?? (q.question_type === 'mcq_multi' ? [] : '')}
+            onChange={(v) => setAnswers((a) => ({ ...a, [String(q.id)]: v }))}
+          />
+        ))}
+        <button onClick={submit} className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 py-3 font-bold mt-2">Submit exam</button>
+        <p className="text-center text-slate-600 text-xs mt-4">Powered by StudyBuddy</p>
       </div>
     </div>
   );
