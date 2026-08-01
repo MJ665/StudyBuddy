@@ -88,3 +88,6 @@ tempProcess.md
 
 # ── Google Play Store release kit (local-only: listing drafts, assets, secrets) ──
 google-playstore/
+
+# MediaPipe WASM is large + regenerated from node_modules on predev/prebuild
+apps/web-next/public/mediapipe/wasm/

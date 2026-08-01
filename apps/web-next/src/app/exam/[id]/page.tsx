@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import ApiService from '@/services/ApiService';
 import QuestionCard, { QCard } from '@/components/quiz/cards/QuestionCard';
 import { uploadProctorMedia } from '@/lib/proctorMedia';
+import { createFacePresenceDetector, type FacePresenceDetector } from '@/lib/faceDetection';
 
 interface ExamSettings {
   require_camera: boolean;
@@ -189,32 +190,55 @@ export default function ExamRunnerPage() {
       } catch { /* recording unsupported — snapshots still cover it */ }
     }
 
-    // Face-presence detection (FaceDetector where available).
-    const FD = (window as unknown as { FaceDetector?: new (o?: unknown) => { detect: (v: unknown) => Promise<unknown[]> } }).FaceDetector;
-    const detector = FD ? new FD({ fastMode: true, maxDetectedFaces: 5 }) : null;
-    if (detector) {
-      faceTimer = setInterval(async () => {
-        const v = videoRef.current;
-        if (!v || !v.videoWidth) return;
-        try {
-          const faces = await detector.detect(v);
-          const n = Array.isArray(faces) ? faces.length : 0;
-          if (n === 0) {
-            setCamStatus('no_face');
-            if (lastFaceFlag !== 'no_face') { flagFace('no_face', 'No face detected in webcam'); lastFaceFlag = 'no_face'; }
-          } else if (n > 1) {
-            setCamStatus('multiple');
-            if (lastFaceFlag !== 'multiple') { flagFace('multiple_faces', `${n} faces detected`); lastFaceFlag = 'multiple'; }
-          } else {
-            setCamStatus('live'); lastFaceFlag = '';
-          }
-        } catch { /* detection hiccup */ }
-      }, 4000);
-    }
+    // Face-presence detection. Prefer the real MediaPipe model (cross-browser);
+    // fall back to Chromium's experimental FaceDetector; else video-only review.
+    let mpDetector: FacePresenceDetector | null = null;
+    let disposed = false;
+
+    const onCount = (n: number) => {
+      if (n < 0) return; // frame not ready / hiccup
+      if (n === 0) {
+        setCamStatus('no_face');
+        if (lastFaceFlag !== 'no_face') { flagFace('no_face', 'No face detected in webcam'); lastFaceFlag = 'no_face'; }
+      } else if (n > 1) {
+        setCamStatus('multiple');
+        if (lastFaceFlag !== 'multiple') { flagFace('multiple_faces', `${n} faces detected`); lastFaceFlag = 'multiple'; }
+      } else {
+        setCamStatus('live'); lastFaceFlag = '';
+      }
+    };
+
+    (async () => {
+      mpDetector = await createFacePresenceDetector();
+      if (disposed) { mpDetector?.close(); return; }
+      if (mpDetector) {
+        faceTimer = setInterval(() => {
+          const v = videoRef.current;
+          if (!v || !v.videoWidth || !mpDetector) return;
+          onCount(mpDetector.count(v));
+        }, 3000);
+        return;
+      }
+      // Fallback: Chromium FaceDetector.
+      const FD = (window as unknown as { FaceDetector?: new (o?: unknown) => { detect: (v: unknown) => Promise<unknown[]> } }).FaceDetector;
+      const detector = FD ? new FD({ fastMode: true, maxDetectedFaces: 5 }) : null;
+      if (detector) {
+        faceTimer = setInterval(async () => {
+          const v = videoRef.current;
+          if (!v || !v.videoWidth) return;
+          try {
+            const faces = await detector.detect(v);
+            onCount(Array.isArray(faces) ? faces.length : 0);
+          } catch { /* detection hiccup */ }
+        }, 4000);
+      }
+    })();
 
     return () => {
+      disposed = true;
       if (snapTimer) clearInterval(snapTimer);
       if (faceTimer) clearInterval(faceTimer);
+      mpDetector?.close();
       try { recorder?.state !== 'inactive' && recorder?.stop(); } catch { /* noop */ }
     };
   }, [paper, result, phase, webcamNeeded, settings.record_video]);
