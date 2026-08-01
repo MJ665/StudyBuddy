@@ -59,6 +59,7 @@ export default function ExamRunnerPage() {
   const [phase, setPhase] = useState<'lobby' | 'running'>('lobby');
   const [camStatus, setCamStatus] = useState<'idle' | 'live' | 'no_face' | 'multiple' | 'denied'>('idle');
   const [starting, setStarting] = useState(false);
+  const [qIdx, setQIdx] = useState(0); // linear-mode cursor (allow_backtrack=false)
   const submittingRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -369,16 +370,39 @@ export default function ExamRunnerPage() {
       </div>
 
       <div className="max-w-3xl mx-auto p-5">
-        {paper.questions.map((q, i) => (
-          <QuestionCard
-            key={q.id}
-            q={q}
-            index={i}
-            value={answers[String(q.id)] ?? (q.question_type === 'mcq_multi' ? [] : '')}
-            onChange={(v) => setAnswers((a) => ({ ...a, [String(q.id)]: v }))}
-          />
-        ))}
-        <button onClick={submit} className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 py-3 font-bold mt-2">Submit exam</button>
+        {settings.allow_backtrack ? (
+          <>
+            {paper.questions.map((q, i) => (
+              <QuestionCard
+                key={q.id}
+                q={q}
+                index={i}
+                value={answers[String(q.id)] ?? (q.question_type === 'mcq_multi' ? [] : '')}
+                onChange={(v) => setAnswers((a) => ({ ...a, [String(q.id)]: v }))}
+              />
+            ))}
+            <button onClick={submit} className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 py-3 font-bold mt-2">Submit exam</button>
+          </>
+        ) : (
+          // Linear mode: one question at a time, no going back (allow_backtrack=false).
+          <>
+            <div className="text-xs text-slate-500 mb-2">Question {qIdx + 1} of {paper.questions.length} · you cannot return to previous questions</div>
+            {paper.questions[qIdx] && (
+              <QuestionCard
+                key={paper.questions[qIdx].id}
+                q={paper.questions[qIdx]}
+                index={qIdx}
+                value={answers[String(paper.questions[qIdx].id)] ?? (paper.questions[qIdx].question_type === 'mcq_multi' ? [] : '')}
+                onChange={(v) => setAnswers((a) => ({ ...a, [String(paper.questions[qIdx].id)]: v }))}
+              />
+            )}
+            {qIdx < paper.questions.length - 1 ? (
+              <button onClick={() => setQIdx((i) => Math.min(i + 1, paper.questions.length - 1))} className="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 py-3 font-bold mt-2">Next question →</button>
+            ) : (
+              <button onClick={submit} className="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 py-3 font-bold mt-2">Submit exam</button>
+            )}
+          </>
+        )}
         <p className="text-center text-slate-600 text-xs mt-4">Powered by StudyBuddy</p>
       </div>
     </div>

@@ -76,6 +76,7 @@ export default function ExamsPage() {
   const [maxTabSwitches, setMaxTabSwitches] = useState('0');
   const [negativeMarking, setNegativeMarking] = useState('0');
   const [showResults, setShowResults] = useState(true);
+  const [allowBacktrack, setAllowBacktrack] = useState(true);
   const [instructions, setInstructions] = useState('');
 
   // member-facing invited exams ("My Exams")
@@ -162,7 +163,7 @@ export default function ExamsPage() {
     setDuration('60'); setPassing('40'); setProctoring('standard'); setPublish(true);
     setStartsAt(''); setEndsAt(''); setMaxAttempts('1');
     setRequireCamera(false); setRecordVideo(false); setRequireFullscreen(false);
-    setMaxTabSwitches('0'); setNegativeMarking('0'); setShowResults(true); setInstructions('');
+    setMaxTabSwitches('0'); setNegativeMarking('0'); setShowResults(true); setAllowBacktrack(true); setInstructions('');
   };
 
   const create = async (e: React.FormEvent) => {
@@ -196,6 +197,7 @@ export default function ExamsPage() {
           require_fullscreen: requireFullscreen,
           max_tab_switches: Number(maxTabSwitches) || 0,
           negative_marking: Number(negativeMarking) || 0,
+          allow_backtrack: allowBacktrack,
           show_results_immediately: showResults,
           instructions: instructions.trim(),
         },
@@ -339,6 +341,7 @@ export default function ExamsPage() {
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={recordVideo} onChange={(e) => setRecordVideo(e.target.checked)} /> Record webcam video</label>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={requireFullscreen} onChange={(e) => setRequireFullscreen(e.target.checked)} /> Force fullscreen</label>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showResults} onChange={(e) => setShowResults(e.target.checked)} /> Show score immediately</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={allowBacktrack} onChange={(e) => setAllowBacktrack(e.target.checked)} /> Allow going back to previous questions</label>
                 <div><label className={label}>Max tab-switches (0 = unlimited)</label><input type="number" className={input} value={maxTabSwitches} onChange={(e) => setMaxTabSwitches(e.target.value)} min={0} /></div>
                 <div><label className={label}>Negative marking (0–1 per wrong)</label><input type="number" step="0.05" className={input} value={negativeMarking} onChange={(e) => setNegativeMarking(e.target.value)} min={0} max={1} /></div>
               </div>
