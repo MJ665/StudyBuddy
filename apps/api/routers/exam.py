@@ -688,15 +688,16 @@ class ProctorEventIn(BaseModel):
     event_type: str = Field(
         pattern=(
             "^(tab_switch|copy|paste|focus_loss|fullscreen_exit|webcam_snapshot|"
-            "screen_snapshot|no_face|multiple_faces|camera_blocked|camera_denied)$"
+            "screen_snapshot|video_chunk|no_face|multiple_faces|looking_away|"
+            "camera_blocked|camera_denied)$"
         )
     )
     detail: str | None = None
     media_url: str | None = None
 
 
-# Event types that are integrity FLAGS (everything except plain snapshots).
-_PROCTOR_SNAPSHOT_TYPES = ("webcam_snapshot", "screen_snapshot")
+# Event types that carry MEDIA, not integrity flags (don't bump flags_count).
+_PROCTOR_SNAPSHOT_TYPES = ("webcam_snapshot", "screen_snapshot", "video_chunk")
 
 
 @router.post("/attempts/{attempt_id}/proctor-event")
@@ -722,6 +723,32 @@ def log_proctor_event(
         attempt.flags_count = (attempt.flags_count or 0) + 1
     db.commit()
     return {"logged": True, "flags": attempt.flags_count}
+
+
+class ProctorMediaIn(BaseModel):
+    filename: str = Field(default="chunk.webm", max_length=120)
+    content_type: str = Field(default="video/webm", max_length=60)
+
+
+@router.post("/attempts/{attempt_id}/proctor-media")
+def proctor_media_upload_url(
+    attempt_id: int,
+    body: ProctorMediaIn,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(verify_token),
+):
+    """Presigned S3 POST for a webcam video chunk / snapshot. The candidate
+    uploads the blob directly to S3, then logs a proctor-event with the returned
+    s3_key as media_url (keeps large media out of Postgres)."""
+    uid = int(current_user["sub"])
+    attempt = db.query(models.ExamAttempt).filter(models.ExamAttempt.id == attempt_id).first()
+    if not attempt or attempt.user_id != uid:
+        raise HTTPException(404, "Attempt not found")
+    from services.s3_service import generate_proctor_media_upload_url
+
+    return generate_proctor_media_upload_url(
+        attempt_id, body.filename, body.content_type
+    )
 
 
 @router.get("/attempts/{attempt_id}/proctor-events")
@@ -752,14 +779,39 @@ def get_proctor_events(
         .order_by(models.ProctorEvent.created_at.asc())
         .all()
     )
+
+    def _playable(media_url: str | None) -> str | None:
+        """Resolve a stored media reference to something the browser can load.
+        Inline data-URLs / absolute URLs pass through; bare S3 keys become a
+        short-lived presigned GET."""
+        if not media_url:
+            return None
+        if media_url.startswith("data:") or media_url.startswith("http"):
+            return media_url
+        try:
+            from services.s3_service import generate_presigned_get_url
+
+            return generate_presigned_get_url(media_url, expiry_seconds=3600)
+        except Exception:
+            return None
+
     snapshots = [
         {
             "id": e.id,
-            "media_url": e.media_url,
+            "media_url": _playable(e.media_url),
             "at": e.created_at.isoformat() if e.created_at else None,
         }
         for e in events
-        if e.event_type in _PROCTOR_SNAPSHOT_TYPES and e.media_url
+        if e.event_type in ("webcam_snapshot", "screen_snapshot") and e.media_url
+    ]
+    video_chunks = [
+        {
+            "id": e.id,
+            "media_url": _playable(e.media_url),
+            "at": e.created_at.isoformat() if e.created_at else None,
+        }
+        for e in events
+        if e.event_type == "video_chunk" and e.media_url
     ]
     flags = [
         {
@@ -776,6 +828,7 @@ def get_proctor_events(
         "user_id": attempt.user_id,
         "flags_count": attempt.flags_count or 0,
         "snapshots": snapshots,
+        "video_chunks": video_chunks,
         "flags": flags,
     }
 

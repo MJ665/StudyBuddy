@@ -115,6 +115,36 @@ def generate_resource_upload_url(
         raise HTTPException(status_code=503, detail="Could not generate upload URL.")
 
 
+def generate_proctor_media_upload_url(
+    attempt_id: int,
+    filename: str,
+    file_type: str = "video/webm",
+    max_size_bytes: int = 26214400,  # 25 MB per chunk/snapshot
+):
+    """Presigned POST for a proctoring artifact (webcam video chunk or snapshot),
+    namespaced under the exam attempt. Returns {upload_url, s3_key}."""
+    s3_client = get_s3_client()
+    import uuid
+
+    safe_name = filename.replace(" ", "_")
+    s3_key = f"proctoring/{attempt_id}/{uuid.uuid4().hex[:12]}_{safe_name}"
+    try:
+        presigned_post = s3_client.generate_presigned_post(
+            Bucket=settings.S3_BUCKET_NAME,
+            Key=s3_key,
+            Fields={"Content-Type": file_type},
+            Conditions=[
+                {"Content-Type": file_type},
+                ["content-length-range", 1, max_size_bytes],
+            ],
+            ExpiresIn=600,
+        )
+        return {"upload_url": presigned_post, "s3_key": s3_key}
+    except ClientError as e:
+        logger.error(f"S3 proctor media upload URL generation failed: {e}")
+        raise HTTPException(status_code=503, detail="Could not generate upload URL.")
+
+
 def delete_s3_object(s3_key: str):
     try:
         s3_client = get_s3_client()
