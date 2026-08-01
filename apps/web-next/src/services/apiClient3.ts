@@ -219,6 +219,9 @@ export class ApiClient3 extends ApiClient2 {
   static async examAttemptsForReview(examId: number) {
     return this.request(`/exams/${examId}/attempts`);
   }
+  static async examStats(examId: number) {
+    return this.request(`/exams/${examId}/stats`);
+  }
   static async getProctorEvents(attemptId: number) {
     return this.request(`/exams/attempts/${attemptId}/proctor-events`);
   }

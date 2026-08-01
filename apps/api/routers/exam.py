@@ -24,7 +24,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from services.job_handlers import JOB_EMAIL
 from services.job_queue import enqueue_sync
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -930,4 +930,129 @@ def exam_attempts_for_review(
             }
             for a in attempts
         ]
+    }
+
+
+@router.get("/{exam_id}/stats")
+async def exam_stats(
+    exam_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: dict = Depends(require_mentor_or_above),
+):
+    """Mettl-grade exam analytics: participation, score distribution, timing,
+    per-question difficulty, and a proctoring integrity summary."""
+    exam = await db.get(models.Exam, exam_id)
+    if not exam:
+        raise HTTPException(404, "Exam not found")
+    await db.run_sync(lambda s: assert_same_super_org(exam, current_user, s, "Exam"))
+
+    caller_org = caller_org_id(current_user)
+    a_rows = await db.execute(
+        select(models.ExamAttempt).where(models.ExamAttempt.exam_id == exam_id)
+    )
+    all_attempts = list(a_rows.scalars().all())
+    # Org-scope the candidate set (a sibling unit may reuse the exam).
+    if caller_org is not None:
+        all_attempts = [a for a in all_attempts if a.organization_id in (caller_org, None)]
+
+    submitted = [a for a in all_attempts if a.status != "in_progress"]
+    inv_rows = await db.execute(
+        select(func.count()).select_from(models.ExamInvite).where(models.ExamInvite.exam_id == exam_id)
+    )
+    invited_count = int(inv_rows.scalar() or 0)
+
+    # Percentages per attempt.
+    pcts = [
+        (float(a.score) / float(a.total) * 100.0)
+        for a in submitted
+        if a.total and a.total > 0 and a.score is not None
+    ]
+    pcts.sort()
+
+    def _median(xs: list[float]) -> float:
+        if not xs:
+            return 0.0
+        n = len(xs)
+        mid = n // 2
+        return xs[mid] if n % 2 else (xs[mid - 1] + xs[mid]) / 2.0
+
+    # 5 distribution buckets: 0-20 .. 80-100.
+    buckets = [0, 0, 0, 0, 0]
+    for p in pcts:
+        idx = min(4, int(p // 20))
+        buckets[idx] += 1
+    dist = [
+        {"range": lbl, "count": buckets[i]}
+        for i, lbl in enumerate(["0-20", "20-40", "40-60", "60-80", "80-100"])
+    ]
+
+    # Average time taken (minutes) over submitted attempts.
+    durations = [
+        (a.submitted_at - a.started_at).total_seconds() / 60.0
+        for a in submitted
+        if a.submitted_at and a.started_at
+    ]
+    avg_time = round(sum(durations) / len(durations), 1) if durations else 0.0
+
+    # Per-question difficulty: grade each submitted attempt and tally correctness.
+    from modules.assessment.services.attempt_engine import grade_answer_set
+
+    q_rows = await db.execute(
+        select(models.Question).where(models.Question.id.in_(exam.question_ids or []))
+    )
+    qmap = {q.id: q for q in q_rows.scalars().all()}
+    per_q: dict[int, dict] = {qid: {"answered": 0, "correct": 0} for qid in (exam.question_ids or [])}
+    for a in submitted:
+        if not isinstance(a.answers, dict):
+            continue
+        graded = await grade_answer_set(
+            qmap, exam.question_ids or [], a.answers, difficulty_weights=None, collect_details=True
+        )
+        for item in graded.items:
+            rec = per_q.get(item.question_id)
+            if rec is None:
+                continue
+            ans = a.answers.get(str(item.question_id))
+            if ans not in (None, "", [], {}):
+                rec["answered"] += 1
+                if item.grade.is_correct:
+                    rec["correct"] += 1
+    question_analytics = [
+        {
+            "question_id": qid,
+            "question": (qmap.get(qid).question[:120] if qmap.get(qid) else f"Q{qid}"),
+            "answered": rec["answered"],
+            "correct": rec["correct"],
+            "correct_pct": round(rec["correct"] / rec["answered"] * 100.0, 1) if rec["answered"] else 0.0,
+        }
+        for qid, rec in per_q.items()
+    ]
+
+    flagged = [a for a in submitted if (a.flags_count or 0) > 0]
+    total_flags = sum(a.flags_count or 0 for a in submitted)
+
+    return {
+        "exam_id": exam_id,
+        "title": exam.title,
+        "participation": {
+            "invited": invited_count,
+            "attempted": len(submitted),
+            "in_progress": len(all_attempts) - len(submitted),
+            "completion_rate": round(len(submitted) / invited_count * 100.0, 1) if invited_count else 0.0,
+        },
+        "scores": {
+            "pass_rate": round(sum(1 for a in submitted if a.passed) / len(submitted) * 100.0, 1) if submitted else 0.0,
+            "average": round(sum(pcts) / len(pcts), 1) if pcts else 0.0,
+            "median": round(_median(pcts), 1),
+            "highest": round(max(pcts), 1) if pcts else 0.0,
+            "lowest": round(min(pcts), 1) if pcts else 0.0,
+            "distribution": dist,
+        },
+        "timing": {"average_minutes": avg_time, "duration_minutes": exam.duration_minutes},
+        "questions": question_analytics,
+        "proctoring": {
+            "candidates_flagged": len(flagged),
+            "total_flags": total_flags,
+            "avg_flags_per_candidate": round(total_flags / len(submitted), 2) if submitted else 0.0,
+        },
     }

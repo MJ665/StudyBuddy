@@ -17,6 +17,15 @@ interface Attempt {
   submitted_at: string | null;
 }
 
+interface ExamStats {
+  title: string;
+  participation: { invited: number; attempted: number; in_progress: number; completion_rate: number };
+  scores: { pass_rate: number; average: number; median: number; highest: number; lowest: number; distribution: { range: string; count: number }[] };
+  timing: { average_minutes: number; duration_minutes: number };
+  questions: { question_id: number; question: string; answered: number; correct: number; correct_pct: number }[];
+  proctoring: { candidates_flagged: number; total_flags: number; avg_flags_per_candidate: number };
+}
+
 interface ProctorSnapshot { id: number; media_url: string; at: string | null; }
 interface ProctorFlag { id: number; event_type: string; detail: string | null; at: string | null; }
 interface ProctorVideo { id: number; media_url: string; at: string | null; }
@@ -102,12 +111,14 @@ export default function ProctorReviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [stats, setStats] = useState<ExamStats | null>(null);
 
   useEffect(() => {
     ApiService.examAttemptsForReview(examId)
       .then((r) => setAttempts(r.attempts || []))
       .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load'))
       .finally(() => setLoading(false));
+    ApiService.examStats(examId).then((s) => setStats(s)).catch(() => setStats(null));
   }, [examId]);
 
   return (
@@ -122,6 +133,69 @@ export default function ProctorReviewPage() {
         </header>
 
         {error && <div className="rounded-lg bg-rose-500/10 text-rose-400 p-4 text-sm mb-4">{error}</div>}
+
+        {stats && (
+          <section className="mb-6 space-y-4">
+            {/* KPI tiles */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: 'Attempted', value: `${stats.participation.attempted}/${stats.participation.invited || '—'}`, sub: `${stats.participation.completion_rate}% completion` },
+                { label: 'Pass rate', value: `${stats.scores.pass_rate}%`, sub: `avg ${stats.scores.average}% · med ${stats.scores.median}%` },
+                { label: 'Score range', value: `${stats.scores.lowest}–${stats.scores.highest}%`, sub: 'low – high' },
+                { label: 'Avg time', value: `${stats.timing.average_minutes}m`, sub: `of ${stats.timing.duration_minutes}m` },
+              ].map((k) => (
+                <div key={k.label} className="rounded-xl bg-slate-900 border border-slate-800 p-4">
+                  <div className="text-[10px] uppercase tracking-widest text-slate-500">{k.label}</div>
+                  <div className="text-xl font-black mt-1">{k.value}</div>
+                  <div className="text-[11px] text-slate-500">{k.sub}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Score distribution */}
+            <div className="rounded-xl bg-slate-900 border border-slate-800 p-4">
+              <div className="text-xs uppercase tracking-widest text-slate-500 mb-3">Score distribution</div>
+              <div className="flex items-end gap-2 h-28">
+                {stats.scores.distribution.map((b) => {
+                  const max = Math.max(1, ...stats.scores.distribution.map((x) => x.count));
+                  return (
+                    <div key={b.range} className="flex-1 flex flex-col items-center justify-end gap-1">
+                      <div className="w-full bg-emerald-600/70 rounded-t" style={{ height: `${(b.count / max) * 100}%` }} title={`${b.count}`} />
+                      <div className="text-[10px] text-slate-500">{b.range}</div>
+                      <div className="text-[10px] text-slate-400 font-bold">{b.count}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Question difficulty + proctoring summary */}
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="rounded-xl bg-slate-900 border border-slate-800 p-4">
+                <div className="text-xs uppercase tracking-widest text-slate-500 mb-2">Question difficulty (correct %)</div>
+                <ul className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {stats.questions.map((q, i) => (
+                    <li key={q.question_id} className="flex items-center gap-2 text-xs">
+                      <span className="text-slate-500 w-6">Q{i + 1}</span>
+                      <div className="flex-1 bg-slate-800 rounded h-2 overflow-hidden">
+                        <div className={`h-full ${q.correct_pct >= 60 ? 'bg-emerald-500' : q.correct_pct >= 30 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${q.correct_pct}%` }} />
+                      </div>
+                      <span className="w-10 text-right text-slate-400">{q.correct_pct}%</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-xl bg-slate-900 border border-slate-800 p-4">
+                <div className="text-xs uppercase tracking-widest text-slate-500 mb-2">Proctoring integrity</div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-slate-400">Candidates flagged</span><span className="font-bold">{stats.proctoring.candidates_flagged}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Total flags</span><span className="font-bold">{stats.proctoring.total_flags}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Avg flags / candidate</span><span className="font-bold">{stats.proctoring.avg_flags_per_candidate}</span></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         <div className="rounded-xl bg-slate-900 border border-slate-800 overflow-x-auto">
           <div className="min-w-[560px]">
