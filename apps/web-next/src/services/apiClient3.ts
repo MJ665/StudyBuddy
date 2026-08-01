@@ -186,11 +186,20 @@ export class ApiClient3 extends ApiClient2 {
     duration_minutes: number; passing_score: number; max_attempts?: number;
     shuffle_questions?: boolean; shuffle_options?: boolean; proctoring_mode?: string; is_published?: boolean;
     recipient_emails?: string[];
+    starts_at?: string | null; ends_at?: string | null; timezone?: string;
+    settings?: {
+      require_camera?: boolean; record_video?: boolean; require_fullscreen?: boolean;
+      max_tab_switches?: number; negative_marking?: number; allow_backtrack?: boolean;
+      show_results_immediately?: boolean; instructions?: string;
+    };
   }) {
     return this.request('/exams', { method: 'POST', body: JSON.stringify(data) });
   }
   static async listExams() {
     return this.request('/exams');
+  }
+  static async myInvitedExams() {
+    return this.request('/exams/me/invited');
   }
   static async myExamAttempts() {
     return this.request('/exams/me/attempts');

@@ -62,7 +62,9 @@ export function Sidebar({ currentView, onChangeView, onLogout, user, onOpenAIPat
     ...(isMentor     ? [{ icon: 'school',   label: 'Mentor Hub',    view: 'MENTOR' }] : []),
     ...(isLdAdmin    ? [{ icon: 'shield',   label: 'L&D Ecosystem', view: 'LD_ADMIN' }] : []),
     // Route-based screens (full-page navigation) rather than view-state.
-    ...(isMentor        ? [{ icon: 'quiz',    label: 'Exams',          href: '/exams' }] : []),
+    // Everyone sees Exams: members find their invited/scheduled exams there
+    // (mentors+ also author from the same page).
+    { icon: 'quiz', label: 'Exams', href: '/exams' },
     ...(isPlatformAdmin ? [{ icon: 'shield',  label: 'Platform Admin', href: '/platform' }] : []),
   ];
 
