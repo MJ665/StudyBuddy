@@ -1,6 +1,19 @@
 # StudyHubV2 → "StudyHub" — First-Principles Product Redesign Plan
 
 ---
+## 🎓 EXAM PORTAL (Mettl parity) + EMAILS + PROCTORING (2026-08-02 — ✅ COMPLETE)
+
+Owner wanted the exam portal to work like **Mercer Mettl**, every email working, real webcam **video recording**, and **reliable detection**. Root cause of "only the L&D can take the exam": invites were sent synchronously with a swallowed error (unreliable), members had no surface to discover exams, and `start_exam` was super-org-only. All fixed. Per-phase commits (`feat exam-p1` … `feat exam-p3c`); 533 tests pass, no shadowing (337 routes), 0×500 exam GET sweep, web build 32 pages, tsc clean.
+
+- **P1 — Emails reliable ✅** — exam invites now flow through the durable `JOB_EMAIL` queue (new `job_queue.enqueue_sync`) instead of a synchronous swallowed send; `GET /admin/email/health` (LDAdmin) reports RESEND config + optional live test. All 17 `send_*` templates were already wired — real blocker is prod config (set `RESEND_EMAILS_API_KEY` + verify the `email.mj665.in` sender domain in Resend).
+- **P2 — Candidate access + scheduling + Mettl config ✅** — new `ExamInvite` candidate list (invited→started→submitted); `start_exam` access = in super-org OR on the invite list (any invited member can take it); **scheduling window** `starts_at/ends_at/timezone` enforced (403 before/after) with an IST-formatted label in the invite email; `Exam.settings` JSONB (`require_camera, record_video, require_fullscreen, max_tab_switches, negative_marking, allow_backtrack, show_results_immediately, instructions`); `GET /exams/me/invited` member feed; submit applies negative marking + honors show-results. Frontend: **"My Exams"** feed (nav now shown to everyone; authoring stays Mentor+) + creation form with scheduling + all toggles.
+- **P3 — Full video recording + real detection ✅** — `POST /exams/attempts/{id}/proctor-media` (presigned S3) + `s3_service.generate_proctor_media_upload_url`; runner rewritten with a **pre-exam lobby** (instructions/window/requirements), settings enforcement (camera-required blocks start, fullscreen request+flag, tab-limit auto-submit), **MediaRecorder → 20s webm chunks → S3** + 15s snapshots → S3 (data-URL fallback when no S3, via `src/lib/proctorMedia.ts`). Detection upgraded to **MediaPipe Tasks Vision** (`src/lib/faceDetection.ts`, self-hosted WASM+model, cross-browser) with graceful fallback to the browser FaceDetector. Review page **plays back the recording** (sequential chunk player) + snapshot gallery + flag timeline. `ProctorEvent` gained `video_chunk`/`looking_away`; `get_proctor_events` resolves S3 keys to presigned GET URLs.
+- **P4 — Mettl statistics ✅** — `GET /exams/{id}/stats`: participation/completion, pass rate + avg/median/high/low + 5-bucket distribution, avg time, per-question difficulty (correct %), proctoring integrity summary. Review page overview dashboard (KPI tiles + distribution bars + question difficulty + integrity) above the per-candidate drilldown.
+- **P5 — Verification ✅** — 533 pytest, 337 routes no-shadow, 0×500 exam sweep, web build 32 pages, tsc clean.
+
+**Owner prereqs for prod:** (1) `RESEND_EMAILS_API_KEY` + verified `email.mj665.in` sender domain (emails); (2) S3 bucket configured (`S3_BUCKET_NAME` + creds) for webcam video/snapshots — snapshots fall back to inline storage without it, video is skipped. **Not yet browser-smoke-tested with a real camera** (record/detect) — flagged for a device test.
+
+---
 ## 🐛 QA BUG-FIX SPRINT — 22 defects, 6 phases (2026-07-31 — ✅ COMPLETE)
 
 Owner + QA tester filed ~22 defects from an end-to-end product traversal. Fixed across 6 phases, one commit per phase (`8dc6a18` → `e40c4c6` + `qa-p3-api` link fix). Locked Q&A: Bug 1 L&D scope = **enterprise-wide (super-org)**; Bug 10 proctoring = **full live face-presence detection**; Bug 16 chatbot = **grounded + friendly + fixed ingestion**.
