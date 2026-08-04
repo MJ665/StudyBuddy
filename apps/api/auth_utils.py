@@ -152,6 +152,7 @@ def get_user_jwt_payload(user: User, db: Session) -> Dict:
             return {
                 "sub": str(user.id),
                 "name": user.full_name,
+                "email": user.email,
                 "role": user.role,
                 "group_id": user.group_id,
                 "organization_id": None,
@@ -173,6 +174,7 @@ def get_user_jwt_payload(user: User, db: Session) -> Dict:
     return {
         "sub": str(user.id),
         "name": user.full_name,
+        "email": user.email,
         "role": user.role,
         "group_id": user.group_id,
         "organization_id": org_id,

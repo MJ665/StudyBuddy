@@ -10,7 +10,6 @@ import random
 
 import models
 from auth_utils import (
-    assert_same_org,
     assert_same_super_org,
     caller_org_id,
     caller_super_org_id,
@@ -472,9 +471,12 @@ def start_exam(
     """Single secure attempt: reuse an in-progress attempt or create one; block
     once max_attempts submitted attempts exist.
 
-    Access = the caller is EITHER in the exam's super-org OR on its invite list.
-    This is what lets any invited internal member take the exam (fixing "only the
-    L&D can take it") without opening it to unrelated tenants.
+    Access model (Mettl-style):
+    - If the exam has a candidate/invite list → ONLY invited candidates may take
+      it (the creator/platform-admin may still open it to preview). This prevents
+      a targeted exam leaking to every super-org member.
+    - If the exam has NO invites → it's an open assessment: any super-org member
+      may take it.
     """
     uid = int(current_user["sub"])
     exam = db.query(models.Exam).filter(models.Exam.id == exam_id).first()
@@ -482,8 +484,23 @@ def start_exam(
         raise HTTPException(404, "Exam not found or not published")
 
     invite = _find_invite(exam, current_user, db)
-    if not _in_super_org(exam, current_user, db) and invite is None:
-        raise HTTPException(404, "Exam not found or not published")
+    has_invite_list = (
+        db.query(models.ExamInvite.id)
+        .filter(models.ExamInvite.exam_id == exam.id)
+        .first()
+        is not None
+    )
+    from auth_utils import is_platform_admin
+
+    is_owner = exam.created_by is not None and exam.created_by == uid
+    if has_invite_list:
+        # Targeted exam: invited candidates only (owner/platform-admin may preview).
+        if invite is None and not is_owner and not is_platform_admin(current_user):
+            raise HTTPException(403, "You are not on the candidate list for this exam.")
+    else:
+        # Open exam: anyone in the exam's super-org.
+        if not _in_super_org(exam, current_user, db):
+            raise HTTPException(404, "Exam not found or not published")
 
     # Scheduling window (Mettl-style). NULL bounds = always open.
     now = _now()
@@ -994,36 +1011,50 @@ async def exam_stats(
     ]
     avg_time = round(sum(durations) / len(durations), 1) if durations else 0.0
 
-    # Per-question difficulty: grade each submitted attempt and tally correctness.
-    from modules.assessment.services.attempt_engine import grade_answer_set
-
+    # Per-question difficulty (objective questions only — see loop below).
     q_rows = await db.execute(
         select(models.Question).where(models.Question.id.in_(exam.question_ids or []))
     )
     qmap = {q.id: q for q in q_rows.scalars().all()}
-    per_q: dict[int, dict] = {qid: {"answered": 0, "correct": 0} for qid in (exam.question_ids or [])}
+
+    # Per-question difficulty is computed with the OBJECTIVE grader only
+    # (synchronous, no network). Free-text (short_answer/essay) grading calls the
+    # LLM, so re-grading them here would fire N×AI calls per stats view — instead
+    # they're reported as "manual" and excluded from auto-difficulty.
+    from services.grading import FREE_TEXT_TYPES, grade_objective, question_to_dict
+    from modules.assessment.services.attempt_engine import decode_answer
+
+    per_q: dict[int, dict] = {
+        qid: {"answered": 0, "correct": 0, "manual": False}
+        for qid in (exam.question_ids or [])
+    }
     for a in submitted:
         if not isinstance(a.answers, dict):
             continue
-        graded = await grade_answer_set(
-            qmap, exam.question_ids or [], a.answers, difficulty_weights=None, collect_details=True
-        )
-        for item in graded.items:
-            rec = per_q.get(item.question_id)
-            if rec is None:
+        for qid in (exam.question_ids or []):
+            q = qmap.get(qid)
+            rec = per_q.get(qid)
+            if q is None or rec is None:
                 continue
-            ans = a.answers.get(str(item.question_id))
-            if ans not in (None, "", [], {}):
+            raw = a.answers.get(str(qid))
+            if raw in (None, "", [], {}):
+                continue
+            if getattr(q, "question_type", "mcq_single") in FREE_TEXT_TYPES:
+                rec["manual"] = True
                 rec["answered"] += 1
-                if item.grade.is_correct:
-                    rec["correct"] += 1
+                continue
+            rec["answered"] += 1
+            grade = grade_objective(question_to_dict(q), decode_answer(raw))
+            if grade.is_correct:
+                rec["correct"] += 1
     question_analytics = [
         {
             "question_id": qid,
             "question": (qmap.get(qid).question[:120] if qmap.get(qid) else f"Q{qid}"),
             "answered": rec["answered"],
             "correct": rec["correct"],
-            "correct_pct": round(rec["correct"] / rec["answered"] * 100.0, 1) if rec["answered"] else 0.0,
+            "manual_graded": rec["manual"],
+            "correct_pct": round(rec["correct"] / rec["answered"] * 100.0, 1) if (rec["answered"] and not rec["manual"]) else None,
         }
         for qid, rec in per_q.items()
     ]

@@ -22,7 +22,7 @@ interface ExamStats {
   participation: { invited: number; attempted: number; in_progress: number; completion_rate: number };
   scores: { pass_rate: number; average: number; median: number; highest: number; lowest: number; distribution: { range: string; count: number }[] };
   timing: { average_minutes: number; duration_minutes: number };
-  questions: { question_id: number; question: string; answered: number; correct: number; correct_pct: number }[];
+  questions: { question_id: number; question: string; answered: number; correct: number; correct_pct: number | null; manual_graded?: boolean }[];
   proctoring: { candidates_flagged: number; total_flags: number; avg_flags_per_candidate: number };
 }
 
@@ -190,15 +190,19 @@ export default function ProctorReviewPage() {
               <div className="rounded-xl bg-slate-900 border border-slate-800 p-4">
                 <div className="text-xs uppercase tracking-widest text-slate-500 mb-2">Question difficulty (correct %)</div>
                 <ul className="space-y-1.5 max-h-48 overflow-y-auto">
-                  {stats.questions.map((q, i) => (
-                    <li key={q.question_id} className="flex items-center gap-2 text-xs">
-                      <span className="text-slate-500 w-6">Q{i + 1}</span>
-                      <div className="flex-1 bg-slate-800 rounded h-2 overflow-hidden">
-                        <div className={`h-full ${q.correct_pct >= 60 ? 'bg-emerald-500' : q.correct_pct >= 30 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${q.correct_pct}%` }} />
-                      </div>
-                      <span className="w-10 text-right text-slate-400">{q.correct_pct}%</span>
-                    </li>
-                  ))}
+                  {stats.questions.map((q, i) => {
+                    const pct = q.correct_pct;
+                    const manual = q.manual_graded || pct === null;
+                    return (
+                      <li key={q.question_id} className="flex items-center gap-2 text-xs">
+                        <span className="text-slate-500 w-6">Q{i + 1}</span>
+                        <div className="flex-1 bg-slate-800 rounded h-2 overflow-hidden">
+                          {!manual && <div className={`h-full ${(pct ?? 0) >= 60 ? 'bg-emerald-500' : (pct ?? 0) >= 30 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${pct ?? 0}%` }} />}
+                        </div>
+                        <span className="w-14 text-right text-slate-400">{manual ? 'manual' : `${pct}%`}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
               <div className="rounded-xl bg-slate-900 border border-slate-800 p-4">
