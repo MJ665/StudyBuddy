@@ -11,6 +11,8 @@ Owner wanted the exam portal to work like **Mercer Mettl**, every email working,
 - **P4 — Mettl statistics ✅** — `GET /exams/{id}/stats`: participation/completion, pass rate + avg/median/high/low + 5-bucket distribution, avg time, per-question difficulty (correct %), proctoring integrity summary. Review page overview dashboard (KPI tiles + distribution bars + question difficulty + integrity) above the per-candidate drilldown, plus **`GET /exams/{id}/export` → CSV results** (Export CSV button, authed blob download).
 - **P5 — Verification ✅** — 533 pytest, 337 routes no-shadow, 0×500 exam sweep, web build 32 pages, tsc clean.
 
+**Senior-review hardening (2026-08-05):** (a) targeted exams (with an invite list) are now **invited-candidates-only** — a non-invited super-org member is 403'd (open exams stay super-org-wide; owner/platform-admin may preview); (b) added an `email` claim to the JWT so ExamInvite email-matching works, not just user_id; (c) `/exams/{id}/stats` per-question analytics is **objective-only (no AI)** — free-text questions are marked 'manual' rather than re-graded via the LLM (which would have fired N×AI calls per stats view). Confirmed `grade_free_text` fails closed (`needs_review`, no 500) so submits are safe under the AI spend cap. Verified: invited=200 / non-invited=403 / open=200; 533 tests, 338 routes no-shadow, build 32 pages.
+
 **Owner prereqs for prod:** (1) `RESEND_EMAILS_API_KEY` + verified `email.mj665.in` sender domain (emails); (2) S3 bucket configured (`S3_BUCKET_NAME` + creds) for webcam video/snapshots — snapshots fall back to inline storage without it, video is skipped. **Not yet browser-smoke-tested with a real camera** (record/detect) — flagged for a device test.
 
 ---
