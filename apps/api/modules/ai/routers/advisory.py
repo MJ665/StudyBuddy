@@ -294,7 +294,7 @@ async def ask_ai(
 
     from langchain_core.messages import HumanMessage, SystemMessage
 
-    sys_prompt = "You are StudyHub AI, a highly encouraging and extremely knowledgeable learning assistant. Answer the user's questions clearly, accurately, and thoroughly. Format your response in clean Markdown."
+    sys_prompt = "You are StudyBuddy AI, a highly encouraging and extremely knowledgeable learning assistant. Answer the user's questions clearly, accurately, and thoroughly. Format your response in clean Markdown."
     if context:
         sys_prompt += f"\nUse the following context to help answer the user query if relevant:\n{context}"
 

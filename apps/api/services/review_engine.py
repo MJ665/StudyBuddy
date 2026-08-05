@@ -1,5 +1,5 @@
 """
-AI Review Engine — StudyHub Phase 4
+AI Review Engine — StudyBuddy Phase 4
 Uses LangGraph for refined question review, LangChain for model invocation,
 and Pydantic Guardrails for state-of-the-art accuracy and relevancy.
 """
@@ -103,7 +103,7 @@ def node_check_relevancy(state: ReviewState) -> ReviewState:
 
     system_msg = SystemMessage(
         content=(
-            "You are a StudyHub Relevancy Guardrail. Your job is to classify user queries.\n"
+            "You are a StudyBuddy Relevancy Guardrail. Your job is to classify user queries.\n"
             "RELEVANT: Questions directly about the quiz question, its logic, or options.\n"
             "EDUCATIONAL_GENERAL: Broad technical or academic questions (e.g., 'What is 2+2?', 'How does a stack work?', 'Explain React'). These are allowed.\n"
             "SPAM: Gibberish, unrelated personal questions, or non-academic noise.\n"

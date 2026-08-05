@@ -1,5 +1,5 @@
 """
-AI Feature Router — StudyHub Enterprise
+AI Feature Router — StudyBuddy Enterprise
 Exposes AI-powered endpoints:
   - POST /ai/review         → Answer review with Gemini (existing)
   - POST /ai/smart-quiz     → Generate quiz questions from topic with Gemini

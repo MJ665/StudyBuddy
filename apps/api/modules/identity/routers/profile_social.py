@@ -70,7 +70,7 @@ async def get_public_profile(slug: str, db: AsyncSession = Depends(get_async_db)
 
     # 4. Fetch Hierarchy
     hierarchy = {
-        "organization": "StudyHub Global",
+        "organization": "StudyBuddy Global",
         "department": "Core Intelligence",
         "batch": "Foundation",
         "group": "General Registry",

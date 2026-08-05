@@ -113,7 +113,7 @@ def export_global_activity(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={
-            "Content-Disposition": f"attachment; filename=StudyHub_GlobalActivity_{datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d')}.xlsx"
+            "Content-Disposition": f"attachment; filename=StudyBuddy_GlobalActivity_{datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d')}.xlsx"
         },
     )
 

@@ -155,7 +155,7 @@ class KTCompany(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     domain: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
-    # which StudyHub organization_id owns this company record
+    # which StudyBuddy organization_id owns this company record
     organization_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     # Shared across the customer's business units (see SuperOrganization).
     super_organization_id: Mapped[int | None] = mapped_column(Integer, index=True, nullable=True)

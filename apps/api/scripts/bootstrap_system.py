@@ -15,7 +15,7 @@ from ensure_system_identity import ensure_system  # noqa: E402
 
 
 def bootstrap():
-    print("🚀 StudyHub V3 | Enterprise Infrastructure Bootstrap")
+    print("🚀 StudyBuddy V3 | Enterprise Infrastructure Bootstrap")
     print("──────────────────────────────────────────────────")
 
     # 1. Initialize Schema
@@ -155,7 +155,7 @@ def bootstrap():
         db.close()
 
     print("──────────────────────────────────────────────────")
-    print("✨ StudyHub V3 is now Production-Ready.")
+    print("✨ StudyBuddy V3 is now Production-Ready.")
 
 
 if __name__ == "__main__":

@@ -617,7 +617,7 @@ async def summarize_leaderboard(
             "summary": "Not enough data on the leaderboard yet to generate a summary."
         }
 
-    prompt = f"""You are the StudyHub Chief Performance Analyst.
+    prompt = f"""You are the StudyBuddy Chief Performance Analyst.
 Analyze this snapshot of the {req.group_name} leaderboard and write a 2-3 sentence executive summary.
 Highlight the top performer and mention if it's a tight race or a runaway lead.
 

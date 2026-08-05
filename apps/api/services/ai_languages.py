@@ -5,7 +5,7 @@ configuration, no logic. ai_engine star-imports this for compatibility.
 """
 from __future__ import annotations
 """
-AI Code Evaluation Engine — StudyHub Enterprise v4
+AI Code Evaluation Engine — StudyBuddy Enterprise v4
 Pure AI-based evaluation. No sandbox. No subprocess. No Docker dependency.
 Supports 50+ enterprise languages via Gemini 2.0 Flash with LangGraph orchestration.
 Mentor grading layer is separate — AI gives initial score, mentor can override.

@@ -16,8 +16,8 @@ else:
         "RESEND_EMAILS_API_KEY not found in environment. Emails will not be sent."
     )
 
-FROM_EMAIL = "StudyHub L&D <noreply@email.mj665.in>"
-SECURITY_EMAIL = "StudyHub Security <security@email.mj665.in>"
+FROM_EMAIL = "StudyBuddy L&D <noreply@email.mj665.in>"
+SECURITY_EMAIL = "StudyBuddy Security <security@email.mj665.in>"
 
 
 def _frontend_url() -> str:
@@ -145,17 +145,17 @@ def send_otp_email(to_email: str, otp_code: str) -> bool:
     html = f"""
     <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;border:1px solid #e2e8f0;border-radius:12px;">
       <h2 style="color:#4f46e5;margin-bottom:4px;">Verification Required</h2>
-      <p style="color:#475569;">Use the OTP below to reset your StudyHub password. Valid for <strong>10 minutes</strong>.</p>
+      <p style="color:#475569;">Use the OTP below to reset your StudyBuddy password. Valid for <strong>10 minutes</strong>.</p>
       <div style="background:#f8fafc;padding:20px;text-align:center;border-radius:8px;margin:20px 0;">
         <span style="font-size:36px;font-weight:900;letter-spacing:8px;color:#1e293b;">{otp_code}</span>
       </div>
       <p style="color:#94a3b8;font-size:13px;">If you didn't request this, you can safely ignore this email.</p>
       <hr style="border:0;border-top:1px solid #e2e8f0;margin:16px 0;"/>
-      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyHub Enterprise L&D Framework</p>
+      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyBuddy Enterprise L&D Framework</p>
     </div>"""
     return _send(
         to_email,
-        "🔒 StudyHub Password Recovery Code",
+        "🔒 StudyBuddy Password Recovery Code",
         html,
         SECURITY_EMAIL,
         email_type="OTP",
@@ -168,7 +168,7 @@ def send_otp_email(to_email: str, otp_code: str) -> bool:
 def send_welcome_email(to_email: str, full_name: str, group_name: str) -> bool:
     html = f"""
     <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;border:1px solid #e2e8f0;border-radius:12px;">
-      <h1 style="color:#4f46e5;">Welcome to StudyHub, {full_name}! 🎉</h1>
+      <h1 style="color:#4f46e5;">Welcome to StudyBuddy, {full_name}! 🎉</h1>
       <p>You've been added to <strong>{group_name}</strong>. Your learning journey starts now.</p>
       <ul style="color:#475569;line-height:1.8;">
         <li>📚 Access your group's question banks</li>
@@ -179,7 +179,7 @@ def send_welcome_email(to_email: str, full_name: str, group_name: str) -> bool:
       <p style="color:#94a3b8;font-size:13px;margin-top:20px;">Login using the credentials your Group Admin shared with you.</p>
     </div>"""
     return _send(
-        to_email, f"🎓 Welcome to StudyHub — {group_name}", html, email_type="WELCOME"
+        to_email, f"🎓 Welcome to StudyBuddy — {group_name}", html, email_type="WELCOME"
     )
 
 
@@ -196,7 +196,7 @@ def send_credentials_email(
     """
     html = f"""
     <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;border:1px solid #e2e8f0;border-radius:12px;">
-      <h1 style="color:#4f46e5;">Welcome to StudyHub, {full_name}! 🎉</h1>
+      <h1 style="color:#4f46e5;">Welcome to StudyBuddy, {full_name}! 🎉</h1>
       <p>You've been added to <strong>{group_name}</strong>. Sign in with your email and the temporary password below.</p>
       <div style="background:#f8fafc;padding:20px;border-radius:8px;margin:20px 0;">
         <p style="margin:0;color:#475569;font-size:13px;">Email</p>
@@ -206,11 +206,11 @@ def send_credentials_email(
       </div>
       <p style="color:#b45309;font-size:13px;">⚠️ Change this password after your first sign-in (Profile → Change Password).</p>
       <hr style="border:0;border-top:1px solid #e2e8f0;margin:16px 0;"/>
-      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyHub Enterprise L&D Framework</p>
+      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyBuddy Enterprise L&D Framework</p>
     </div>"""
     return _send(
         to_email,
-        "🔑 Your StudyHub account credentials",
+        "🔑 Your StudyBuddy account credentials",
         html,
         SECURITY_EMAIL,
         email_type="CREDENTIALS",
@@ -237,11 +237,11 @@ def send_role_promotion_email(
       <p>Hi <strong>{full_name}</strong>,</p>
       <p>Your role in <strong>{group_name}</strong> has been upgraded to <strong>{new_role}</strong>.</p>
       <p style="color:#475569;">{description}</p>
-      <p style="color:#94a3b8;font-size:13px;margin-top:20px;">Log in to StudyHub to explore your new capabilities.</p>
+      <p style="color:#94a3b8;font-size:13px;margin-top:20px;">Log in to StudyBuddy to explore your new capabilities.</p>
     </div>"""
     return _send(
         to_email,
-        f"✅ You've been promoted to {new_role} on StudyHub",
+        f"✅ You've been promoted to {new_role} on StudyBuddy",
         html,
         email_type="ROLE_PROMOTION",
     )
@@ -272,7 +272,7 @@ def send_assignment_email(
         <strong style="font-size:18px;">{bank_name}</strong>
         {due_str}{attempts_str}
       </div>
-      <p style="color:#475569;">Log in to StudyHub to complete this assignment before the deadline.</p>
+      <p style="color:#475569;">Log in to StudyBuddy to complete this assignment before the deadline.</p>
     </div>"""
     return _send(
         to_email,
@@ -364,7 +364,7 @@ def send_deadline_reminder_email(
       <h2 style="color:#d97706;">⏰ Assignment Deadline Tomorrow</h2>
       <p>Hi <strong>{full_name}</strong>,</p>
       <p>The mandatory assignment <strong>{bank_name}</strong> is due on <strong>{due_date}</strong>.</p>
-      <p style="color:#475569;">Log in to StudyHub now to complete it before the deadline.</p>
+      <p style="color:#475569;">Log in to StudyBuddy now to complete it before the deadline.</p>
     </div>"""
     return _send(
         to_email,
@@ -392,7 +392,7 @@ def send_weekly_digest_email(to_email: str, full_name: str, stats: dict) -> bool
     </div>"""
     return _send(
         to_email,
-        "📊 Your Weekly StudyHub Learning Report",
+        "📊 Your Weekly StudyBuddy Learning Report",
         html,
         email_type="WEEKLY_DIGEST",
     )
@@ -417,7 +417,7 @@ def send_intervention_email(
         L&D Global Executive Team
       </div>
       <p style="color:#94a3b8;font-size:11px;margin-top:20px;text-align:center;">
-        StudyHub Intelligence & Development Platform
+        StudyBuddy Intelligence & Development Platform
       </p>
     </div>"""
     return _send(
@@ -435,7 +435,7 @@ def send_reengagement_email(to_email: str, full_name: str, days_inactive: int) -
     html = f"""
     <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;border:1px solid #e2e8f0;border-radius:12px;">
       <h2 style="color:#4f46e5;">We've Missed Your Progress, {full_name}! 🚀</h2>
-      <p>It's been <strong>{days_inactive} days</strong> since your last synchronization on StudyHub.</p>
+      <p>It's been <strong>{days_inactive} days</strong> since your last synchronization on StudyBuddy.</p>
       <p style="color:#475569;line-height:1.6;">
         Consistency is the core of master engineering. Your learning track is waiting for you to continue your journey toward 100% proficiency.
       </p>
@@ -445,7 +445,7 @@ def send_reengagement_email(to_email: str, full_name: str, days_inactive: int) -
       </div>
       <p style="color:#94a3b8;font-size:13px;">Don't let your knowledge decay. Log back in and keep building!</p>
       <hr style="border:0;border-top:1px solid #e2e8f0;margin:16px 0;"/>
-      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyHub Intelligence & Development Platform</p>
+      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyBuddy Intelligence & Development Platform</p>
     </div>"""
     return _send(
         to_email,
@@ -504,7 +504,7 @@ def send_kt_notification_email(
       <div style="color:#334155;line-height:1.6;font-size:15px;margin:20px 0;">
         {body}
       </div>
-      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyHub KT Intelligence</p>
+      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyBuddy KT Intelligence</p>
     </div>"""
     return _send(
         to_email, f"📢 KT Notification: {title}", html, email_type="KT_NOTIFICATION"
@@ -531,7 +531,7 @@ def send_coauthor_invite(
       </div>
       <p style="color:#94a3b8;font-size:13px;">Login to the Knowledge Transfer portal to start collaborating.</p>
       <hr style="border:0;border-top:1px solid #e2e8f0;margin:16px 0;"/>
-      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyHub KT Collaboration Platform</p>
+      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyBuddy KT Collaboration Platform</p>
     </div>"""
     return _send(
         to_email,
@@ -558,7 +558,7 @@ def send_doc_submitted(
       </div>
       <p style="color:#94a3b8;font-size:13px;">Please review the document and provide feedback or approval.</p>
       <hr style="border:0;border-top:1px solid #e2e8f0;margin:16px 0;"/>
-      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyHub KT Intelligence</p>
+      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyBuddy KT Intelligence</p>
     </div>"""
     return _send(
         to_email,
@@ -576,7 +576,7 @@ def send_doc_approved(to_email: str, recipient_name: str, doc_title: str) -> boo
       <p>Your document "<strong>{doc_title}</strong>" has been approved and is now being ingested into the knowledge base.</p>
       <p style="color:#475569;">It will soon be available for AI-powered queries and team collaboration.</p>
       <hr style="border:0;border-top:1px solid #e2e8f0;margin:16px 0;"/>
-      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyHub KT Intelligence</p>
+      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyBuddy KT Intelligence</p>
     </div>"""
     return _send(
         to_email, f"🎉 Approved: {doc_title}", html, email_type="KT_DOC_APPROVED"
@@ -597,7 +597,7 @@ def send_doc_rejected(
       </div>
       <p style="color:#475569;">Please address the feedback and re-submit the document for review.</p>
       <hr style="border:0;border-top:1px solid #e2e8f0;margin:16px 0;"/>
-      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyHub KT Intelligence</p>
+      <p style="text-align:center;color:#cbd5e1;font-size:11px;">StudyBuddy KT Intelligence</p>
     </div>"""
     return _send(
         to_email, f"⚠️ Action Required: {doc_title}", html, email_type="KT_DOC_REJECTED"

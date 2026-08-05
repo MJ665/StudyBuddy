@@ -593,7 +593,7 @@ async def export_batch_report(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={
-            "Content-Disposition": f"attachment; filename=StudyHub_Batch_{batch_id}_Report.xlsx"
+            "Content-Disposition": f"attachment; filename=StudyBuddy_Batch_{batch_id}_Report.xlsx"
         },
     )
 
@@ -672,6 +672,6 @@ def export_batch_csv(
         iter([output.getvalue().encode()]),
         media_type="text/csv",
         headers={
-            "Content-Disposition": f"attachment; filename=StudyHub_Batch_{batch_id}.csv"
+            "Content-Disposition": f"attachment; filename=StudyBuddy_Batch_{batch_id}.csv"
         },
     )

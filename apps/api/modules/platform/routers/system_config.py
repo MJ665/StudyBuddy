@@ -1,5 +1,5 @@
 """
-System Configuration Router — StudyHub Enterprise
+System Configuration Router — StudyBuddy Enterprise
 Serves dynamic configuration to the frontend.
 Replaces all hardcoded arrays in React components.
 """

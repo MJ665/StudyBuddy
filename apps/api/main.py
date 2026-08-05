@@ -260,7 +260,7 @@ scheduler = AsyncIOScheduler(timezone=datetime.timezone.utc)
 @app.on_event("startup")
 async def on_startup():
     """Enterprise-grade auto-provisioning protocol."""
-    logger.info("🚀 Initiating StudyHub V3 Auto-Provisioning Sequence...")
+    logger.info("🚀 Initiating StudyBuddy V3 Auto-Provisioning Sequence...")
 
     try:
         from startup_validator import validate_infrastructure

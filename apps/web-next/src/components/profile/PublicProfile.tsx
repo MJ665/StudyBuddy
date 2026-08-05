@@ -216,7 +216,7 @@ export default function PublicProfile({
               <div className="flex flex-wrap items-center gap-6 text-slate-400 text-sm font-bold">
                 <span className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5"><Mail size={16} className="text-indigo-400" /> {profile.email}</span>
                 <span className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5"><Building2 size={16} className="text-indigo-400" /> {profile.hierarchy?.department || 'Operations'}</span>
-                <span className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5"><Globe size={16} className="text-indigo-400" /> studyhub.ai/profile/{profile.custom_slug || emailPrefix}</span>
+                <span className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5"><Globe size={16} className="text-indigo-400" /> studybuddy.mj665.in/profile/{profile.custom_slug || emailPrefix}</span>
               </div>
             </div>
 
