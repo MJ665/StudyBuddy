@@ -1,4 +1,5 @@
 """profile endpoints (moved verbatim from routers/auth.py)."""
+from services.s3_service import sign_media_url
 from fastapi import APIRouter
 
 from modules.identity.routers.auth_shared import *  # noqa: F401,F403
@@ -31,8 +32,8 @@ async def get_my_detailed_profile(
         "role": user.role,
         "bio": user.bio,
         "custom_slug": user.custom_slug,
-        "profile_photo_url": user.profile_photo_url,
-        "cover_photo_url": user.cover_photo_url,
+        "profile_photo_url": sign_media_url(user.profile_photo_url),
+        "cover_photo_url": sign_media_url(user.cover_photo_url),
         "intro_video_url": user.intro_video_url,
         "github_url": user.github_url,
         "linkedin_url": user.linkedin_url,
@@ -99,8 +100,8 @@ def get_profile_by_slug(slug: str, db: Session = Depends(get_db)):
         "id": user.id,
         "full_name": user.full_name,
         "bio": user.bio,
-        "profile_photo_url": user.profile_photo_url,
-        "cover_photo_url": user.cover_photo_url,
+        "profile_photo_url": sign_media_url(user.profile_photo_url),
+        "cover_photo_url": sign_media_url(user.cover_photo_url),
         "role": user.role,
         "github_url": user.github_url,
         "linkedin_url": user.linkedin_url,

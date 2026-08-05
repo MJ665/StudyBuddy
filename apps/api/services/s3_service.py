@@ -145,6 +145,32 @@ def generate_proctor_media_upload_url(
         raise HTTPException(status_code=503, detail="Could not generate upload URL.")
 
 
+def sign_media_url(value: str | None, expiry_seconds: int = 3600) -> str | None:
+    """Turn a stored media reference into a browser-loadable URL.
+
+    The bucket is PRIVATE, so raw object URLs (…amazonaws.com/key) return
+    AccessDenied. This converts a stored full-S3-URL or bare key into a
+    short-lived presigned GET. Non-S3 values (data:, external http) pass through.
+    """
+    if not value:
+        return None
+    v = str(value)
+    if v.startswith("data:"):
+        return v
+    key = None
+    if ".amazonaws.com/" in v:
+        key = v.split(".amazonaws.com/", 1)[1].split("?", 1)[0]
+    elif not v.startswith("http"):
+        key = v  # already a bare key
+    if key is None:
+        return v  # some other external URL — leave as-is
+    try:
+        return generate_presigned_get_url(key, expiry_seconds=expiry_seconds)
+    except Exception as e:
+        logger.warning(f"sign_media_url failed for {key}: {e}")
+        return None
+
+
 def delete_s3_object(s3_key: str):
     try:
         s3_client = get_s3_client()

@@ -16,6 +16,7 @@ from typing import Optional
 import models
 from auth_utils import assert_user_in_org, verify_token
 from cache_manager import cache_manager
+from services.s3_service import sign_media_url
 from database import get_async_db, get_db
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -110,7 +111,7 @@ async def get_user_intelligence(
         "full_name": user.full_name,
         "email": user.email,
         "role": user.role,
-        "profile_photo_url": user.profile_photo_url,
+        "profile_photo_url": sign_media_url(user.profile_photo_url),
         "streak_count": user.streak_count or 0,
         "last_active_date": user.last_active_date.isoformat()
         if user.last_active_date
@@ -420,7 +421,7 @@ def get_hierarchy_with_users(
                                 "email": u.email,
                                 "role": u.role,
                                 "streak_count": u.streak_count or 0,
-                                "profile_photo_url": u.profile_photo_url,
+                                "profile_photo_url": sign_media_url(u.profile_photo_url),
                                 "scoped_roles": [
                                     {
                                         "role": sr.role,
@@ -507,7 +508,7 @@ async def get_profile_by_slug(
                     "email_prefix": c.author.email.split("@")[0]
                     if c.author.email
                     else "anon",
-                    "profile_photo_url": c.author.profile_photo_url,
+                    "profile_photo_url": sign_media_url(c.author.profile_photo_url),
                 },
             }
         )
@@ -564,8 +565,8 @@ async def get_profile_by_slug(
         "role": user.role,
         "bio": user.bio,
         "custom_slug": user.custom_slug,
-        "profile_photo_url": user.profile_photo_url,
-        "cover_photo_url": user.cover_photo_url,
+        "profile_photo_url": sign_media_url(user.profile_photo_url),
+        "cover_photo_url": sign_media_url(user.cover_photo_url),
         "intro_video_url": user.intro_video_url,
         "github_url": user.github_url,
         "linkedin_url": user.linkedin_url,
