@@ -81,34 +81,11 @@ async def _check_rate_limit(user_id: str, key_suffix: str = "ai"):
         pass  # Redis down → allow request
 
 def _get_llm(temperature: float = 0.3, max_tokens: int = 800, json_mode: bool = False):
-    """Create a Gemini LLM instance via LangChain."""
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        return None
+    """Chat LLM for the active provider (OpenRouter free, Gemini fallback)."""
     try:
-        from langchain_google_genai import (
-            ChatGoogleGenerativeAI,
-            HarmBlockThreshold,
-            HarmCategory,
-        )
+        from services.llm_provider import get_chat_llm
 
-        safety = {
-            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-        }
-        kwargs = {}
-        if json_mode:
-            kwargs["model_kwargs"] = {"response_mime_type": "application/json"}
-        return ChatGoogleGenerativeAI(
-            model=settings.PRIMARY_AI_MODEL,
-            temperature=temperature,
-            max_output_tokens=max_tokens,
-            safety_settings=safety,
-            api_key=api_key,
-            **kwargs,
-        )
+        return get_chat_llm(temperature=temperature, max_tokens=max_tokens, json_mode=json_mode)
     except Exception as e:
         logger.error(f"LLM init error: {e}")
         return None

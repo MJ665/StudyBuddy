@@ -95,16 +95,13 @@ def structure_batch_observations(raw: list) -> list[dict]:
 
 class ExecutiveAIService:
     def __init__(self):
-        self.api_key = settings.GEMINI_API_KEY
-        if self.api_key:
-            self.llm = ChatGoogleGenerativeAI(
-                model=settings.PRIMARY_AI_MODEL,
-                google_api_key=self.api_key,
-                temperature=0.7,
-            )
-        else:
-            self.llm = None
-            logger.warning("GEMINI_API_KEY not set — AI insights will be unavailable.")
+        # Chat via OpenRouter (free) with Gemini fallback; embeddings unaffected.
+        from services.llm_provider import get_chat_llm
+
+        self.llm = get_chat_llm(temperature=0.7, max_tokens=2048)
+        self.api_key = bool(self.llm)
+        if not self.llm:
+            logger.warning("No chat LLM configured — AI insights will be unavailable.")
 
     @retry(
         stop=stop_after_attempt(3),

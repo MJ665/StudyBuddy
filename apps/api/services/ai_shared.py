@@ -12,30 +12,11 @@ from services.ai_languages import *  # noqa: F401,F403
 
 
 def _get_llm(max_tokens: int = 1200, json_mode: bool = False):
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        logger.warning("GEMINI_API_KEY not set — AI evaluation disabled")
-        return None
+    # Provider-agnostic: OpenRouter (free) for chat, Gemini fallback. Embeddings
+    # stay on Gemini elsewhere. See services/llm_provider.py.
+    from services.llm_provider import get_chat_llm
 
-    safety_settings = {
-        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-    }
-
-    model_kwargs = {}
-    if json_mode:
-        model_kwargs["response_mime_type"] = "application/json"
-
-    return ChatGoogleGenerativeAI(
-        model=settings.PRIMARY_AI_MODEL,
-        temperature=0.15,
-        max_output_tokens=max_tokens,
-        safety_settings=safety_settings,
-        model_kwargs=model_kwargs,
-        api_key=api_key,
-    )
+    return get_chat_llm(temperature=0.15, max_tokens=max_tokens, json_mode=json_mode)
 
 
 # ── Helper: Get Language Entry ────────────────────────────────────────────────

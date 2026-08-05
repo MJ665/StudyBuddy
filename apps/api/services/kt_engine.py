@@ -289,8 +289,33 @@ class GeminiClient:
     async def generate(
         self, prompt: str, system: Optional[str] = None, feature: str = "gemini_generate"
     ) -> str:
+        # Prefer OpenRouter (free chat) when configured; embeddings still use Gemini.
+        from services.llm_provider import get_openrouter_async_client, use_openrouter
+
+        if use_openrouter():
+            client = get_openrouter_async_client()
+            if client:
+                try:
+                    msgs = ([{"role": "system", "content": system}] if system else []) + [
+                        {"role": "user", "content": prompt}
+                    ]
+                    resp = await client.chat.completions.create(
+                        model=settings.OPENROUTER_MODEL, messages=msgs,
+                        temperature=0.1, max_tokens=4096,
+                    )
+                    from services import ai_meter
+
+                    try:
+                        await ai_meter.record_sync(feature, settings.OPENROUTER_MODEL,
+                                                   len(prompt) // 4, 0)
+                    except Exception:
+                        pass
+                    return (resp.choices[0].message.content or "") if resp.choices else ""
+                except Exception as e:
+                    logger.error(f"OpenRouter generate error: {e}")
+                    raise HTTPException(500, f"AI generation failed: {e}")
         if not self.client:
-            raise HTTPException(503, "Gemini service unavailable")
+            raise HTTPException(503, "AI service unavailable")
         try:
             resp = await self.client.aio.models.generate_content(
                 model=GEMINI_MODEL,
@@ -308,8 +333,30 @@ class GeminiClient:
             raise HTTPException(500, f"AI generation failed: {e}")
 
     async def stream(self, prompt: str, system: Optional[str] = None):
+        from services.llm_provider import get_openrouter_async_client, use_openrouter
+
+        if use_openrouter():
+            client = get_openrouter_async_client()
+            if client:
+                try:
+                    msgs = ([{"role": "system", "content": system}] if system else []) + [
+                        {"role": "user", "content": prompt}
+                    ]
+                    stream = await client.chat.completions.create(
+                        model=settings.OPENROUTER_MODEL, messages=msgs,
+                        temperature=0.1, stream=True,
+                    )
+                    async for chunk in stream:
+                        delta = chunk.choices[0].delta.content if chunk.choices else None
+                        if delta:
+                            yield delta
+                    return
+                except Exception as e:
+                    logger.error(f"OpenRouter stream error: {e}")
+                    yield f"Error: {e}"
+                    return
         if not self.client:
-            raise HTTPException(503, "Gemini service unavailable")
+            raise HTTPException(503, "AI service unavailable")
         try:
             # google-genai: generate_content_stream() is a coroutine returning an
             # async iterator — it MUST be awaited before `async for`.
@@ -335,8 +382,25 @@ class GeminiClient:
             yield f"Error: {e}"
 
     async def generate_json(self, prompt: str, system: Optional[str] = None) -> Any:
+        from services.llm_provider import use_openrouter
+
+        if use_openrouter():
+            # Free models don't reliably honor strict JSON mode → ask for JSON in
+            # the prompt and repair the result.
+            sys2 = (system or "") + "\nReturn ONLY valid JSON. No prose, no code fences."
+            text = await self.generate(prompt, sys2, feature="openrouter_json")
+            try:
+                clean = re.sub(r"```json\n?|\n?```", "", text).strip()
+                return json.loads(clean)
+            except Exception:
+                from utils.json_repair import safe_json_loads
+
+                parsed = safe_json_loads(text)
+                if parsed is not None:
+                    return parsed
+                raise HTTPException(500, "AI failed to return valid JSON")
         if not self.client:
-            raise HTTPException(503, "Gemini service unavailable")
+            raise HTTPException(503, "AI service unavailable")
         try:
             resp = await self.client.aio.models.generate_content(
                 model=GEMINI_MODEL,

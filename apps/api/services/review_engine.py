@@ -67,23 +67,11 @@ class ReviewState(TypedDict):
 
 
 def _get_llm(temperature: float = 0.2):
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        return None
+    # Provider-agnostic (OpenRouter free / Gemini fallback); returns None only
+    # when neither is configured.
+    from services.llm_provider import get_chat_llm
 
-    safety_settings = {
-        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-    }
-
-    return ChatGoogleGenerativeAI(
-        model=settings.PRIMARY_AI_MODEL,
-        temperature=temperature,
-        safety_settings=safety_settings,
-        api_key=api_key,
-    )
+    return get_chat_llm(temperature=temperature)
 
 
 relevancy_parser = PydanticOutputParser(pydantic_object=RelevancyScore)

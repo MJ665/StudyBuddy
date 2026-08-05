@@ -79,6 +79,13 @@ class Settings(BaseSettings):
     PRIMARY_AI_MODEL: str = "gemini-2.5-flash"
     SECONDARY_AI_MODEL: str = "gemini-2.5-flash"
     FAST_AI_MODEL: str = "gemini-2.5-flash"
+    # ── AI chat/completion provider ─────────────────────────────────────────
+    # Chat/completion can run on OpenRouter (free models, no Gemini credit)
+    # while EMBEDDINGS stay on Gemini (OpenRouter has no free embedding model).
+    AI_CHAT_PROVIDER: str = "openrouter"  # openrouter | gemini
+    OPENROUTER_API_KEY: Optional[str] = None
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    OPENROUTER_MODEL: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
     APP_VERSION: str = "3.1.0"
     ALLOWED_ORIGINS: List[str] = []
     ENFORCE_HTTPS: bool = False
