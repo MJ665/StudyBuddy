@@ -121,8 +121,13 @@ export default function ExamsPage() {
     ApiService.getMe()
       .then((u) => {
         setMe(u);
-        if (u?.group_id) {
-          ApiService.getCourses(u.group_id)
+        // L&D/Owner author exams across the org — fetch ALL courses (group_id=0
+        // admin path). Members use their own group. Note: group_id 0 is falsy, so
+        // the old `if (u.group_id)` skipped L&D entirely → empty dropdown.
+        const isLd = ['LDAdmin', 'ld_admin', 'Owner', 'owner'].includes(u?.role);
+        const gid = isLd ? 0 : u?.group_id;
+        if (isLd || u?.group_id != null) {
+          ApiService.getCourses(gid as number)
             .then((c) => setCourses(Array.isArray(c) ? c : (c?.courses || c?.items || [])))
             .catch(() => setCourses([]));
         }
@@ -207,9 +212,14 @@ export default function ExamsPage() {
       await load();
       if (publish && finalRecipients.length) {
         const n = res?.invited ?? 0;
+        const req = res?.requested_recipients ?? finalRecipients.length;
         setError(null);
         // A lightweight inline confirmation (no toast system on this standalone page).
-        setNotice(`Exam published — ${n} recipient${n === 1 ? '' : 's'} notified by email.`);
+        setNotice(
+          n === req
+            ? `Exam published — ${n} recipient${n === 1 ? '' : 's'} notified by email.`
+            : `Exam published — ${n} of ${req} notified. The rest aren't registered internal users (they must have an account in your organization to be invited).`,
+        );
       }
     } catch (e2: unknown) {
       setError(e2 instanceof Error ? e2.message : 'Create failed');

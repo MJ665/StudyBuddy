@@ -154,6 +154,8 @@ def create_exam(
         "title": exam.title,
         "question_count": len(q_ids),
         "invited": invited,
+        # So the UI can explain a 0: unmatched emails aren't registered internal users.
+        "requested_recipients": len(exam.recipient_emails or []),
     }
 
 

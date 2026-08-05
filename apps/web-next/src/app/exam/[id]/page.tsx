@@ -60,6 +60,7 @@ export default function ExamRunnerPage() {
   const [camStatus, setCamStatus] = useState<'idle' | 'live' | 'no_face' | 'multiple' | 'denied'>('idle');
   const [starting, setStarting] = useState(false);
   const [qIdx, setQIdx] = useState(0); // linear-mode cursor (allow_backtrack=false)
+  const [fullscreenLost, setFullscreenLost] = useState(false);
   const submittingRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -124,7 +125,13 @@ export default function ExamRunnerPage() {
     const onCopy = () => flag('copy');
     const onPaste = () => flag('paste');
     const onFsChange = () => {
-      if (settings.require_fullscreen && !document.fullscreenElement) flag('fullscreen_exit', 'Left fullscreen');
+      if (!settings.require_fullscreen) return;
+      if (!document.fullscreenElement) {
+        flag('fullscreen_exit', 'Left fullscreen');
+        setFullscreenLost(true);   // show the blocking "return to fullscreen" prompt
+      } else {
+        setFullscreenLost(false);
+      }
     };
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('blur', onBlur);
@@ -139,6 +146,20 @@ export default function ExamRunnerPage() {
       document.removeEventListener('fullscreenchange', onFsChange);
     };
   }, [paper, result, phase, settings.max_tab_switches, settings.require_fullscreen, submit]);
+
+  // Bind the captured stream to the <video> once the running preview mounts.
+  // The camera is acquired in the lobby (startExam) where NO <video> exists yet,
+  // so without this the preview would render black. Rebinds whenever the element
+  // remounts (lobby→running, preview↔hidden swap).
+  useEffect(() => {
+    if (phase !== 'running' || !webcamNeeded) return;
+    const v = videoRef.current;
+    const s = streamRef.current;
+    if (v && s && v.srcObject !== s) {
+      v.srcObject = s;
+      v.play().catch(() => {});
+    }
+  });
 
   // Webcam pipeline: face-presence detection + periodic snapshots (→S3) +
   // continuous video recording (→S3) once running.
@@ -351,6 +372,22 @@ export default function ExamRunnerPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
+      {/* Blocking overlay: force the candidate back into fullscreen (not just a flag) */}
+      {fullscreenLost && phase === 'running' && !result && (
+        <div className="fixed inset-0 z-50 bg-slate-950/95 flex items-center justify-center p-6">
+          <div className="max-w-sm text-center">
+            <div className="text-4xl mb-3">🖥️</div>
+            <h2 className="text-xl font-black mb-2">Return to fullscreen to continue</h2>
+            <p className="text-slate-400 text-sm mb-5">This exam must run in fullscreen. Leaving it has been flagged for the proctor.</p>
+            <button
+              onClick={async () => { try { await document.documentElement.requestFullscreen(); setFullscreenLost(false); } catch { /* user gesture required */ } }}
+              className="px-5 py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-bold"
+            >
+              Re-enter fullscreen
+            </button>
+          </div>
+        </div>
+      )}
       {camActive && (
         <div className="fixed bottom-4 right-4 z-30 w-40 rounded-xl overflow-hidden border-2 border-slate-700 shadow-2xl bg-black">
           <video ref={videoRef} muted playsInline className="w-full h-28 object-cover scale-x-[-1]" />
