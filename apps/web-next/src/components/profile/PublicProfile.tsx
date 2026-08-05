@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import ApiService from '../../services/ApiService';
 import { useToast } from '../ui/Toast';
 import ActivityHeatmap from '../common/ActivityHeatmap';
+import { normalizeExternalUrl } from '../../lib/url';
 
 type TabId = 'STRATEGIC' | 'ANALYTICS' | 'REGISTRY' | 'ATLAS' | 'COMMUNITY';
 
@@ -221,12 +222,12 @@ export default function PublicProfile({
 
             <div className="flex gap-3 pb-4">
               {profile.linkedin_url && (
-                <a href={profile.linkedin_url} target="_blank" rel="noopener" className="p-4 bg-white/5 hover:bg-blue-600/20 text-slate-400 hover:text-blue-400 rounded-2xl border border-white/10 transition-all shadow-lg hover:shadow-blue-600/10">
+                <a href={normalizeExternalUrl(profile.linkedin_url)} target="_blank" rel="noopener" className="p-4 bg-white/5 hover:bg-blue-600/20 text-slate-400 hover:text-blue-400 rounded-2xl border border-white/10 transition-all shadow-lg hover:shadow-blue-600/10">
                   <Linkedin size={24} />
                 </a>
               )}
               {profile.github_url && (
-                <a href={profile.github_url} target="_blank" rel="noopener" className="p-4 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-2xl border border-white/10 transition-all shadow-lg">
+                <a href={normalizeExternalUrl(profile.github_url)} target="_blank" rel="noopener" className="p-4 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-2xl border border-white/10 transition-all shadow-lg">
                   <Github size={24} />
                 </a>
               )}

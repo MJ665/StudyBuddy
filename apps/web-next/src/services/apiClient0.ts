@@ -36,7 +36,12 @@ export class ApiClient0 {
         return response.blob();
       }
 
-      if (response.status === 401 && !isRetry) {
+      // Auth endpoints (login/register/forgot/reset/refresh) legitimately return
+      // 401/4xx for bad input — do NOT run the silent token-refresh dance or the
+      // "session expired" message there; let the real API error surface.
+      const isAuthEndpoint = /\/auth\/(login|register|forgot-password|reset-password|refresh|superadmin\/login)/.test(endpoint);
+
+      if (response.status === 401 && !isRetry && !isAuthEndpoint) {
         try {
           const refreshRes = await fetch(`${getBaseUrl()}/auth/refresh`, {
             method: 'POST',

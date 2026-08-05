@@ -371,6 +371,7 @@ def get_my_stats(
         return {
             "total_attempts": 0,
             "avg_accuracy": 0,
+            "overall_accuracy": 0,
             "banks_attempted": [],
             "is_system_admin": True,
         }
@@ -378,7 +379,7 @@ def get_my_stats(
     attempts = db.query(models.Attempt).filter(models.Attempt.user_id == user_id).all()
 
     if not attempts:
-        return {"total_attempts": 0, "avg_accuracy": 0, "banks_attempted": []}
+        return {"total_attempts": 0, "avg_accuracy": 0, "overall_accuracy": 0, "banks_attempted": []}
 
     total_attempts = len(attempts)
     total_questions_attempted = 0.0
@@ -468,6 +469,9 @@ def get_my_stats(
     return {
         "total_attempts": total_attempts,
         "avg_accuracy": avg_accuracy,
+        # Frontend (Sidebar, Dashboard) reads `overall_accuracy` — alias it so the
+        # "Average Accuracy" stat isn't stuck at 0% from a field-name mismatch.
+        "overall_accuracy": avg_accuracy,
         "banks_attempted": bank_breakdown,
     }
 

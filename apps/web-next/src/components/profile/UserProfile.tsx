@@ -16,6 +16,7 @@ import ApiService, { AIResponseEnvelope } from '../../services/ApiService';
 import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from '../ui/Toast';
 import ActivityHeatmap from '../common/ActivityHeatmap';
+import { normalizeExternalUrl } from '../../lib/url';
 import ExecutiveGrowthAtlas from '../dashboard/ExecutiveGrowthAtlas';
 import { Activity, Camera, Save, Copy } from 'lucide-react';
 import { KPICard, Field } from './tabs/shared';
@@ -425,25 +426,25 @@ export default function UserProfile({
 
           <div className="flex items-center gap-3 pb-3 flex-wrap">
             {profile.linkedin_url && (
-              <a href={profile.linkedin_url} target="_blank" rel="noopener"
+              <a href={normalizeExternalUrl(profile.linkedin_url)} target="_blank" rel="noopener"
                 className="p-2.5 bg-white/5 hover:bg-blue-600/20 text-slate-400 hover:text-blue-400 rounded-xl border border-white/10 transition-all" title="LinkedIn">
                 <Linkedin size={18} />
               </a>
             )}
             {profile.github_url && (
-              <a href={profile.github_url} target="_blank" rel="noopener"
+              <a href={normalizeExternalUrl(profile.github_url)} target="_blank" rel="noopener"
                 className="p-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl border border-white/10 transition-all" title="GitHub">
                 <Github size={18} />
               </a>
             )}
             {profile.leetcode_url && (
-              <a href={profile.leetcode_url} target="_blank" rel="noopener"
+              <a href={normalizeExternalUrl(profile.leetcode_url)} target="_blank" rel="noopener"
                 className="p-2.5 bg-white/5 hover:bg-amber-600/20 text-slate-400 hover:text-amber-400 rounded-xl border border-white/10 transition-all" title="LeetCode">
                 <Code2 size={18} />
               </a>
             )}
             {profile.codolio_url && (
-              <a href={profile.codolio_url} target="_blank" rel="noopener"
+              <a href={normalizeExternalUrl(profile.codolio_url)} target="_blank" rel="noopener"
                 className="p-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl border border-white/10 transition-all" title="Codolio">
                 <Globe size={18} />
               </a>
