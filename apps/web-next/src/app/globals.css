@@ -119,3 +119,13 @@
     page-break-inside: avoid;
   }
 }
+
+/* Mobile/tablet typography: Tailwind sizes are rem-based, so trimming the root
+   font-size scales the whole UI down on small screens (fixes "fonts huge on
+   mobile" and helps more features fit / not clip). Desktop unchanged. */
+@media (max-width: 640px) {
+  html { font-size: 14px; }
+}
+@media (min-width: 641px) and (max-width: 1024px) {
+  html { font-size: 15px; }
+}
