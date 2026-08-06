@@ -51,13 +51,20 @@ class GroupCreate(BaseModel):
 
 
 async def _invalidate_org_caches() -> None:
-    """Purge every cache namespace that embeds the org hierarchy."""
-    for key in ("org_tree", "org", "global_stats"):
-        await cache_manager.invalidate(key)
-    try:
-        await redis_client.delete("org:tree:data")
-    except Exception as e:  # pragma: no cover - cache purge is best-effort
-        logger.warning(f"Failed to purge org tree cache: {e}")
+    """Purge every cache namespace that embeds the org hierarchy.
+
+    The org tree is cached PER super-org (`org:tree:data:{super_id}`), so a bare
+    `delete("org:tree:data")` never hit the real keys — a newly-created org/dept/
+    vertical/batch/group stayed invisible in the cached tree for up to an hour,
+    which is why the add-user dropdown didn't show a just-created group and L&D
+    "couldn't add users". Use the SCAN-based invalidator to purge every
+    `org:tree:data*` variant.
+    """
+    for key in ("org_tree", "org", "global_stats", "org:tree:data"):
+        try:
+            await cache_manager.invalidate(key)
+        except Exception as e:  # pragma: no cover - cache purge is best-effort
+            logger.warning(f"Failed to purge cache '{key}': {e}")
 
 
 # --- Routes ---
