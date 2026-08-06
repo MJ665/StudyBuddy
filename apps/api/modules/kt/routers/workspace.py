@@ -27,19 +27,44 @@ async def list_companies(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user_with_db_role),
 ):
-    from auth_utils import is_platform_admin
+    from auth_utils import is_ld_admin_plus, is_platform_admin
 
     stmt = select(KTCompany).where(KTCompany.is_active == True)  # noqa: E712
-    # PlatformAdmin administers every customer, so it is not org-filtered here.
-    # NOTE: this is the ADMIN LISTING only — it does NOT widen knowledge
-    # RETRIEVAL, which stays least-privilege via _resolve_retrieval_scope().
-    if not is_platform_admin(current_user):
+
+    # PlatformAdmin + L&D admins MANAGE knowledge, so they see every company in
+    # their scope. Everyone else is a knowledge CONSUMER: they must only see the
+    # companies they actually have an access grant in (a redeemed key / project
+    # membership) — otherwise the hub leaks the full list of company knowledge
+    # bases to any org member. Grants come from kt_project_members.
+    if is_platform_admin(current_user):
+        pass  # all customers
+    elif is_ld_admin_plus(current_user):
         raw_org = current_user.get("organization_id")
         if raw_org is None:
-            # Org-less, non-platform-admin caller has no company scope — fail
-            # closed with an empty list rather than crashing on int(None).
             return []
         stmt = stmt.where(KTCompany.organization_id == int(raw_org))
+    else:
+        raw_org = current_user.get("organization_id")
+        if raw_org is None:
+            return []
+        from modules.kt.routers._shared import _resolve_granted_project_ids
+        from models.kt_model import KTProject
+
+        granted_projects = await _resolve_granted_project_ids(
+            int(current_user["sub"]), int(raw_org), db
+        )
+        if not granted_projects:
+            return []  # no key redeemed / no membership → no knowledge visible
+        crows = await db.execute(
+            select(KTProject.company_id).where(KTProject.id.in_(granted_projects))
+        )
+        company_ids = {c for (c,) in crows.all() if c}
+        if not company_ids:
+            return []
+        stmt = stmt.where(
+            KTCompany.organization_id == int(raw_org),
+            KTCompany.id.in_(company_ids),
+        )
     result = await db.execute(stmt)
     return result.scalars().all()
 
