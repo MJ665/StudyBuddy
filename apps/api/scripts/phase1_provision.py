@@ -38,7 +38,16 @@ from models import (
 from modules.org.models import OrgUnit, UserOrgRole
 from shared.constants import OrgUnitType
 
-NEW_TABLES = ["org_units", "user_org_roles", "kt_document_chunks"]
+# GraphRAG (Phase 6): entity/relationship graph extracted at KT ingest.
+from modules.kt.models import KTGraphEdge, KTGraphNode  # noqa: E402,F401
+
+NEW_TABLES = [
+    "org_units",
+    "user_org_roles",
+    "kt_document_chunks",
+    "kt_graph_nodes",
+    "kt_graph_edges",
+]
 
 
 def provision_schema() -> None:

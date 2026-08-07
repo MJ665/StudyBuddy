@@ -207,6 +207,20 @@ async def _execute(doc_id: str, db: AsyncSession) -> None:
             doc_id, len(rows), failed_embeds,
         )
 
+        # GraphRAG (Phase 6): extract entities/relationships into the knowledge
+        # graph. Best-effort and self-committing — a failure here never undoes
+        # the vector ingest above (vectors are the retrieval floor).
+        try:
+            from modules.kt.services.graph_extraction import extract_and_store
+
+            counts = await extract_and_store(db, doc)
+            logger.info(
+                "graph for doc %s: %d nodes / %d edges",
+                doc_id, counts.get("nodes", 0), counts.get("edges", 0),
+            )
+        except Exception as ge:  # noqa: BLE001 — graph is additive
+            logger.warning("graph extraction skipped for doc %s: %s", doc_id, ge)
+
     except Exception as e:  # noqa: BLE001 — always record, never silent
         logger.error("pgvector ingestion FAILED for doc %s: %s", doc_id, e)
         await db.rollback()

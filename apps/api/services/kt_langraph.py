@@ -146,18 +146,44 @@ async def _retrieve_and_rerank(
 ) -> list[dict]:
     """Embed → vector search (scoped) → enrich with titles → rerank."""
     query_embedding = await gemini.embed_query(query)
-    if not query_embedding:
-        return []
 
     # pgvector (Phase 2) — replaced neo4j.vector_search; same chunk contract.
-    candidates = await pg_vector_search(
-        query_embedding=query_embedding,
-        company_id=company_id,
-        project_ids=project_ids,
-        top_k=RETRIEVE_TOP_K,
-    )
-    enriched = await _enrich_with_titles(candidates, company_id)
-    return await rerank_llm(query, enriched, top_n=CONTEXT_TOP_N)
+    # If embeddings are unavailable (e.g. Gemini quota/billing), we DON'T bail:
+    # retrieval degrades to graph-only via the GraphRAG blend below (the exact
+    # fallback the product plan calls for).
+    enriched: list[dict] = []
+    reranked: list[dict] = []
+    if query_embedding:
+        candidates = await pg_vector_search(
+            query_embedding=query_embedding,
+            company_id=company_id,
+            project_ids=project_ids,
+            top_k=RETRIEVE_TOP_K,
+        )
+        enriched = await _enrich_with_titles(candidates, company_id)
+        reranked = await rerank_llm(query, enriched, top_n=CONTEXT_TOP_N)
+    else:
+        logger.warning(
+            "embeddings unavailable — degrading to graph-only KT retrieval"
+        )
+
+    # GraphRAG blend (Phase 6): traverse the Postgres knowledge graph seeded by
+    # the query terms + the documents pgvector surfaced, and prepend the
+    # connected relationships as an extra grounded source. Prepended after rerank
+    # so the structural context is never dropped; also the sole retrieval path
+    # when embeddings are down. Best-effort.
+    try:
+        from modules.kt.services.graph_rag import graph_context
+
+        seed_doc_ids = list({c.get("doc_id") for c in enriched if c.get("doc_id")})
+        gctx = await graph_context(query, company_id, project_ids, seed_doc_ids)
+        if gctx:
+            gctx["doc_title"] = "Knowledge Graph"
+            reranked = [gctx] + reranked
+    except Exception as e:  # noqa: BLE001 — graph blend is additive
+        logger.warning("graph blend skipped: %s", e)
+
+    return reranked
 
 
 def _build_context(chunks: list[dict]) -> str:

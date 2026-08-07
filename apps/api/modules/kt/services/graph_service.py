@@ -14,11 +14,11 @@ Episode ids use the retrieval convention "{doc_id}_ep_{chunk_index}".
 
 from typing import Dict, List, Optional
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.kt_model import DocStatusEnum, KTDocument, KTProject
-from modules.kt.models import KTDocumentChunk
+from modules.kt.models import KTDocumentChunk, KTGraphEdge, KTGraphNode
 
 VISIBLE_STATUSES = (DocStatusEnum.APPROVED, DocStatusEnum.INGESTED)
 
@@ -106,6 +106,66 @@ async def get_graph_explorer_data(
             nodes.append({"id": d.id, "label": d.title or "Document", "type": "document"})
             seen.add(d.id)
             edges.append({"source": d.id, "target": d.project_id, "type": "BELONGS_TO"})
+
+    # Real knowledge graph (GraphRAG, Phase 6): entities + relationships
+    # extracted at ingest. Documents with an extracted graph use it; documents
+    # without one fall back to their tags so nothing regresses.
+    docs_with_graph: set = set()
+    if doc_ids:
+        gnodes = (
+            (
+                await db.execute(
+                    select(KTGraphNode).where(KTGraphNode.document_id.in_(doc_ids))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        gedges = (
+            (
+                await db.execute(
+                    select(KTGraphEdge).where(KTGraphEdge.document_id.in_(doc_ids))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        # One entity node per distinct norm_name (cross-document grouping).
+        entity_label: Dict[str, str] = {}
+        entity_type: Dict[str, str] = {}
+        for n in gnodes:
+            docs_with_graph.add(n.document_id)
+            entity_label.setdefault(n.norm_name, n.name)
+            entity_type.setdefault(n.norm_name, (n.node_type or "entity").lower())
+        for e in gedges:
+            docs_with_graph.add(e.document_id)
+            entity_label.setdefault(e.norm_source, e.source_name)
+            entity_label.setdefault(e.norm_target, e.target_name)
+
+        def _ent_id(norm: str) -> str:
+            return f"entity:{norm}"
+
+        for norm, label in entity_label.items():
+            eid = _ent_id(norm)
+            if eid not in seen:
+                nodes.append({"id": eid, "label": label, "type": entity_type.get(norm, "entity")})
+                seen.add(eid)
+        # document -MENTIONS-> entity, and entity -relation-> entity
+        mention_seen: set = set()
+        for n in gnodes:
+            key = (n.document_id, n.norm_name)
+            if key not in mention_seen:
+                mention_seen.add(key)
+                edges.append({"source": n.document_id, "target": _ent_id(n.norm_name), "type": "MENTIONS"})
+        for e in gedges:
+            edges.append(
+                {"source": _ent_id(e.norm_source), "target": _ent_id(e.norm_target), "type": e.relation}
+            )
+
+    # Tag fallback for documents that have no extracted graph yet.
+    for d in docs:
+        if d.id in docs_with_graph:
+            continue
         for tag in _doc_tags(d):
             if tag not in seen:
                 nodes.append({"id": tag, "label": tag, "type": "entity"})
@@ -150,6 +210,35 @@ async def get_graph_neighborhood(db: AsyncSession, node_id: str) -> Dict[str, Li
 
     def add_edge(s: str, t: str, etype: str):
         edges.append({"source": s, "target": t, "type": etype})
+
+    # Extracted entity node? ("entity:{norm_name}")
+    if node_id.startswith("entity:"):
+        norm = node_id.split("entity:", 1)[1]
+        add_node(node_id, norm, "entity")
+        rel_rows = (
+            await db.execute(
+                select(KTGraphEdge)
+                .where(or_(KTGraphEdge.norm_source == norm, KTGraphEdge.norm_target == norm))
+                .limit(50)
+            )
+        ).scalars().all()
+        for e in rel_rows:
+            if e.norm_source == norm:
+                add_node(f"entity:{e.norm_target}", e.target_name, "entity")
+            else:
+                add_node(f"entity:{e.norm_source}", e.source_name, "entity")
+            add_edge(f"entity:{e.norm_source}", f"entity:{e.norm_target}", e.relation)
+        doc_rows = (
+            await db.execute(
+                select(KTGraphNode.document_id).where(KTGraphNode.norm_name == norm).limit(50)
+            )
+        ).fetchall()
+        for r in doc_rows:
+            d = await db.get(KTDocument, r.document_id)
+            if d:
+                add_node(d.id, d.title or "Document", "document")
+                add_edge(d.id, node_id, "MENTIONS")
+        return {"nodes": nodes, "edges": edges}
 
     # Episode id? ("{uuid}_ep_{i}")
     if "_ep_" in node_id:
@@ -246,11 +335,23 @@ async def graph_counts(
         (await db.execute(select(KTDocument.tags, KTDocument.auto_tags).where(*doc_filter)))
         .fetchall()
     )
-    tags: set = set()
+    entities: set = set()
     for r in docs:
-        tags.update(t for t in (r.tags or []) if t)
-        tags.update(t for t in (r.auto_tags or []) if t)
-    return {"total_episodes": int(episodes or 0), "total_entities": len(tags)}
+        entities.update((t or "").strip().lower() for t in (r.tags or []) if t)
+        entities.update((t or "").strip().lower() for t in (r.auto_tags or []) if t)
+
+    # Union in the distinct extracted graph entities (GraphRAG, Phase 6).
+    node_filter = []
+    if organization_id is not None:
+        node_filter.append(KTGraphNode.organization_id == organization_id)
+    if company_id is not None:
+        node_filter.append(KTGraphNode.company_id == company_id)
+    norm_rows = (
+        await db.execute(select(KTGraphNode.norm_name).where(*node_filter))
+    ).fetchall()
+    entities.update(r.norm_name for r in norm_rows if r.norm_name)
+
+    return {"total_episodes": int(episodes or 0), "total_entities": len(entities)}
 
 
 async def related_documents(db: AsyncSession, doc: KTDocument, limit: int = 10) -> List[Dict]:

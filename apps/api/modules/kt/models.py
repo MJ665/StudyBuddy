@@ -56,3 +56,72 @@ class KTDocumentChunk(Base):
     __table_args__ = (
         Index("ix_kt_chunks_doc_order", "document_id", "chunk_index", unique=True),
     )
+
+
+class KTGraphNode(Base):
+    """An entity extracted from a KT document (GraphRAG on Postgres).
+
+    Stored per-document (``document_id`` non-null) so re-ingest/delete is a
+    clean cascade by document. The same entity mentioned in two documents is two
+    rows; cross-document connectivity is recovered at query/explorer time by
+    grouping on ``norm_name`` within a company/project scope.
+    """
+
+    __tablename__ = "kt_graph_nodes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    document_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("kt_documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    project_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    company_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    organization_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Lowercased/trimmed name used for query matching + cross-doc grouping.
+    norm_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    node_type: Mapped[str] = mapped_column(String(50), default="CONCEPT", nullable=False)
+
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        Index("ix_kt_gnode_scope", "company_id", "project_id", "norm_name"),
+    )
+
+
+class KTGraphEdge(Base):
+    """A directed relationship (source)-[relation]->(target) between two
+    entities, extracted from a single document. Names are denormalized so
+    traversal and the explorer never need a node join."""
+
+    __tablename__ = "kt_graph_edges"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    document_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("kt_documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    project_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    company_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    organization_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+
+    source_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    target_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    norm_source: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    norm_target: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    relation: Mapped[str] = mapped_column(String(120), default="related to", nullable=False)
+
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    __table_args__ = (
+        Index("ix_kt_gedge_scope", "company_id", "project_id"),
+    )
