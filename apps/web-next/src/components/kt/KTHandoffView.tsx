@@ -144,6 +144,25 @@ export default function KTHandoffView({ user }: KTHandoffViewProps) {
     }
   };
 
+  const canSignoff = ['Mentor', 'GroupAdmin', 'LDAdmin', 'Owner', 'PlatformAdmin'].includes(user?.role);
+
+  const handleSignoff = async (handoffId: string) => {
+    try {
+      await ApiService.signoffHandoff(handoffId);
+      toast.success('Handoff signed off & completed!');
+      fetchHandoffList();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to sign off handoff');
+    }
+  };
+
+  const STATUS_STYLES: Record<string, string> = {
+    completed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    awaiting_signoff: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    in_progress: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
+    pending: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+  };
+
   return (
     <div className="flex-1 p-8 overflow-y-auto custom-scrollbar relative z-10 max-w-7xl mx-auto w-full">
       <header className="mb-12">
@@ -382,12 +401,20 @@ export default function KTHandoffView({ user }: KTHandoffViewProps) {
                   <div key={h.id} className="bg-slate-900/40 border border-slate-850 rounded-[2rem] p-6 space-y-4">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div>
-                        <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full">
-                          {h.handoff_type || 'Mentorship'}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full">
+                            {h.handoff_type || 'Mentorship'}
+                          </span>
+                          <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 border rounded-full ${STATUS_STYLES[h.status] || STATUS_STYLES.pending}`}>
+                            {(h.status || 'pending').replace('_', ' ')}
+                          </span>
+                        </div>
                         <h4 className="text-white font-bold text-base mt-2">
                           Knowledge transition: {h.departing_user_name || 'Outgoing'} → {h.receiving_user_name || 'Incoming'}
                         </h4>
+                        {h.mentor_name && (
+                          <p className="text-[11px] text-slate-500 mt-0.5">Mentor: {h.mentor_name}</p>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-4 text-xs text-slate-400">
@@ -395,6 +422,20 @@ export default function KTHandoffView({ user }: KTHandoffViewProps) {
                           <Calendar size={14} />
                           Target: {h.departure_date ? new Date(h.departure_date).toLocaleDateString() : 'TBD'}
                         </span>
+                      </div>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-500">
+                        <span>Transfer Progress</span>
+                        <span>{h.progress ?? 0}%</span>
+                      </div>
+                      <div className="h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all ${h.status === 'completed' ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+                          style={{ width: `${h.progress ?? 0}%` }}
+                        />
                       </div>
                     </div>
 
@@ -424,6 +465,29 @@ export default function KTHandoffView({ user }: KTHandoffViewProps) {
                             </button>
                           ))}
                         </div>
+                      </div>
+                    )}
+
+                    {/* Mentor sign-off */}
+                    {h.status !== 'completed' && canSignoff && (
+                      <div className="pt-3 border-t border-slate-850 flex items-center justify-between gap-3">
+                        <p className="text-[11px] text-slate-500">
+                          {h.status === 'awaiting_signoff'
+                            ? 'All required items complete — ready for your sign-off.'
+                            : 'Complete all required checklist items to enable sign-off.'}
+                        </p>
+                        <button
+                          onClick={() => handleSignoff(h.id)}
+                          disabled={h.status !== 'awaiting_signoff'}
+                          className="shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-white text-xs font-bold transition-all"
+                        >
+                          <UserCheck size={14} /> Mentor Sign-off
+                        </button>
+                      </div>
+                    )}
+                    {h.status === 'completed' && (
+                      <div className="pt-3 border-t border-slate-850 flex items-center gap-2 text-emerald-400 text-xs font-bold">
+                        <CheckSquare size={14} /> Handoff completed{h.completed_at ? ` on ${new Date(h.completed_at).toLocaleDateString()}` : ''}
                       </div>
                     )}
                   </div>

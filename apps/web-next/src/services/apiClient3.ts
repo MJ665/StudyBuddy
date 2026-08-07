@@ -437,6 +437,10 @@ export class ApiClient3 extends ApiClient2 {
     );
   }
 
+  static async signoffHandoff(handoffId: string) {
+    return this.request(`/kt/handoffs/${handoffId}/signoff`, { method: 'POST' });
+  }
+
   // ─── Notifications ────────────────────────────────────────────────────────
 
   static async getKTNotifications(unreadOnly: boolean = false, page: number = 1) {
