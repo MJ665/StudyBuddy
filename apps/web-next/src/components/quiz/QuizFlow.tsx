@@ -227,7 +227,7 @@ export default function QuizFlow({ bank, questions, onFinish, onCancel, user }: 
         />
       </div>
 
-      <div className="max-w-7xl mx-auto w-full px-6 py-10 flex-1 flex gap-8">
+      <div className="max-w-7xl mx-auto w-full px-4 md:px-6 py-6 md:py-10 flex-1 flex gap-8">
         {/* LEFT SIDEBAR: Question Navigation */}
         <aside className="hidden lg:flex flex-col w-72 shrink-0 gap-6">
           <div className="bg-slate-900 border border-white/5 rounded-[2.5rem] p-8 flex flex-col shadow-2xl">
@@ -288,16 +288,16 @@ export default function QuizFlow({ bank, questions, onFinish, onCancel, user }: 
 
         {/* MAIN CONTENT AREA */}
         <main className="flex-1 flex flex-col">
-          <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center justify-between gap-4 flex-wrap mb-6 md:mb-10">
             <div>
               <div className="flex items-center gap-2 text-brand-primary mb-1">
                 <div className="w-1.5 h-1.5 rounded-full bg-brand-primary" />
                 <span className="text-[10px] font-black uppercase tracking-[0.3em]">Data Sector {currentIdx + 1}</span>
               </div>
-              <h2 className="text-3xl font-black text-white">Assessment Query</h2>
+              <h2 className="text-2xl md:text-3xl font-black text-white">Assessment Query</h2>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
               {bank.show_timer && (
                 <div className={`flex items-center gap-4 px-6 py-3 rounded-2xl border transition-all ${
                   timeLeft <= 10 ? 'bg-rose-500/10 border-rose-500/50 text-rose-400 animate-pulse' : 'bg-slate-900 border-white/5 text-brand-primary'
@@ -330,9 +330,9 @@ export default function QuizFlow({ bank, questions, onFinish, onCancel, user }: 
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: direction * -50, opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="bg-slate-900 border border-white/5 rounded-[3rem] p-12 shadow-2xl flex-1 flex flex-col"
+              className="bg-slate-900 border border-white/5 rounded-3xl md:rounded-[3rem] p-5 md:p-12 shadow-2xl flex-1 flex flex-col"
             >
-              <div className="text-xl font-bold text-slate-200 leading-relaxed mb-12">
+              <div className="text-lg md:text-xl font-bold text-slate-200 leading-relaxed mb-6 md:mb-12 break-words overflow-x-auto">
                 <RichText text={currentQ.question} />
               </div>
 
@@ -359,18 +359,18 @@ export default function QuizFlow({ bank, questions, onFinish, onCancel, user }: 
                     <button
                       key={idx}
                       onClick={() => setAnswers({ ...answers, [currentIdx]: opt })}
-                      className={`p-6 rounded-3xl border-2 text-left transition-all flex items-center gap-6 group ${
-                        answers[currentIdx] === opt 
-                          ? 'bg-brand-primary/10 border-brand-primary text-white' 
+                      className={`p-4 md:p-6 rounded-3xl border-2 text-left transition-all flex items-center gap-4 md:gap-6 group ${
+                        answers[currentIdx] === opt
+                          ? 'bg-brand-primary/10 border-brand-primary text-white'
                           : 'bg-slate-950 border-white/5 text-slate-400 hover:border-white/10 hover:bg-white/5'
                       }`}
                     >
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm transition-all ${
+                      <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center font-black text-sm transition-all ${
                         answers[currentIdx] === opt ? 'bg-brand-primary text-slate-950' : 'bg-slate-900 text-slate-500 group-hover:text-white'
                       }`}>
                         {String.fromCharCode(65 + idx)}
                       </div>
-                      <span className="font-bold">{opt}</span>
+                      <span className="font-bold min-w-0 break-words">{opt}</span>
                     </button>
                   ))}
                 </div>

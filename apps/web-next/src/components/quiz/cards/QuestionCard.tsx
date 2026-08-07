@@ -58,7 +58,7 @@ export default function QuestionCard({ q, index, value, onChange }: Props) {
         </span>
       </div>
 
-      <div className="text-slate-100 mb-4 leading-relaxed">
+      <div className="text-slate-100 mb-4 leading-relaxed break-words overflow-x-auto">
         <MathText content={q.question} format={fmt} />
       </div>
 
@@ -92,7 +92,7 @@ export default function QuestionCard({ q, index, value, onChange }: Props) {
             return (
               <label
                 key={opt}
-                className={`flex items-center gap-3 rounded-lg border px-4 py-2.5 cursor-pointer transition ${
+                className={`flex items-start gap-3 rounded-lg border px-4 py-2.5 cursor-pointer transition ${
                   checked ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-700 hover:border-slate-600'
                 }`}
               >
@@ -101,9 +101,9 @@ export default function QuestionCard({ q, index, value, onChange }: Props) {
                   name={`q-${q.id}`}
                   checked={checked}
                   onChange={() => (isMulti ? toggleMulti(opt) : onChange(opt))}
-                  className="accent-emerald-500"
+                  className="accent-emerald-500 shrink-0 mt-0.5"
                 />
-                <span className="text-sm text-slate-200">
+                <span className="text-sm text-slate-200 min-w-0 break-words">
                   <MathText content={opt} format={fmt} />
                 </span>
               </label>
