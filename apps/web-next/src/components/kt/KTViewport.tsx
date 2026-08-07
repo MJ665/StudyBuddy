@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { KeyRound, Loader2 } from 'lucide-react';
 import { useKTNavStore } from '@/stores/ktNavStore';
 import type { KTView } from '@/stores/ktNavStore';
 
@@ -40,6 +41,46 @@ export default function KTViewport({ user }: KTViewportProps) {
 
   const [historyDocId, setHistoryDocId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // ── Access-key entry gate ────────────────────────────────────────────────
+  // L&D / Owner / PlatformAdmin manage KT and bypass the gate. Everyone else is
+  // a knowledge CONSUMER: they must hold an access grant (a redeemed key /
+  // project membership) before the hub opens — otherwise no company knowledge is
+  // shown at all. `/kt/companies` is grant-scoped, so an empty list ⇒ no access.
+  const role = user?.role || 'Member';
+  const isManager = ['LDAdmin', 'ld_admin', 'Owner', 'owner', 'PlatformAdmin'].includes(role);
+  const [gate, setGate] = useState<'checking' | 'locked' | 'open'>(isManager ? 'open' : 'checking');
+  const [keyInput, setKeyInput] = useState('');
+  const [redeeming, setRedeeming] = useState(false);
+  const [gateError, setGateError] = useState<string | null>(null);
+
+  const checkAccess = React.useCallback(async () => {
+    if (isManager) { setGate('open'); return; }
+    try {
+      const companies = await ApiService.getKTCompanies();
+      setGate(Array.isArray(companies) && companies.length > 0 ? 'open' : 'locked');
+    } catch {
+      setGate('locked');
+    }
+  }, [isManager]);
+
+  useEffect(() => { checkAccess(); }, [checkAccess]);
+
+  const redeem = async () => {
+    if (!keyInput.trim()) return;
+    setRedeeming(true);
+    setGateError(null);
+    try {
+      await ApiService.redeemKTKey(keyInput.trim());
+      setKeyInput('');
+      await checkAccess();
+      toast.success('Access key accepted — knowledge unlocked.');
+    } catch (e: any) {
+      setGateError(e?.message || 'Invalid or expired access key.');
+    } finally {
+      setRedeeming(false);
+    }
+  };
 
   const handleEndorse = async (docId: string) => {
     try {
@@ -122,6 +163,47 @@ export default function KTViewport({ user }: KTViewportProps) {
         return <KTCompanySelectorView user={user} />;
     }
   };
+
+  // ── Gate screens (consumers only) ────────────────────────────────────────
+  if (gate === 'checking') {
+    return (
+      <div className="flex-1 flex items-center justify-center text-slate-400">
+        <Loader2 className="animate-spin mr-2" size={18} /> Verifying knowledge access…
+      </div>
+    );
+  }
+  if (gate === 'locked') {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="max-w-md w-full rounded-2xl bg-slate-900 border border-slate-800 p-8 text-center">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-4">
+            <KeyRound className="text-indigo-400" size={26} />
+          </div>
+          <h2 className="text-xl font-black text-white mb-2">Access key required</h2>
+          <p className="text-slate-400 text-sm mb-6">
+            The Knowledge Hub is protected. Enter the access key shared with you to
+            unlock the projects and chatbot you&apos;ve been granted.
+          </p>
+          <input
+            value={keyInput}
+            onChange={(e) => setKeyInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && redeem()}
+            placeholder="sh_kt_…"
+            className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2.5 text-sm font-mono text-white mb-3 focus:outline-none focus:border-indigo-500"
+          />
+          {gateError && <p className="text-rose-400 text-xs mb-3">{gateError}</p>}
+          <button
+            onClick={redeem}
+            disabled={redeeming || !keyInput.trim()}
+            className="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 py-2.5 font-bold text-sm text-white"
+          >
+            {redeeming ? 'Verifying…' : 'Unlock knowledge'}
+          </button>
+          <p className="text-slate-600 text-[11px] mt-4">No key? Ask your L&amp;D admin to issue one for your project.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden h-full">
