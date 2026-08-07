@@ -397,7 +397,26 @@ async def list_keys(
         )
 
     result = await db.execute(q.order_by(KTAccessKey.created_at.desc()))
-    return result.scalars().all()
+    keys = result.scalars().all()
+
+    # Populate the computed UI fields (recipient_name is a real column;
+    # is_active + uses_remaining are derived) so the registry shows real values
+    # instead of 'System Account' / 'undefined/100' / everything 'Revoked'.
+    now = datetime.now(timezone.utc)
+    from kt_schemas import KTKeyOut
+
+    out = []
+    for k in keys:
+        exp = k.expires_at
+        if exp is not None and exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        active = k.revoked_at is None and (exp is None or exp > now)
+        remaining = (k.max_uses - (k.use_count or 0)) if k.max_uses else None
+        dto = KTKeyOut.model_validate(k)
+        dto.is_active = active
+        dto.uses_remaining = remaining
+        out.append(dto)
+    return out
 
 
 

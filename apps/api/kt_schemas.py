@@ -339,10 +339,15 @@ class KTKeyOut(BaseModel):
     scope_label: Optional[str]
     company_id: str
     project_ids: List[str]
+    recipient_name: Optional[str] = None
     recipient_email: Optional[str]
     expires_at: Optional[datetime]
     use_count: int
     max_uses: Optional[int]
+    # Computed for the UI (were missing → 'undefined/100', 'System Account',
+    # and every key showing 'Revoked/Inactive').
+    uses_remaining: Optional[int] = None  # None = unlimited
+    is_active: bool = True
     is_onboarding_key: bool
     created_at: datetime
     revoked_at: Optional[datetime]

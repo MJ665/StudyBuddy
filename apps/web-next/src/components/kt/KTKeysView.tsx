@@ -409,7 +409,7 @@ export default function KTKeysView({ user }: KTKeysViewProps) {
                     </div>
                     <div>
                       <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Uses remaining</p>
-                      <p className="text-slate-300 mt-0.5">{k.max_uses !== null ? `${k.uses_count}/${k.max_uses}` : 'unlimited'}</p>
+                      <p className="text-slate-300 mt-0.5">{k.max_uses != null ? `${k.uses_remaining ?? (k.max_uses - (k.use_count ?? 0))} / ${k.max_uses}` : 'unlimited'}</p>
                     </div>
                     <div>
                       <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Expires</p>
