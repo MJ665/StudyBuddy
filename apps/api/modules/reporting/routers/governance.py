@@ -151,18 +151,80 @@ def get_security_highlights(
 
     return result
 
+def _seed_daily_from_bank(db, bank_id: int, group_id: Optional[int], current_user: dict) -> int:
+    """Set today's Daily Challenge from a chosen Question Bank as a mentor
+    override, for the given group (or every active group when None)."""
+    import datetime as _dt
+    import random as _rnd
+
+    bank = db.query(models.QuestionBank).filter(models.QuestionBank.id == bank_id).first()
+    if not bank:
+        raise HTTPException(404, "Question bank not found")
+    q_ids = [
+        q.id for q in db.query(models.Question.id).filter(models.Question.bank_id == bank_id).all()
+    ]
+    if not q_ids:
+        raise HTTPException(400, "That question bank has no questions.")
+
+    if group_id:
+        groups = [group_id]
+    else:
+        groups = [g.id for g in db.query(models.Group.id).filter(models.Group.is_active.is_(True)).all()]
+
+    today = _dt.date.today()
+    seeded = 0
+    for gid in groups:
+        existing = (
+            db.query(models.DailyChallenge)
+            .filter(
+                models.DailyChallenge.group_id == gid,
+                models.DailyChallenge.challenge_date == today,
+            )
+            .first()
+        )
+        qid = _rnd.choice(q_ids)
+        if existing:
+            existing.question_id = qid
+            existing.is_mentor_override = True
+            existing.selection_reason = f"L&D seeded from bank: {bank.name}"
+        else:
+            db.add(
+                models.DailyChallenge(
+                    group_id=gid, question_id=qid, challenge_date=today,
+                    is_mentor_override=True,
+                    selection_reason=f"L&D seeded from bank: {bank.name}",
+                )
+            )
+        seeded += 1
+    db.commit()
+    return seeded
+
+
 @router.post("/seed-daily")
 def seed_daily_on_demand(
     group_id: Optional[int] = None,
+    bank_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_ldadmin),
 ):
     """
     On-demand daily challenge seed — wired to the 'Seed Daily' button in the L&D admin dashboard.
     Enforced by Global LDAdmin privileges (AUD-Logged).
+
+    If `bank_id` is given, the L&D explicitly chooses that Question Bank as the
+    day's challenge (a mentor override the auto-generator won't overwrite);
+    otherwise it runs the performance-based auto-selection.
     """
     assert_group_in_org(group_id, db, current_user)
     try:
+        if bank_id:
+            seeded = _seed_daily_from_bank(db, bank_id, group_id, current_user)
+            log_admin_action(
+                db=db, actor_id=int(current_user["sub"]), actor_role=current_user["role"],
+                action="SEED_DAILY_FROM_BANK", resource_type="BANK", resource_id=bank_id,
+                details={"groups_seeded": seeded, "group_id": group_id},
+            )
+            return {"success": True, "message": f"Daily challenge set from bank for {seeded} group(s)."}
         tasks.generate_daily_challenges(group_id=group_id)
 
         # Log the action (Strategic Audit)

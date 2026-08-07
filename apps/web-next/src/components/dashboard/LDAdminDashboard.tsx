@@ -580,10 +580,26 @@ export default function LDAdminDashboard({
           { icon: <Plus size={16} />, label: 'Create Coding', onClick: () => setShowCodingModal(true) },
           {
             icon: <Database size={16} />, label: 'Seed Daily', onClick: async () => {
-              toast('info', "Initializing Synchonicity Protocol...");
               try {
-                await ApiService.seedDailyChallenges();
-                toast('success', "Challenges generated successfully");
+                // Let the L&D pick a Question Bank to become the Daily Challenge
+                // (a mentor override), or auto-select by performance.
+                const res = await ApiService.getBanks(undefined, 1, 200);
+                const banks: any[] = res?.items || [];
+                let bankId: number | undefined;
+                if (banks.length) {
+                  const list = banks.map((b, i) => `${i + 1}. ${b.name}`).join('\n');
+                  const pick = window.prompt(
+                    `Seed Daily Challenge from which Question Bank?\nEnter a number, or leave blank for automatic (performance-based) selection.\n\n${list}`,
+                  );
+                  if (pick && pick.trim()) {
+                    const idx = parseInt(pick.trim(), 10) - 1;
+                    if (idx >= 0 && idx < banks.length) bankId = banks[idx].id;
+                    else { toast('error', 'Invalid selection'); return; }
+                  }
+                }
+                toast('info', 'Seeding daily challenge…');
+                await ApiService.seedDailyChallenges(bankId);
+                toast('success', bankId ? 'Daily challenge set from the selected bank' : 'Challenges generated automatically');
               } catch (err: any) { toast('error', err.message); }
             }
           },

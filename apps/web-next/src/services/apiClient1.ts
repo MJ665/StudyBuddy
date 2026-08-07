@@ -299,8 +299,12 @@ export class ApiClient1 extends ApiClient0 {
     return this.request(`/admin/tasks/trigger/${taskName}`, { method: 'POST' });
   }
 
-  static async seedDailyChallenges() {
-    return this.request('/admin/seed-daily', { method: 'POST' });
+  static async seedDailyChallenges(bankId?: number, groupId?: number) {
+    const p = new URLSearchParams();
+    if (bankId != null) p.set('bank_id', String(bankId));
+    if (groupId != null) p.set('group_id', String(groupId));
+    const qs = p.toString();
+    return this.request(`/admin/seed-daily${qs ? `?${qs}` : ''}`, { method: 'POST' });
   }
 
   static async notifyIntervention(data: { user_ids: number[], message: string }) {
