@@ -308,7 +308,8 @@ export class ApiClient1 extends ApiClient0 {
     if (bankId != null) p.set('bank_id', String(bankId));
     if (groupId != null) p.set('group_id', String(groupId));
     const qs = p.toString();
-    return this.request(`/admin/seed-daily${qs ? `?${qs}` : ''}`, { method: 'POST' });
+    const path = qs ? `/admin/seed-daily?${qs}` : '/admin/seed-daily';
+    return this.request(path, { method: 'POST' });
   }
 
   static async notifyIntervention(data: { user_ids: number[], message: string }) {
