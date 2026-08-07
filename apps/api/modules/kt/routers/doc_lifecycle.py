@@ -226,13 +226,23 @@ async def list_documents(
 
         # ── RBAC visibility ──────────────────────────────────────────────────
         if role == "author" or role not in ["Mentor", "GroupAdmin", "LDAdmin", "Owner"]:
-            # Authors: see their own docs (any status) OR any approved/ingested docs (Discovery)
+            # Knowledge CONSUMERS see their own docs (any status) OR approved/
+            # ingested docs ONLY in projects they hold an access grant for
+            # (redeemed key / kt_project_members) — NOT every approved doc in the
+            # org. Without this, any member could read all org knowledge documents.
+            from sqlalchemy import and_
+            from modules.kt.routers._shared import _resolve_granted_project_ids
+
+            granted = await _resolve_granted_project_ids(uid, org_id, db)
             q = q.where(
                 or_(
                     KTDocument.author_id == uid,
                     KTDocument.co_author_ids.contains([uid]),
-                    KTDocument.status.in_(
-                        [DocStatusEnum.APPROVED, DocStatusEnum.INGESTED]
+                    and_(
+                        KTDocument.project_id.in_(granted or []),
+                        KTDocument.status.in_(
+                            [DocStatusEnum.APPROVED, DocStatusEnum.INGESTED]
+                        ),
                     ),
                 )
             )
@@ -335,12 +345,21 @@ async def get_document(
         role = _db_user_res.scalar_one_or_none() or current_user.get("role", "Member")
         doc = await _get_doc_or_404(doc_id, org_id, db)
 
-        # Access check for authors
+        # Access check for consumers: author/co-author, OR an approved doc in a
+        # project they hold a grant for (redeemed key / membership). A public
+        # status alone is NOT enough — otherwise any member could open any org
+        # document by id.
         if role not in ["Mentor", "GroupAdmin", "LDAdmin", "Owner"]:
+            from modules.kt.routers._shared import _resolve_granted_project_ids
+
             is_author = doc.author_id == uid
             is_coauthor = uid in (doc.co_author_ids or [])
-            is_public = doc.status in [DocStatusEnum.APPROVED, DocStatusEnum.INGESTED]
-            if not (is_author or is_coauthor or is_public):
+            granted = await _resolve_granted_project_ids(uid, org_id, db)
+            is_granted_public = (
+                doc.status in [DocStatusEnum.APPROVED, DocStatusEnum.INGESTED]
+                and doc.project_id in (granted or [])
+            )
+            if not (is_author or is_coauthor or is_granted_public):
                 raise HTTPException(403, "Access denied")
 
         doc_out = KTDocumentOut.model_validate(doc)
