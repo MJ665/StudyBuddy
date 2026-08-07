@@ -412,3 +412,38 @@ def email_health(
                 result["test_sent"] = False
                 result["test_error"] = str(e)
     return result
+
+
+@router.post("/alerts/test")
+def alerts_test(current_user: dict = Depends(require_ldadmin)):
+    """Fire a test Slack alert so operational alerting is verifiable end-to-end.
+
+    Reports whether SLACK_WEBHOOK_URL is configured and the real HTTP result of
+    a synchronous post (production alerts go through the fire-and-forget facade
+    observability.slack.post_alert; this endpoint posts synchronously only so it
+    can surface the delivery status)."""
+    from config import settings
+
+    url = settings.SLACK_WEBHOOK_URL
+    result = {"configured": bool(url), "env": settings.ENVIRONMENT}
+    if not url:
+        result["sent"] = False
+        result["error"] = "SLACK_WEBHOOK_URL is not set."
+        return result
+    text = (
+        f"🔵 *StudyBuddy · TEST* _(env: {settings.ENVIRONMENT})_\n"
+        f"Test alert triggered from /admin/alerts/test by "
+        f"{current_user.get('full_name') or current_user.get('sub')}."
+    )
+    try:
+        import httpx
+
+        resp = httpx.post(url, json={"text": text}, timeout=5.0)
+        result["sent"] = resp.status_code == 200
+        result["status_code"] = resp.status_code
+        if resp.status_code != 200:
+            result["error"] = resp.text[:200]
+    except Exception as e:
+        result["sent"] = False
+        result["error"] = str(e)
+    return result

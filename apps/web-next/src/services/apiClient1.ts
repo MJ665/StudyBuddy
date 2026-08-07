@@ -299,6 +299,10 @@ export class ApiClient1 extends ApiClient0 {
     return this.request(`/admin/tasks/trigger/${taskName}`, { method: 'POST' });
   }
 
+  static async testSlackAlert() {
+    return this.request('/admin/alerts/test', { method: 'POST' });
+  }
+
   static async seedDailyChallenges(bankId?: number, groupId?: number) {
     const p = new URLSearchParams();
     if (bankId != null) p.set('bank_id', String(bankId));
